@@ -1,0 +1,88 @@
+{
+  "_about": "Design and check rules per manufacturing process. Used by tools/partcheck.py and tools/make_viewer.py; mirrored for the CAD side in lib/process.scad (keep the two in step). Wall limits follow what the services' own checks reject (red) and flag (warn). Rates are rough per-cm3 figures from real JLC quotes; always upload the file for a real price. short, for and look are the plain-words name, the one-line purpose and the material look the preview page uses.",
+
+  "resin_sla": {
+    "name": "Resin (SLA), prototype",
+    "short": "Resin", "for": "A cheap, quick test print to check fit and feel before the real thing. Brittle, and not for life outdoors.", "look": "resin",
+    "wall_red": 0.5, "wall_warn": 0.8,
+    "overhang_deg": null,
+    "bridges_ok": true,
+    "needs_escape": true,
+    "fit": 0.20, "hole_comp": 0.05, "min_hole": 0.8,
+    "rate_usd_cm3": null,
+    "notes": [
+      "The service adds and removes supports itself; overhangs are not your problem, trapped resin is.",
+      "A closed cavity holds liquid resin. Every hollow needs a drain hole of at least 2 mm.",
+      "Brittle and UV-sensitive. Tests fit, feel and function, not life outdoors. Hand-tight only."
+    ]
+  },
+
+  "fdm_asa": {
+    "name": "FDM, ASA plastic, final part",
+    "short": "ASA plastic", "for": "A tough plastic that lasts outdoors in sun and water. The usual choice for a finished plastic part.", "look": "asa",
+    "wall_red": 0.4, "wall_warn": 0.8,
+    "overhang_deg": 45,
+    "bridges_ok": true,
+    "needs_escape": false,
+    "fit": 0.30, "hole_comp": 0.15, "min_hole": 1.5,
+    "rate_usd_cm3": 0.05,
+    "notes": [
+      "Walls: under one 0.4 mm line cannot print; under two lines (0.8) prints weak.",
+      "Print with the largest flat face on the bed; chamfer the bed edge 0.6-1 mm against elephant foot.",
+      "Flat ceilings bridge fine up to about 10 mm; past that, slope them 45 degrees.",
+      "Horizontal holes over 6 mm: teardrop them (hole_x in process.scad).",
+      "Layer lines are the weak direction: load across them, not along them.",
+      "Rate is filament only, at 100 % fill (upper bound)."
+    ]
+  },
+
+  "slm_316l": {
+    "name": "Metal (SLM), 316L stainless",
+    "short": "Stainless steel", "for": "Printed metal for parts that must be strong, take heat or last for decades. Priced by how much metal is in it.", "look": "steel",
+    "wall_red": 0.5, "wall_warn": 1.2,
+    "overhang_deg": 45,
+    "bridges_ok": false,
+    "needs_escape": true,
+    "fit": 0.45, "hole_comp": 0.0, "min_hole": 1.0,
+    "rate_usd_cm3": 1.76,
+    "notes": [
+      "No flat ceilings: every downward face steeper than 45 degrees, or a support nobody can reach inside.",
+      "Powder must pour out: no closed cavities.",
+      "Threads print rough on the downward flanks: print loose (0.45) and chase with a tap.",
+      "Food-equipment alloy; no galling against brass; fine outdoors. Not a certified drinking-water fitting.",
+      "Rate: JLC quote, 38 cm3 part at $67."
+    ]
+  },
+
+  "slm_alsi10mg": {
+    "name": "Metal (SLM), aluminium AlSi10Mg",
+    "short": "Aluminium", "for": "Printed metal at about half the weight and price of steel. Needs care against corrosion next to brass or steel in water.", "look": "alu",
+    "wall_red": 0.5, "wall_warn": 1.2,
+    "overhang_deg": 45,
+    "bridges_ok": false,
+    "needs_escape": true,
+    "fit": 0.45, "hole_comp": 0.0, "min_hole": 1.0,
+    "rate_usd_cm3": 1.06,
+    "notes": [
+      "Same geometry rules as 316L.",
+      "Against brass, nickel or steel in water it corrodes slowly: PTFE tape on threads, anodize if offered, dry it over winter.",
+      "Rate: JLC quote, 38 cm3 part at $41."
+    ]
+  },
+
+  "mjf_pa12": {
+    "name": "Nylon (MJF/SLS), PA12",
+    "short": "Nylon", "for": "A tough, slightly flexible plastic printed in powder, so any shape prints without supports.", "look": "nylon",
+    "wall_red": 0.6, "wall_warn": 1.0,
+    "overhang_deg": null,
+    "bridges_ok": true,
+    "needs_escape": true,
+    "fit": 0.30, "hole_comp": 0.10, "min_hole": 1.0,
+    "rate_usd_cm3": null,
+    "notes": [
+      "Self-supporting in its powder bed: any overhang prints.",
+      "Powder must escape: hollows need two openings of 4 mm or more.",
+      "Tougher than resin and fine outdoors; slightly porous, so seal with a gasket, not the surface."
+    ]
+  }
+}

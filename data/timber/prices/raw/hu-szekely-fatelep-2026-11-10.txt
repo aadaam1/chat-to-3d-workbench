@@ -1,0 +1,304 @@
+# Székely Fatelep, Budapest (XVI. kerület): price tables copied from the pages below.
+# Read 2026-11-10. Prices in HUF per piece (sheets: per sheet), net and gross (27% VAT).
+# Rebuild the CSV: tools/timber_import.py this-file ../hu-szekely-fatelep-2026-11-10.csv --supplier "Székely Fatelep" --region hu --date 2026-11-10
+## https://szekelyfatelep.hu/fatelep/pallo/
+5cmx10cmx2fm	1 511,81 Ft	1 920,00 Ft
+5cmx10cmx2fm gyalult	1 787,40 Ft	2 270,00 Ft
+5cmx10cmx2fm Impregnált (rovar és gombamentesítésre, zöld)	1 610,24 Ft	2 045,00 Ft
+5cmx10cmx3fm	2 267,72 Ft	2 880,00 Ft
+5cmx10cmx3fm gyalult	2 681,10 Ft	3 405,00 Ft
+5cmx10cmx3fm Impregnált (rovar és gombamentesítésre, zöld)	2 415,75 Ft	3 068,00 Ft
+5cmx10cmx4fm	3 023,62 Ft	3 840,00 Ft
+5cmx10cmx4fm gyalult	3 574,80 Ft	4 540,00 Ft
+5cmx10cmx4fm Impregnált (rovar és gombamentesítésre, zöld)	3 220,47 Ft	4 090,00 Ft
+5cmx10cmx5fm	3 779,53 Ft	4 800,00 Ft
+5cmx10cmx5fm Impregnált (rovar és gombamentesítésre, zöld)	4 025,98 Ft	5 113,00 Ft
+5cmx10cmx5fm gyalult	4 468,50 Ft	5 675,00 Ft
+5cmx10cmx6fm	4 535,43 Ft	5 760,00 Ft
+5cmx10cmx6fm Impregnált (rovar és gombamentesítésre, zöld)	4 830,71 Ft	6 135,00 Ft
+5cmx10cmx6fm gyalult	5 362,20 Ft	6 810,00 Ft
+5cmx15cmx2fm	2 267,72 Ft	2 880,00 Ft
+5cmx15cmx2fm gyalult	2 681,10 Ft	3 405,00 Ft
+5cmx15cmx2fm Impregnált (rovar és gombamentesítésre, zöld)	2 415,75 Ft	3 068,00 Ft
+5cmx15cmx3fm	3 401,57 Ft	4 320,00 Ft
+5cmx15cmx3fm gyalult	4 022,05 Ft	5 108,00 Ft
+5cmx15cmx3fm impregnált (rovar és gombamentesítésre, zöld)	3 622,83 Ft	4 601,00 Ft
+5cmx15cmx4fm	4 535,43 Ft	5 760,00 Ft
+5cmx15cmx4fm Impregnált (rovar és gombamentesítésre, zöld)	4 830,71 Ft	6 135,00 Ft
+5cmx15cmx4fm gyalult	5 362,20 Ft	6 810,00 Ft
+5cmx15cmx5fm	5 669,29 Ft	7 200,00 Ft
+5cmx15cmx5fm Impregnált (rovar és gombamentesítésre, zöld)	6 038,58 Ft	7 669,00 Ft
+5cmx15cmx5fm gyalult	6 703,15 Ft	8 513,00 Ft
+5cmx15cmx6fm	6 803,15 Ft	8 640,00 Ft
+5cmx15cmx6fm Impregnált (rovar és gombamentesítésre, zöld)	7 246,46 Ft	9 203,00 Ft
+5cmx15cmx6fm gyalult	8 043,31 Ft	10 215,00 Ft
+5cmx15cmx7fm	8 681,10 Ft	11 025,00 Ft
+5cmx15cmx7fm Impregnált (rovar és gombamentesítésre, zöld)	9 197,64 Ft	11 681,00 Ft
+5cmx15cmx7fm gyalult	10 128,35 Ft	12 863,00 Ft
+5cmx15cmx8fm	10 393,70 Ft	13 200,00 Ft
+5cmx15cmx8fm Impregnált (rovar és gombamentesítésre, zöld)	10 984,25 Ft	13 950,00 Ft
+5cmx15cmx8fm gyalult	12 047,24 Ft	15 300,00 Ft
+5cmx15cmx9fm	12 224,41 Ft	15 525,00 Ft
+5cmx15cmx9fm Impregnált (rovar és gombamentesítésre, zöld)	12 888,98 Ft	16 369,00 Ft
+5cmx20cmx2fm	3 228,35 Ft	4 100,00 Ft
+5cmx20cmx2fm gyalult	3 779,53 Ft	4 800,00 Ft
+5cmx20cmx2fm Impregnált (rovar és gombamentesítésre, zöld)	3 425,20 Ft	4 350,00 Ft
+5cmx20cmx3fm	4 842,52 Ft	6 150,00 Ft
+5cmx20cmx3fm gyalult	5 669,29 Ft	7 200,00 Ft
+5cmx20cmx3fm Impregnált (rovar és gombamentesítésre, zöld)	5 137,80 Ft	6 525,00 Ft
+5cmx20cmx4fm	6 456,69 Ft	8 200,00 Ft
+5cmx20cmx4fm Impregnált (rovar és gombamentesítésre, zöld)	6 850,39 Ft	8 700,00 Ft
+5cmx20cmx4fm gyalult	7 559,06 Ft	9 600,00 Ft
+5cmx20cmx5fm	8 070,87 Ft	10 250,00 Ft
+5cmx20cmx5fm Impregnált (rovar és gombamentesítésre, zöld)	8 562,99 Ft	10 875,00 Ft
+5cmx20cmx5fm gyalult	9 448,82 Ft	12 000,00 Ft
+5cmx20cmx6fm	9 685,04 Ft	12 300,00 Ft
+5cmx20cmx6fm Impregnált (rovar és gombamentesítésre, zöld)	10 275,59 Ft	13 050,00 Ft
+5cmx20cmx6fm gyalult	11 338,58 Ft	14 400,00 Ft
+5cmx20cmx7fm	11 850,39 Ft	15 050,00 Ft
+5cmx20cmx7fm Impregnált (rovar és gombamentesítésre, zöld)	12 539,37 Ft	15 925,00 Ft
+5cmx20cmx7fm gyalult	13 779,53 Ft	17 500,00 Ft
+5cmx20cmx8fm	14 173,23 Ft	18 000,00 Ft
+5cmx20cmx8fm Impregnált (rovar és gombamentesítésre, zöld)	14 960,63 Ft	19 000,00 Ft
+5cmx20cmx8fm gyalult	16 377,95 Ft	20 800,00 Ft
+5cmx20cmx9fm	17 362,20 Ft	22 050,00 Ft
+5cmx20cmx9fm Impregnált (rovar és gombamentesítésre, zöld)	18 248,03 Ft	23 175,00 Ft
+5cmx20cmx9fm gyalult	19 842,52 Ft	25 200,00 Ft
+## https://szekelyfatelep.hu/fatelep/deszka/
+2,5cmx10cmx2fm	755,91 Ft	960,00 Ft
+2,5cmx10cmx2fm impregnált (rovar és gombamentesítésre, zöld)	805,51 Ft	1 023,00 Ft
+2,5cmx10cmx3fm	1 133,86 Ft	1 440,00 Ft
+2,5cmx10cmx3fm gyalult	1 370,08 Ft	1 740,00 Ft
+2,5cmx10cmx3fm impregnált (rovar és gombamentesítésre, zöld)	1 207,87 Ft	1 534,00 Ft
+2,5cmx10cmx4fm	1 511,81 Ft	1 920,00 Ft
+2,5cmx10cmx4fm gyalult	1 826,77 Ft	2 320,00 Ft
+2,5cmx10cmx4fm impregnált (rovar és gombamentesítésre, zöld)	1 610,24 Ft	2 045,00 Ft
+2,5cmx10cmx5fm	1 889,76 Ft	2 400,00 Ft
+2,5cmx10cmx5fm gyalult	2 283,46 Ft	2 900,00 Ft
+2,5cmx10cmx5fm Impregnált (rovar és gombamentesítésre, zöld)	2 012,60 Ft	2 556,00 Ft
+2,5cmx10cmx6fm	2 267,72 Ft	2 880,00 Ft
+2,5cmx10cmx6fm gyalult	2 740,16 Ft	3 480,00 Ft
+2,5cmx10cmx6fm Impregnált (rovar és gombamentesítésre, zöld)	2 415,75 Ft	3 068,00 Ft
+2,5cmx12cmx2fm	907,09 Ft	1 152,00 Ft
+2,5cmx12cmx2fm gyalult	1 096,06 Ft	1 392,00 Ft
+2,5cmx12cmx2fm Impregnált (rovar és gombamentesítésre, zöld)	966,14 Ft	1 227,00 Ft
+2,5cmx12cmx3fm	1 360,63 Ft	1 728,00 Ft
+2,5cmx12cmx3fm gyalult	1 644,09 Ft	2 088,00 Ft
+2,5cmx12cmx3fm Impregnált (rovar és gombamentesítésre, zöld)	1 449,61 Ft	1 841,00 Ft
+2,5cmx12cmx4fm	1 814,17 Ft	2 304,00 Ft
+2,5cmx12cmx4fm gyalult	2 192,13 Ft	2 784,00 Ft
+2,5cmx12cmx4fm Impregnált (rovar és gombamentesítésre, zöld)	1 932,28 Ft	2 454,00 Ft
+2,5cmx12cmx5fm	2 267,72 Ft	2 880,00 Ft
+2,5cmx12cmx5fm gyalult	2 740,16 Ft	3 480,00 Ft
+2,5cmx12cmx5fm Impregnált (rovar és gombamentesítésre, zöld)	2 415,75 Ft	3 068,00 Ft
+2,5cmx12cmx6fm	2 721,26 Ft	3 456,00 Ft
+2,5cmx12cmx6fm gyalult	3 288,19 Ft	4 176,00 Ft
+2,5cmx12cmx6fm Impregnált (rovar és gombamentesítésre, zöld)	2 898,43 Ft	3 681,00 Ft
+2,5cmx15cmx2fm	1 133,86 Ft	1 440,00 Ft
+2,5cmx15cmx2fm gyalult	1 370,08 Ft	1 740,00 Ft
+2,5cmx15cmx2fm Impregnált (rovar és gombamentesítésre, zöld)	1 207,87 Ft	1 534,00 Ft
+2,5cmx15cmx3fm	1 700,79 Ft	2 160,00 Ft
+2,5cmx15cmx3fm gyalult	2 055,12 Ft	2 610,00 Ft
+2,5cmx15cmx3fm Impregnált (rovar és gombamentesítésre, zöld)	1 811,81 Ft	2 301,00 Ft
+2,5cmx15cmx4fm	2 267,72 Ft	2 880,00 Ft
+2,5cmx15cmx4fm gyalult	2 740,16 Ft	3 480,00 Ft
+2,5cmx15cmx4fm Impregnált (rovar és gombamentesítésre, zöld)	2 415,75 Ft	3 068,00 Ft
+2,5cmx15cmx5fm	2 834,65 Ft	3 600,00 Ft
+2,5cmx15cmx5fm gyalult	3 425,20 Ft	4 350,00 Ft
+2,5cmx15cmx5fm Impregnált (rovar és gombamentesítésre, zöld)	3 018,90 Ft	3 834,00 Ft
+2,5cmx15cmx6fm	3 401,57 Ft	4 320,00 Ft
+2,5cmx15cmx6fm gyalult	4 110,24 Ft	5 220,00 Ft
+2,5cmx15cmx6fm Impregnált (rovar és gombamentesítésre, zöld)	3 622,83 Ft	4 601,00 Ft
+2,5cmx20cmx2fm	1 614,17 Ft	2 050,00 Ft
+2,5cmx20cmx2fm gyalult	1 929,13 Ft	2 450,00 Ft
+2,5cmx20cmx2fm Impregnált (rovar és gombamentesítésre, zöld)	1 712,60 Ft	2 175,00 Ft
+2,5cmx20cmx3fm	2 421,26 Ft	3 075,00 Ft
+2,5cmx20cmx3fm gyalult	2 893,70 Ft	3 675,00 Ft
+2,5cmx20cmx3fm Impregnált (rovar és gombamentesítésre, zöld)	2 569,29 Ft	3 263,00 Ft
+2,5cmx20cmx4fm	3 228,35 Ft	4 100,00 Ft
+2,5cmx20cmx4fm gyalult	3 858,27 Ft	4 900,00 Ft
+2,5cmx20cmx4fm Impregnált (rovar és gombamentesítésre, zöld)	3 425,20 Ft	4 350,00 Ft
+2,5cmx20cmx5fm	4 035,43 Ft	5 125,00 Ft
+2,5cmx20cmx5fm gyalult	4 822,83 Ft	6 125,00 Ft
+2,5cmx20cmx5fm Impregnált (rovar és gombamentesítésre, zöld)	4 281,89 Ft	5 438,00 Ft
+2,5cmx20cmx6fm	4 842,52 Ft	6 150,00 Ft
+2,5cmx20cmx6fm gyalult	5 787,40 Ft	7 350,00 Ft
+2,5cmx20cmx6fm Impregnált (rovar és gombamentesítésre, zöld)	5 137,80 Ft	6 525,00 Ft
+## https://szekelyfatelep.hu/fatelep/gyalult-deszka/
+Gyalult deszka 19mm*116mm*4fm A/B Luc	2 440,94 Ft	3 100,00 Ft
+Gyalult deszka 19mm*146mm*3fm A/B Luc	2 283,47 Ft	2 900,00 Ft
+Gyalult deszka 19mm*146mm*4fm A/B Luc (0,584m2/db) Szárított, csiszolt	2 992,12 Ft	3 800,00 Ft
+Gyalult deszka 19mm*196mm*4fm A/B Luc	4 173,24 Ft	5 300,00 Ft
+Gyalult deszka 19mm*96mm*4fm A/B Luc	1 992,125 Ft	2 530,00 Ft
+Gyalult palló Borovi 45mm x 145mm x 5,1m C24 Szárított, csiszolt, fózolt	6 850,39 Ft	8 700,00 Ft
+Gyalult palló Borovi 45mm x 95mm x 5,4m C24 Szárított, csiszolt, fózolt	4488,18 Ft	5 700,00 Ft
+## https://szekelyfatelep.hu/fatelep/gerenda-szarufa/
+10cmx10cmx2fm	3 023,62 Ft	3 840,00 Ft
+10cmx10cmx2fm gyalult	3 574,80 Ft	4 540,00 Ft
+10cmx10cmx2fm Impregnált (rovar és gombamentesítésre, zöld)	3 220,47 Ft	4 090,00 Ft
+10cmx10cmx3fm	4 535,43 Ft	5 760,00 Ft
+10cmx10cmx3fm gyalult	5 362,20 Ft	6 810,00 Ft
+10cmx10cmx3fm Impregnált (rovar és gombamentesítésre, zöld)	4 830,71 Ft	6 135,00 Ft
+10cmx10cmx4fm	6 047,24 Ft	7 680,00 Ft
+10cmx10cmx4fm Impregnált (rovar és gombamentesítésre, zöld)	6 440,94 Ft	8 180,00 Ft
+10cmx10cmx4fm gyalult	7 149,61 Ft	9 080,00 Ft
+10cmx10cmx5fm	7 559,06 Ft	9 600,00 Ft
+10cmx10cmx5fm Impregnált (rovar és gombamentesítésre, zöld)	8 051,18 Ft	10 225,00 Ft
+10cmx10cmx5fm gyalult	8 937,01 Ft	11 350,00 Ft
+10cmx10cmx6fm	9 070,87 Ft	11 520,00 Ft
+10cmx10cmx6fm Impregnált (rovar és gombamentesítésre, zöld)	9 661,42 Ft	12 270,00 Ft
+10cmx10cmx6fm gyalult	10 724,41 Ft	13 620,00 Ft
+7,5cmx15cmx2fm	3 401,57 Ft	4 320,00 Ft
+7,5cmx15cmx2fm gyalult	4 022,05 Ft	5 108,00 Ft
+7,5cmx15cmx2fm Impregnált (rovar és gombamentesítésre, zöld)	3 622,83 Ft	4 601,00 Ft
+7,5cmx15cmx3fm	5 102,36 Ft	6 480,00 Ft
+7,5cmx15cmx3fm gyalult	6 032,28 Ft	7 661,00 Ft
+7,5cmx15cmx3fm Impregnált (rovar és gombamentesítésre, zöld)	5 434,65 Ft	6 902,00 Ft
+7,5cmx15cmx4fm	6 803,15 Ft	8 640,00 Ft
+7,5cmx15cmx4fm Impregnált (rovar és gombamentesítésre, zöld)	7 246,46 Ft	9 203,00 Ft
+7,5cmx15cmx4fm gyalult	8 043,31 Ft	10 215,00 Ft
+7,5cmx15cmx5fm	8 503,94 Ft	10 800,00 Ft
+7,5cmx15cmx5fm Impregnált (rovar és gombamentesítésre, zöld)	9 057,48 Ft	11 503,00 Ft
+7,5cmx15cmx5fm gyalult	10 054,33 Ft	12 769,00 Ft
+7,5cmx15cmx6fm	10 204,72 Ft	12 960,00 Ft
+7,5cmx15cmx6fm Impregnált (rovar és gombamentesítésre, zöld)	10 869,29 Ft	13 804,00 Ft
+7,5cmx15cmx6fm gyalult	12 065,35 Ft	15 323,00 Ft
+7,5cmx15cmx7fm	13 022,05 Ft	16 538,00 Ft
+7,5cmx15cmx7fm Impregnált (rovar és gombamentesítésre, zöld)	13 796,85 Ft	17 522,00 Ft
+7,5cmx15cmx7fm gyalult	15 192,13 Ft	19 294,00 Ft
+7,5cmx15cmx8fm	15 590,55 Ft	19 800,00 Ft
+7,5cmx15cmx8fm Impregnált (rovar és gombamentesítésre, zöld)	16 476,38 Ft	20 925,00 Ft
+7,5cmx15cmx8fm gyalult	18 070,87 Ft	22 950,00 Ft
+7,5cmx15cmx9fm	18 337,01 Ft	23 288,00 Ft
+7,5cmx15cmx9fm Impregnált (rovar és gombamentesítésre, zöld)	19 333,07 Ft	24 553,00 Ft
+7,5cmx15cmx9fm gyalult	21 126,77 Ft	26 831,00 Ft
+10cmx15cmx2fm	4 535,43 Ft	5 760,00 Ft
+10cmx15cmx2fm gyalult	5 362,20 Ft	6 810,00 Ft
+10cmx15cmx2fm Impregnált (rovar és gombamentesítésre, zöld)	4 830,71 Ft	6 135,00 Ft
+10cmx15cmx3fm	6 803,15 Ft	8 640,00 Ft
+10cmx15cmx3fm gyalult	8 043,31 Ft	10 215,00 Ft
+10cmx15cmx3fm Impregnált (rovar és gombamentesítésre, zöld)	7 246,46 Ft	9 203,00 Ft
+10cmx15cmx4fm	9 070,87 Ft	11 520,00 Ft
+10cmx15cmx4fm Impregnált (rovar és gombamentesítésre, zöld)	9 661,42 Ft	12 270,00 Ft
+10cmx15cmx4fm gyalult	10 724,41 Ft	13 620,00 Ft
+10cmx15cmx5fm	11 338,58 Ft	14 400,00 Ft
+10cmx15cmx5fm Impregnált (rovar és gombamentesítésre, zöld)	12 077,17 Ft	15 338,00 Ft
+10cmx15cmx5fm gyalult	13 405,51 Ft	17 025,00 Ft
+10cmx15cmx6fm	13 606,30 Ft	17 280,00 Ft
+10cmx15cmx6fm Impregnált (rovar és gombamentesítésre, zöld)	14 492,13 Ft	18 405,00 Ft
+10cmx15cmx6fm gyalult	16 086,61 Ft	20 430,00 Ft
+10cmx15cmx7fm	17 362,20 Ft	22 050,00 Ft
+10cmx15cmx7fm Impregnált (rovar és gombamentesítésre, zöld)	18 396,06 Ft	23 363,00 Ft
+10cmx15cmx7fm gyalult	20 255,91 Ft	25 725,00 Ft
+10cmx15cmx8fm	20 787,40 Ft	26 400,00 Ft
+10cmx15cmx8fm Impregnált (rovar és gombamentesítésre, zöld)	21 968,50 Ft	27 900,00 Ft
+10cmx15cmx8fm gyalult	24 094,49 Ft	30 600,00 Ft
+10cmx15cmx9fm	24 448,82 Ft	31 050,00 Ft
+10cmx15cmx9fm Impregnált (rovar és gombamentesítésre, zöld)	25 777,95 Ft	32 738,00 Ft
+10cmx15cmx9fm gyalult	28 169,29 Ft	35 775,00 Ft
+10cmx15cmx10fm	28 346,46 Ft	36 000,00 Ft
+10cmx15cmx10fm gyalult	32 480,31 Ft	41 250,00 Ft
+10cmx15cmx10fm Impregnált (rovar és gombamentesítésre, zöld)	29 822,83 Ft	37 875,00 Ft
+12cmx12cmx2fm	4 354,33 Ft	5 530,00 Ft
+12cmx12cmx2fm gyalult	5 148,03 Ft	6 538,00 Ft
+12cmx12cmx2fm Impregnált (rovar és gombamentesítésre, zöld)	4 637,80 Ft	5 890,00 Ft
+12cmx12cmx3fm	6 530,71 Ft	8 294,00 Ft
+12cmx12cmx3fm gyalult	7 721,26 Ft	9 806,00 Ft
+12cmx12cmx3fm impregnált (rovar és gombamentesítésre, zöld)	6 955,91 Ft	8 834,00 Ft
+12cmx12cmx4fm	8 707,87 Ft	11 059,00 Ft
+12cmx12cmx4fm Impregnált (rovar és gombamentesítésre, zöld)	9 274,80 Ft	11 779,00 Ft
+12cmx12cmx4fm gyalult	10 295,28 Ft	13 075,00 Ft
+12cmx12cmx5fm	10 885,04 Ft	13 824,00 Ft
+12cmx12cmx5fm Impregnált (rovar és gombamentesítésre, zöld)	11 593,70 Ft	14 724,00 Ft
+12cmx12cmx5fm gyalult	12 869,29 Ft	16 344,00 Ft
+12cmx12cmx6fm	13 062,20 Ft	16 589,00 Ft
+12cmx12cmx6fm Impregnált (rovar és gombamentesítésre, zöld)	13 912,60 Ft	17 669,00 Ft
+12cmx12cmx6fm gyalult	15 443,31 Ft	19 613,00 Ft
+12cmx12cmx7fm	16 667,72 Ft	21 168,00 Ft
+12cmx12cmx7fm gyalult	19 445,67 Ft	24 696,00 Ft
+12cmx12cmx7fm impregnált (rovar és gombamentesítésre, zöld)	17 659,84 Ft	22 428,00 Ft
+12cmx12cmx8fm	19 955,91 Ft	25 344,00 Ft
+12cmx12cmx8fm gyalult	23 130,71 Ft	29 376,00 Ft
+12cmx12cmx8fm impregnált (rovar és gombamentesítésre, zöld)	21 089,76 Ft	26 784,00 Ft
+12cmx12cmx9fm	23 470,87 Ft	29 808,00 Ft
+12cmx12cmx9fm gyalult	27 042,52 Ft	34 344,00 Ft
+12cmx12cmx9fm Impregnált (rovar és gombamentesítésre, zöld)	24 746,46 Ft	31 428,00 Ft
+12cmx12cmx10fm	27 212,60 Ft	34 560,00 Ft
+12cmx12cmx10fm gyalult	31 181,10 Ft	39 600,00 Ft
+12cmx12cmx10fm Impregnált (rovar és gombamentesítésre, zöld)	28 629,92 Ft	36 360,00 Ft
+15cmx15cmx2fm	6 803,15 Ft	8 640,00 Ft
+15cmx15cmx2fm gyalult	8 043,31 Ft	10 215,00 Ft
+15cmx15cmx2fm impregnált (rovar és gombamentesítésre, zöld)	7 246,46 Ft	9 203,00 Ft
+15cmx15cmx3fm	10 204,72 Ft	12 960,00 Ft
+15cmx15cmx3fm gyalult	12 065,35 Ft	15 323,00 Ft
+15cmx15cmx3fm impregnált (rovar és gombamentesítésre, zöld)	10 869,29 Ft	13 804,00 Ft
+15cmx15cmx4fm	13 606,30 Ft	17 280,00 Ft
+15cmx15cmx4fm Impregnált (rovar és gombamentesítésre, zöld)	14 492,13 Ft	18 405,00 Ft
+15cmx15cmx4fm gyalult	16 086,61 Ft	20 430,00 Ft
+15cmx15cmx5fm	17 007,87 Ft	21 600,00 Ft
+15cmx15cmx5fm Impregnált (rovar és gombamentesítésre, zöld)	18 114,96 Ft	23 006,00 Ft
+15cmx15cmx5fm gyalult	20 108,66 Ft	25 538,00 Ft
+15cmx15cmx6fm	20 409,45 Ft	25 920,00 Ft
+15cmx15cmx6fm Impregnált (rovar és gombamentesítésre, zöld)	21 738,58 Ft	27 608,00 Ft
+15cmx15cmx6fm gyalult	24 129,92 Ft	30 645,00 Ft
+15cmx15cmx7fm	26 043,31 Ft	33 075,00 Ft
+15cmx15cmx7fm Impregnált (rovar és gombamentesítésre, zöld)	27 593,70 Ft	35 044,00 Ft
+15cmx15cmx7fm gyalult	30 384,25 Ft	38 588,00 Ft
+15cmx15cmx8fm	31 181,10 Ft	39 600,00 Ft
+15cmx15cmx8fm Impregnált (rovar és gombamentesítésre, zöld)	32 952,76 Ft	41 850,00 Ft
+15cmx15cmx8fm gyalult	36 141,73 Ft	45 900,00 Ft
+15cmx15cmx9fm	36 673,23 Ft	46 575,00 Ft
+15cmx15cmx9fm Impregnált (rovar és gombamentesítésre, zöld)	38 666,14 Ft	49 106,00 Ft
+15cmx15cmx9fm gyalult	42 254,33 Ft	53 663,00 Ft
+15cmx15cmx10fm	42 519,69 Ft	54 000,00 Ft
+15cmx15cmx10fm impregnált (rovar és gombamentesítésre, zöld)	44 734,65 Ft	56 813,00 Ft
+15cmx15cmx10m gyalult	46 948,82 Ft	59 625,00 Ft
+## https://szekelyfatelep.hu/fatelep/tetolec-zarlec/
+Bramac Léc (3cmx5cmx2fm)	519,69 Ft	660,00 Ft
+Bramac Léc (3cmx5cmx2fm) Impregnált (rovar és gombamentesítésre, zöld)	549,61 Ft	698,00 Ft
+Bramac Léc (3cmx5cmx3fm)	779,53 Ft	990,00 Ft
+Bramac Léc (3cmx5cmx3fm) impregnált (rovar és gombamentesítésre, zöld)	823,62 Ft	1 046,00 Ft
+Bramac Léc (3cmx5cmx4fm)	1 039,37 Ft	1 320,00 Ft
+Bramac Léc (3cmx5cmx4fm) Impregnált (rovar és gombamentesítésre, zöld)	1 098,43 Ft	1 395,00 Ft
+Bramac Léc (3cmx5cmx5fm)	1 299,21 Ft	1 650,00 Ft
+Bramac Léc (3cmx5cmx5fm) Impregnált (rovar és gombamentesítésre, zöld)	1 373,23 Ft	1 744,00 Ft
+Bramac Léc (3cmx5cmx6fm)	1 559,06 Ft	1 980,00 Ft
+Bramac Léc (3cmx5cmx6fm) Impregnált (rovar és gombamentesítésre, zöld)	1 648,03 Ft	2 093,00 Ft
+Normál Léc (2,5cmx5cmx3fm)	649,61 Ft	825,00 Ft
+Normál Léc (2,5cmx5cmx3fm) Impregnált (rovar és gombamentesítésre, zöld)	686,61 Ft	872,00 Ft
+Normál Léc (2,5cmx5cmx4fm)	866,14 Ft	1 100,00 Ft
+Normál Léc (2,5cmx5cmx4fm) Impregnált (rovar és gombamentesítésre, zöld)	915,75 Ft	1 163,00 Ft
+Normál Léc (2,5cmx5cmx5fm)	1 082,68 Ft	1 375,00 Ft
+Normál Léc (2,5cmx5cmx5fm) Impregnált (rovar és gombamentesítésre, zöld)	1 144,09 Ft	1 453,00 Ft
+Stafni (5cmx5cmx4fm)	1 732,28 Ft	2 200,00 Ft
+Stafni (5cmx5cmx4fm) Impregnált (rovar és gombamentesítésre, zöld)	1 830,71 Ft	2 325,00 Ft
+Stafni (5cmx5cmx4fm) vörösfenyő	1 653,54 Ft	2 100,00 Ft
+Stafni (5cmx5cmx5fm)	2 165,35 Ft	2 750,00 Ft
+Stafni (5cmx5cmx5fm) Impregnált (rovar és gombamentesítésre, zöld)	2 288,19 Ft	2 906,00 Ft
+Stafni (5cmx5cmx6fm)	2 598,43 Ft	3 300,00 Ft
+Stafni (5cmx5cmx6fm) Impregnált (rovar és gombamentesítésre, zöld)	2 746,46 Ft	3 488,00 Ft
+Egalizált léc 3 fm 28mmx48mm szárított	708,66 Ft	900,00 Ft
+Egalizált léc 4 fm 28mmx48mm szárított	984,25 Ft	1 250,00 Ft
+Egalizált zárléc 4 fm 48×48 mm szárított	1 732,28 Ft	2 200,00 Ft
+Pipaléc 20*30*2fm	787,40 Ft	1 000,00 Ft
+Pipaléc 30*30*2fm	1 181,10 Ft	1 500,00 Ft
+Pipaléc 45*45*2fm	1 724,41 Ft	2 190,00 Ft
+Pipaléc 55*55*2fm	2 086,61 Ft	2 650,00 Ft
+## https://szekelyfatelep.hu/fatelep/osb/
+OSB-3 6mm (1250*2500/ 3,125m2 ) 15kg/db	3 700,79 Ft	4 700,00 Ft
+OSB-3 8mm (1250*2500/ 3,125m2 )17kg/db	4 251,97 Ft	5 400,00 Ft
+OSB-3 10mm (1250*2500/ 3,125m2 ) 21kg/db	5 236,22 Ft	6 650,00 Ft
+OSB-3 12mm (1250*2500/ 3,125m2 )25kg/db	6 102,36 Ft	7 750,00 Ft
+OSB-3 15mm (1250*2500/ 3,125m2 ) 32kg/db	7 622,05 Ft	9 680,00 Ft
+OSB-3 18mm (1250*2500/ 3,125m2 ) 37kg/db	9 055,12 Ft	11 500,00 Ft
+OSB-3 20mm (1250*2500/ 3,125m2 ) 41kg/db	10 078,74 Ft	12 800,00 Ft
+OSB-3 22mm (1250*2500/ 3,125m2 ) 44kg/db	11 023,62 Ft	14 000,00 Ft
+OSB-3 25mm (1250*2500/ 3,125m2 ) 50kg/db	12 519,69 Ft	15 900,00 Ft
+OSB-3 30mm (1250*2500/ 3,125m2 ) 64kg/db	15 590,55 Ft	19 800,00 Ft
+OSB-3 12mm NF (67,5*2500/ 1,687m2) 12kg/db	3 559,06 Ft	4 520,00 Ft
+OSB-3 15mm NF (67,5*250/ 1,687m2) 15kg/db	4 448,82 Ft	5 650,00 Ft
+OSB-3 18mm NF (67,5*250/ 1,687m2) 18kg/db	5 330,71 Ft	6 770,00 Ft
+OSB-3 22mm NF (67,5*250/ 1,687m2) 22kg/db	6 519,69 Ft	8 280,00 Ft
+OSB-3 25mm NF (67,5*250/ 1,687m2) 23kg/db	7 007,87 Ft	8 900,00 Ft
+Ecopanel 10mm (1150*2200) 21kg/db, 2,53m2/tábla	7 165,35 Ft	9 100,00 Ft
+Ecopanel 18mm (1150*2200) 38kg/db, 2,53m2/tábla	11 259,84 Ft	14 300,00 Ft

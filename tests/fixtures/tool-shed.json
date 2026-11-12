@@ -1,0 +1,18 @@
+{
+  "type": "pent-shed",
+  "name": "tool-shed",
+  "region": "eu",
+  "units": "metric",
+  "width": 3500,
+  "depth": 2500,
+  "height_front": 2350,
+  "height_back": 2000,
+  "overhang": 300,
+  "roof_deck": "osb-15",
+  "openings": [
+    { "wall": "front", "kind": "door", "x": 400, "width": 900, "height": 1950 },
+    { "wall": "front", "kind": "window", "x": 1900, "sill": 1000, "width": 700, "height": 700 },
+    { "wall": "left", "kind": "window", "x": 900, "sill": 1000, "width": 700, "height": 600 }
+  ],
+  "loads": { "snow_kn_m2": 1.0, "floor_kn_m2": 1.5 }
+}

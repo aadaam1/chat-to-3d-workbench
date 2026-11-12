@@ -1,0 +1,15 @@
+{
+  "type": "pent-shed",
+  "name": "garden-shed",
+  "region": "eu",
+  "units": "metric",
+  "width": 3000,
+  "depth": 2000,
+  "height_front": 2350,
+  "height_back": 2000,
+  "openings": [
+    { "wall": "front", "kind": "door", "x": 1000, "width": 900, "height": 1950 },
+    { "wall": "left", "kind": "window", "x": 600, "sill": 1000, "width": 600, "height": 600 }
+  ],
+  "loads": { "snow_kn_m2": 1.0, "floor_kn_m2": 1.5 }
+}

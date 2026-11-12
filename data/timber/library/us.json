@@ -1,0 +1,640 @@
+{
+  "schema": 1,
+  "region": "us",
+  "name": "United States (dressed nominal lumber, 16 in on centre, 4 × 8 ft sheets)",
+  "units": "imperial",
+  "sections": {
+    "1x4": {
+      "name": "1×4",
+      "thickness_mm": 19,
+      "width_mm": 89,
+      "stock_lengths_mm": [
+        2438,
+        3048,
+        3658,
+        4267,
+        4877
+      ],
+      "uses": [
+        "trim",
+        "fascia",
+        "light cladding"
+      ],
+      "sources": [
+        "ps20",
+        "plan"
+      ],
+      "unverified_stock_lengths": true,
+      "note": "Dressed size from PS 20-20; stock lengths 8-16 ft are the plan's assumption until a retailer's range is read."
+    },
+    "2x2": {
+      "name": "2×2",
+      "thickness_mm": 38,
+      "width_mm": 38,
+      "stock_lengths_mm": [
+        2438,
+        3048,
+        3658,
+        4267,
+        4877
+      ],
+      "uses": [
+        "light framing, noggins"
+      ],
+      "sources": [
+        "ps20",
+        "plan"
+      ],
+      "unverified_stock_lengths": true,
+      "note": "Dressed size from PS 20-20; stock lengths 8-16 ft are the plan's assumption until a retailer's range is read."
+    },
+    "2x3": {
+      "name": "2×3",
+      "thickness_mm": 38,
+      "width_mm": 64,
+      "stock_lengths_mm": [
+        2438,
+        3048,
+        3658,
+        4267,
+        4877
+      ],
+      "uses": [
+        "light framing"
+      ],
+      "sources": [
+        "ps20",
+        "plan"
+      ],
+      "unverified_stock_lengths": true,
+      "note": "Dressed size from PS 20-20; stock lengths 8-16 ft are the plan's assumption until a retailer's range is read."
+    },
+    "2x4": {
+      "name": "2×4",
+      "thickness_mm": 38,
+      "width_mm": 89,
+      "stock_lengths_mm": [
+        2438,
+        3048,
+        3658,
+        4267,
+        4877
+      ],
+      "uses": [
+        "wall studs",
+        "plates",
+        "blocking"
+      ],
+      "sources": [
+        "ps20",
+        "plan"
+      ],
+      "unverified_stock_lengths": true,
+      "note": "Dressed size from PS 20-20; stock lengths 8-16 ft are the plan's assumption until a retailer's range is read."
+    },
+    "2x6": {
+      "name": "2×6",
+      "thickness_mm": 38,
+      "width_mm": 140,
+      "stock_lengths_mm": [
+        2438,
+        3048,
+        3658,
+        4267,
+        4877
+      ],
+      "uses": [
+        "floor joists",
+        "rafters"
+      ],
+      "sources": [
+        "ps20",
+        "plan"
+      ],
+      "unverified_stock_lengths": true,
+      "note": "Dressed size from PS 20-20; stock lengths 8-16 ft are the plan's assumption until a retailer's range is read."
+    },
+    "2x8": {
+      "name": "2×8",
+      "thickness_mm": 38,
+      "width_mm": 184,
+      "stock_lengths_mm": [
+        2438,
+        3048,
+        3658,
+        4267,
+        4877
+      ],
+      "uses": [
+        "joists and rafters over longer spans"
+      ],
+      "sources": [
+        "ps20",
+        "plan"
+      ],
+      "unverified_stock_lengths": true,
+      "note": "Dressed size from PS 20-20; stock lengths 8-16 ft are the plan's assumption until a retailer's range is read."
+    },
+    "2x10": {
+      "name": "2×10",
+      "thickness_mm": 38,
+      "width_mm": 235,
+      "stock_lengths_mm": [
+        2438,
+        3048,
+        3658,
+        4267,
+        4877
+      ],
+      "uses": [
+        "joists, rafters and headers over longer spans"
+      ],
+      "sources": [
+        "ps20",
+        "plan"
+      ],
+      "unverified_stock_lengths": true,
+      "note": "Dressed size from PS 20-20; stock lengths 8-16 ft are the plan's assumption until a retailer's range is read."
+    },
+    "4x4": {
+      "name": "4×4",
+      "thickness_mm": 89,
+      "width_mm": 89,
+      "stock_lengths_mm": [
+        2438,
+        3048,
+        3658,
+        4267,
+        4877
+      ],
+      "uses": [
+        "posts",
+        "sills"
+      ],
+      "sources": [
+        "ps20",
+        "plan"
+      ],
+      "unverified_stock_lengths": true,
+      "note": "Dressed size from PS 20-20; stock lengths 8-16 ft are the plan's assumption until a retailer's range is read."
+    }
+  },
+  "sheets": {
+    "osb-12": {
+      "name": "OSB 15/32 in (nominal 1/2 in, 11.9 mm)",
+      "material": "osb",
+      "thickness_mm": 11.9,
+      "size_mm": [
+        1219.2,
+        2438.4
+      ],
+      "can_rotate": true,
+      "sources": [
+        "plan"
+      ],
+      "unverified": true,
+      "note": "4 x 8 ft is exact. The thickness is the usual 15/32 in panel; not read from a panel standard. Key kept as osb-12 so a spec works in both regions."
+    },
+    "osb-18": {
+      "name": "OSB 23/32 in (nominal 3/4 in, 18.3 mm)",
+      "material": "osb",
+      "thickness_mm": 18.3,
+      "size_mm": [
+        1219.2,
+        2438.4
+      ],
+      "can_rotate": true,
+      "sources": [
+        "plan"
+      ],
+      "unverified": true,
+      "note": "As osb-12; the usual 23/32 in subfloor panel."
+    }
+  },
+  "cladding": {
+    "shiplap-19x140": {
+      "name": "Shiplap cladding 1×6 (19 × 140 mm)",
+      "profile": "shiplap",
+      "thickness_mm": 19,
+      "face_width_mm": 140,
+      "cover_width_mm": 130,
+      "stock_lengths_mm": [
+        2438,
+        3048,
+        3658,
+        4267,
+        4877
+      ],
+      "can_rotate": false,
+      "sources": [
+        "ps20",
+        "plan"
+      ],
+      "unverified_stock_lengths": true,
+      "note": "Thickness and 130 mm face (cover) width from PS 20-20 Table 4 (shiplap, 10 mm lap, nominal 6); overall width 140 from Table 3; stock lengths are the plan's assumption."
+    }
+  },
+  "sheet_spans": {
+    "osb-12": {
+      "floor_mm": 406.4,
+      "roof_mm": 609.6,
+      "wall_mm": 609.6,
+      "sources": [
+        "apa-span-rating"
+      ],
+      "unverified": true
+    },
+    "osb-18": {
+      "floor_mm": 609.6,
+      "roof_mm": 609.6,
+      "wall_mm": 609.6,
+      "sources": [
+        "apa-span-rating"
+      ],
+      "unverified": true
+    },
+    "_meta": {
+      "sources": [
+        "apa-span-rating"
+      ],
+      "unverified": true,
+      "note": "Largest support spacing for each OSB panel, by use: 16 in. floor for 15/32 in., 24 in. for 23/32 in., 24 in. roof and wall. Rules of thumb for the T4 checks from search summaries of APA span ratings, not from the table itself. Check the panel's stamped span rating."
+    }
+  },
+  "fasteners": {
+    "nail-framing": {
+      "name": "16d common nail, 3-1/2 in. × 0.162 in.",
+      "type": "nail",
+      "diameter_mm": 4.1,
+      "length_mm": 88.9,
+      "sold_by": "weight",
+      "weight_unit": "lb",
+      "pcs_per_lb": 47,
+      "box_lb": [
+        1,
+        5
+      ],
+      "sources": [
+        "plan",
+        "nail-counts-us"
+      ],
+      "unverified": true,
+      "use": "framing joints (end nails, face nails)",
+      "note": "Count per lb is a published figure for common nails (Admiral Steel 47 for 16d, 101 for 8d; Mitek 48 and 94-126 by coating)."
+    },
+    "nail-toe": {
+      "name": "8d common nail, 2-1/2 in. × 0.131 in.",
+      "type": "nail",
+      "diameter_mm": 3.3,
+      "length_mm": 63.5,
+      "sold_by": "weight",
+      "weight_unit": "lb",
+      "pcs_per_lb": 101,
+      "box_lb": [
+        1,
+        5
+      ],
+      "sources": [
+        "plan",
+        "nail-counts-us"
+      ],
+      "unverified": true,
+      "use": "toe nailing, fascia and bargeboards",
+      "note": "Count per lb is a published figure for common nails (Admiral Steel 47 for 16d, 101 for 8d; Mitek 48 and 94-126 by coating)."
+    },
+    "nail-sheathing": {
+      "name": "8d ring-shank nail, 2-1/2 in. × 0.113 in., galvanized",
+      "type": "nail",
+      "diameter_mm": 2.9,
+      "length_mm": 63.5,
+      "sold_by": "weight",
+      "weight_unit": "lb",
+      "pcs_per_lb": 137,
+      "box_lb": [
+        1,
+        5
+      ],
+      "sources": [
+        "plan"
+      ],
+      "unverified": true,
+      "use": "OSB sheets onto framing",
+      "note": "Count per lb computed from steel density (formula in docs/research/timber-structures.md), not read from a catalogue. The IRC sheathing row allows 8d common (0.131 in.) as well."
+    },
+    "nail-cladding": {
+      "name": "8d siding nail, 2-1/2 in., galvanized",
+      "type": "nail",
+      "diameter_mm": 2.9,
+      "length_mm": 63.5,
+      "sold_by": "weight",
+      "weight_unit": "lb",
+      "pcs_per_lb": 189,
+      "box_lb": [
+        1,
+        5
+      ],
+      "sources": [
+        "plan",
+        "nail-counts-us"
+      ],
+      "unverified": true,
+      "use": "cladding boards onto framing",
+      "note": "Count per lb from one distributor's siding-nail list (Admiral Steel), read from a table whose columns were hard to align."
+    },
+    "screw-rafter": {
+      "name": "Structural screw 1/4 × 6 in., fully threaded",
+      "type": "screw",
+      "diameter_mm": 6.4,
+      "length_mm": 152.4,
+      "pack_sizes": [
+        50,
+        100
+      ],
+      "sources": [
+        "plan"
+      ],
+      "unverified": true,
+      "use": "rafter to wall plate (uplift)",
+      "note": "In the US a hurricane/rafter tie is the usual answer; a long structural screw is shown so the same rule works in both regions. Pack sizes are an assumption."
+    },
+    "screw-corner": {
+      "name": "Structural screw 1/4 × 5 in., partly threaded",
+      "type": "screw",
+      "diameter_mm": 6.4,
+      "length_mm": 127,
+      "pack_sizes": [
+        50,
+        100
+      ],
+      "sources": [
+        "plan"
+      ],
+      "unverified": true,
+      "use": "wall panels to each other at the corners",
+      "note": "Pack sizes are an assumption, not a supplier's catalogue."
+    }
+  },
+  "joint_rules": {
+    "stud-plate": {
+      "fastener": "nail-framing",
+      "per_joint": 2,
+      "note": "end nails through the plate into the stud end"
+    },
+    "plate-plate": {
+      "fastener": "nail-framing",
+      "per_joint": 2,
+      "note": "top plates lapped at a corner: 2 face nails"
+    },
+    "joist-rim": {
+      "fastener": "nail-framing",
+      "per_joint": 3,
+      "note": "end nails through the rim into the joist end, or blocking"
+    },
+    "rafter-plate": {
+      "fastener": "nail-toe",
+      "per_joint": 2,
+      "also": [
+        {
+          "fastener": "screw-rafter",
+          "per_joint": 1
+        }
+      ],
+      "note": "2 toe nails hold the rafter while it is fixed; 1 structural screw per rafter and plate resists uplift"
+    },
+    "header-trimmer": {
+      "fastener": "nail-toe",
+      "per_joint": 4,
+      "note": "header or sill to king or jack stud: 4 toe nails"
+    },
+    "sheet-frame": {
+      "fastener": "nail-sheathing",
+      "every_mm": 152.4,
+      "note": "one spacing for the whole sheet: the 6 in. edge spacing; field nails could be 12 in. (the joint carries only the length, not edge or field)"
+    },
+    "board-frame": {
+      "fastener": "nail-cladding",
+      "per_crossing": 2,
+      "note": "2 nails where a board crosses a stud"
+    },
+    "king-jack": {
+      "fastener": "nail-framing",
+      "every_mm": 609.6,
+      "note": "built-up stud, face nailed at 24 in. o.c."
+    },
+    "jack-header": {
+      "fastener": "nail-framing",
+      "per_joint": 2,
+      "note": "header bears on the jack stud; end nails through the header"
+    },
+    "plate-lap": {
+      "fastener": "nail-framing",
+      "every_mm": 406.4,
+      "note": "doubled top plate face nailed at 16 in. o.c."
+    },
+    "corner-stud": {
+      "fastener": "screw-corner",
+      "every_mm": 406.4,
+      "note": "the wall panels are fixed to each other at the corners after they are stood up"
+    },
+    "blocking-rafter": {
+      "fastener": "nail-framing",
+      "per_joint": 3,
+      "note": "blocking or outrigger end nailed through the rafter"
+    },
+    "fascia-rafter": {
+      "fastener": "nail-toe",
+      "per_joint": 2,
+      "note": "board face nailed to each rafter end"
+    },
+    "barge-rafter": {
+      "fastener": "nail-toe",
+      "every_mm": 406.4,
+      "note": "board face nailed along the rafter"
+    },
+    "rafter-ridge": {
+      "fastener": "nail-toe",
+      "per_joint": 4,
+      "also": [
+        {
+          "fastener": "nail-framing",
+          "per_joint": 3
+        }
+      ],
+      "note": "rafter plumb-cut against the ridge board: 4 toe nails and 3 end nails through the ridge board (unverified, from the IRC rafter-to-ridge row)"
+    },
+    "tie-rafter": {
+      "fastener": "nail-framing",
+      "per_joint": 4,
+      "note": "tie (ceiling joist) face nailed to the rafter at the heel: 4 nails per joint (unverified: the IRC heel joint connection table R802.5.1(9) was not read)"
+    },
+    "tie-plate": {
+      "fastener": "nail-toe",
+      "per_joint": 3,
+      "note": "tie (ceiling joist) toe nailed to the top plate: 3 nails per joint (unverified: from the IRC ceiling-joist-to-plate row, not read)"
+    },
+    "_meta": {
+      "sources": [
+        "plan",
+        "irc2021-nailing"
+      ],
+      "unverified": true,
+      "note": "Nail and screw counts per joint follow the IRC 2021 fastening schedule R602.3(1) as read from a distributor's chart and the ICC code-change proposal text (see docs/research/timber-structures.md), adapted to the joints the generator records. They are workbench rules, not a code check. Nails are sold by weight, structural screws only where they are stronger (rafter to plate, wall corners). Review before relying on them."
+    }
+  },
+  "grades": {
+    "SPF-No2": {
+      "name": "SPF No. 2",
+      "standard": "NDS 2018 Supplement Table 4A (No. 1/No. 2)",
+      "basis": "reference design value (allowable-stress)",
+      "bending_psi": 875,
+      "bending_mpa": 6.03,
+      "e_mean_psi": 1400000,
+      "e_mean_mpa": 9653,
+      "e_min_psi": 510000,
+      "e_min_mpa": 3516,
+      "specific_gravity": 0.42,
+      "density_kg_m3": 450,
+      "density_unverified": true,
+      "sources": [
+        "nds2018"
+      ],
+      "note": "Bending, E and G are read from Table 4A. Density is NOT in the table: 450 kg/m3 (about 12% moisture) is derived from G = 0.42 and flagged unverified. Values are allowable-stress reference values, a different basis from EN 338 characteristic strength: T4 must not mix them."
+    }
+  },
+  "defaults": {
+    "stud_spacing_mm": 406.4,
+    "joist_spacing_mm": 406.4,
+    "rafter_spacing_mm": 406.4,
+    "overhang_mm": 152.4,
+    "overhang_side_mm": 152.4,
+    "items": {
+      "frame": "2x4",
+      "plate": "2x4",
+      "floor": "2x6",
+      "rafter": "2x6",
+      "sheathing": "osb-12",
+      "floor_deck": "osb-18",
+      "roof_deck": "osb-12",
+      "cladding": "shiplap-19x140"
+    },
+    "grade": "SPF-No2",
+    "treated_floor": true,
+    "spare_percent": 10,
+    "kerf_mm": 4,
+    "loads": {
+      "snow_kn_m2": 1.0,
+      "floor_kn_m2": 1.9
+    },
+    "pitch_deg": 25,
+    "min_roof_pitch_deg": {
+      "roofing-felt": 5,
+      "metal-sheet": 5,
+      "asphalt-shingle": 9.5
+    },
+    "sources": [
+      "plan"
+    ],
+    "unverified": true,
+    "note": "Spacings, items, spare and kerf are workbench defaults from the plan. Loads are placeholder values to be set per site; roof pitch limits per covering were not read from a manufacturer or code and must be checked.",
+    "details": {
+      "corner": "three-stud",
+      "top_plate": "double",
+      "note": "Platform framing defaults: corner assembly and a double top plate lapped at the corners."
+    }
+  },
+  "bought": {
+    "roofing-felt": {
+      "name": "Roofing felt (bitumen)",
+      "unit": "m2",
+      "sources": [
+        "plan"
+      ]
+    },
+    "drip-edge": {
+      "name": "Drip edge / roof edge trim",
+      "unit": "m",
+      "sources": [
+        "plan"
+      ]
+    },
+    "ridge-cap": {
+      "name": "Ridge cap / ridge trim",
+      "unit": "m",
+      "sources": [
+        "plan"
+      ]
+    },
+    "hinge": {
+      "name": "Door hinge",
+      "unit": "pcs",
+      "sources": [
+        "plan"
+      ]
+    },
+    "latch": {
+      "name": "Door latch",
+      "unit": "pcs",
+      "sources": [
+        "plan"
+      ]
+    },
+    "door": {
+      "name": "Door leaf",
+      "unit": "pcs",
+      "sources": [
+        "plan"
+      ]
+    },
+    "window": {
+      "name": "Window",
+      "unit": "pcs",
+      "sources": [
+        "plan"
+      ]
+    }
+  },
+  "sources": [
+    {
+      "id": "ps20",
+      "title": "American Softwood Lumber Standard, Voluntary Product Standard PS 20-20 (NIST, January 2020), Table 3 (boards, dimension) and Table 4 (worked lumber)",
+      "url": "https://www.nist.gov/document/doc-ps-20-20-american-softwood-lumber-standard",
+      "read": "2026-11-11",
+      "note": "Minimum dressed dry sizes in mm: 1x4 = 19 x 89, 2x2 = 38 x 38, 2x3 = 38 x 64, 2x4 = 38 x 89, 2x6 = 38 x 140, 2x8 = 38 x 184, 2x10 = 38 x 235, 4x4 = 89 x 89. Shiplap (10 mm lap) nominal 1x6: 19 thick, 130 mm face width."
+    },
+    {
+      "id": "nds2018",
+      "title": "National Design Specification Supplement, 2018 edition (American Wood Council), Table 4A, Spruce-Pine-Fir 'No. 1/No. 2', 2\" & wider",
+      "url": "https://boonelumber.com/wp-content/uploads/2022/02/AWC_NDS2018_Supplement_1805.pdf",
+      "read": "2026-11-11",
+      "note": "A retailer-hosted copy of the AWC supplement. Values: Fb 875, Ft 450, Fv 135, Fc-perp 425, Fc 1,150, E 1,400,000, Emin 510,000 psi, specific gravity G 0.42 (NLGA). The table's grade row is 'No. 1/No. 2'. Converted to MPa at 0.00689476 MPa per psi."
+    },
+    {
+      "id": "plan",
+      "title": "Workbench build plan, docs/research/timber-structures.md",
+      "url": "docs/research/timber-structures.md",
+      "read": "2026-11-11",
+      "note": "Region scope (16 in on centre, 4 x 8 ft sheets, 8-16 ft stock lengths), item keys and the packs of 100/200/500 come from the plan. These are workbench decisions, not measured facts."
+    },
+    {
+      "id": "apa-span-rating",
+      "title": "APA span ratings: 24/16 (7/16 in.) roof sheathing on 24 in. supports; 19/32 in. Sturd-I-Floor rated 20 oc (24 in. maximum with clips), as found through search summaries (APA E30, county and city code handouts)",
+      "url": "https://www.apawood.org/data/Sites/1/documents/product-support/rated-sheathing-datasheet.pdf",
+      "read": "2026-11-11",
+      "note": "Search summaries only; APA's own table was not opened. The floor limit for 15/32 in. (16 in.) is a common rule of thumb not confirmed in a source read."
+    },
+    {
+      "id": "irc2021-nailing",
+      "title": "Framing nailing schedule labelled IRC 2021 Table R602.3(1) (distributor chart, Albany County Fasteners); ICC Building Code Action Committee proposal text for the 2012/13 cycle of the same table",
+      "url": "https://www.albanycountyfasteners.com/media/b2/9a/b9/1764612166/nailing-schedule-chart.pdf",
+      "read": "2026-11-12",
+      "note": "codes.iccsafe.org returned 403 (not readable here), so the table was read second-hand: a distributor's chart labelled IRC 2021 and ICC's 2012/13 proposal (https://www.iccsafe.org/wp-content/uploads/bcac/IRC-TableR60231.pdf). Rows differ a little between editions; check the adopted edition."
+    },
+    {
+      "id": "nail-counts-us",
+      "title": "Approximate common nails per lb: Admiral Steel nail list (16d 47, 8d 101, 8d siding 189) and Mitek nail table (16d 48)",
+      "url": "https://www.admiralsteel.com/assets/pdf/products/nails.pdf",
+      "read": "2026-11-12",
+      "note": "Mitek: https://mitek-us.com/wp-content/uploads/files/product/us/tables/Nails.pdf. Counts vary with coating and maker."
+    }
+  ]
+}

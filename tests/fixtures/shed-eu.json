@@ -1,0 +1,27 @@
+{
+  "type": "pent-shed",
+  "name": "shed-eu",
+  "region": "eu",
+  "units": "metric",
+  "width": 3000,
+  "depth": 2000,
+  "height_front": 2350,
+  "height_back": 2000,
+  "stud_spacing": 600,
+  "joist_spacing": 400,
+  "rafter_spacing": 600,
+  "overhang": 150,
+  "frame_item": "50x100",
+  "floor_item": "50x150",
+  "rafter_item": "50x150",
+  "sheathing": "osb-12",
+  "floor_deck": "osb-18",
+  "roof_deck": "osb-12",
+  "cladding": "shiplap-19x121",
+  "treated_floor": true,
+  "openings": [
+    { "wall": "front", "kind": "door", "x": 1000, "width": 900, "height": 1950 },
+    { "wall": "left", "kind": "window", "x": 600, "sill": 1000, "width": 600, "height": 600 }
+  ],
+  "loads": { "snow_kn_m2": 1.0, "floor_kn_m2": 1.5 }
+}

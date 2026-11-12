@@ -1,0 +1,17 @@
+{
+  "type": "gable-shed",
+  "name": "gable-us",
+  "region": "us",
+  "units": "imperial",
+  "width": 3000,
+  "depth": 2400,
+  "height_eaves": 2270,
+  "overhang": 152.4,
+  "floor_item": "2x8",
+  "overhang_side": 101.6,
+  "openings": [
+    { "wall": "right", "kind": "door", "x": 800, "width": 800, "height": 1900 },
+    { "wall": "back", "kind": "window", "x": 1000, "sill": 1000, "width": 800, "height": 600 }
+  ],
+  "loads": { "snow_kn_m2": 1.0, "floor_kn_m2": 1.9 }
+}

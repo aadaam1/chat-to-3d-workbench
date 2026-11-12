@@ -1,0 +1,27 @@
+{
+  "type": "pent-shed",
+  "name": "shed-us",
+  "region": "us",
+  "units": "imperial",
+  "width": 3048,
+  "depth": 2438.4,
+  "height_front": 2438.4,
+  "height_back": 2133.6,
+  "stud_spacing": 406.4,
+  "joist_spacing": 406.4,
+  "rafter_spacing": 406.4,
+  "overhang": 152.4,
+  "frame_item": "2x4",
+  "floor_item": "2x6",
+  "rafter_item": "2x6",
+  "sheathing": "osb-12",
+  "floor_deck": "osb-18",
+  "roof_deck": "osb-12",
+  "cladding": "shiplap-19x140",
+  "treated_floor": true,
+  "openings": [
+    { "wall": "front", "kind": "door", "x": 1016, "width": 914.4, "height": 2032 },
+    { "wall": "left", "kind": "window", "x": 762, "sill": 914.4, "width": 609.6, "height": 609.6 }
+  ],
+  "loads": { "snow_kn_m2": 1.0, "floor_kn_m2": 1.9 }
+}

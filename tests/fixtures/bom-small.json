@@ -1,0 +1,626 @@
+{
+ "bought": [
+  {
+   "item": "roofing-felt",
+   "note": "test",
+   "qty": 2.5,
+   "unit": "m2"
+  }
+ ],
+ "joints": [
+  {
+   "a": "wall/stud-01",
+   "b": "wall/plate-bottom",
+   "type": "stud-plate"
+  },
+  {
+   "a": "wall/stud-01",
+   "b": "wall/plate-top",
+   "type": "stud-plate"
+  },
+  {
+   "a": "wall/stud-02",
+   "b": "wall/plate-bottom",
+   "type": "stud-plate"
+  },
+  {
+   "a": "wall/stud-02",
+   "b": "wall/plate-top",
+   "type": "stud-plate"
+  },
+  {
+   "a": "wall/stud-03",
+   "b": "wall/plate-bottom",
+   "type": "stud-plate"
+  },
+  {
+   "a": "wall/stud-03",
+   "b": "wall/plate-top",
+   "type": "stud-plate"
+  },
+  {
+   "a": "wall/stud-04",
+   "b": "wall/plate-bottom",
+   "type": "stud-plate"
+  },
+  {
+   "a": "wall/stud-04",
+   "b": "wall/plate-top",
+   "type": "stud-plate"
+  },
+  {
+   "a": "wall/stud-05",
+   "b": "wall/plate-bottom",
+   "type": "stud-plate"
+  },
+  {
+   "a": "wall/stud-05",
+   "b": "wall/plate-top",
+   "type": "stud-plate"
+  },
+  {
+   "a": "wall/stud-06",
+   "b": "wall/plate-bottom",
+   "type": "stud-plate"
+  },
+  {
+   "a": "wall/stud-06",
+   "b": "wall/plate-top",
+   "type": "stud-plate"
+  },
+  {
+   "a": "wall/stud-07",
+   "b": "wall/plate-bottom",
+   "type": "stud-plate"
+  },
+  {
+   "a": "wall/stud-07",
+   "b": "wall/plate-top",
+   "type": "stud-plate"
+  },
+  {
+   "a": "wall/stud-08",
+   "b": "wall/plate-bottom",
+   "type": "stud-plate"
+  },
+  {
+   "a": "wall/stud-08",
+   "b": "wall/plate-top",
+   "type": "stud-plate"
+  },
+  {
+   "a": "wall/plate-bottom",
+   "b": "wall/plate-top",
+   "type": "plate-plate"
+  },
+  {
+   "a": "skin/sheet-A",
+   "b": "wall/stud-01",
+   "edge_mm": 2400,
+   "type": "sheet-frame"
+  },
+  {
+   "a": "skin/board-01",
+   "b": "wall/plate-top",
+   "crossings": 3,
+   "type": "board-frame"
+  }
+ ],
+ "members": [
+  {
+   "cut_deg": [
+    0,
+    0
+   ],
+   "group": "g",
+   "id": "wall/stud-01",
+   "item": "50x100",
+   "kind": "stud",
+   "layer": "walls",
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "outline": null,
+   "size": [
+    1000,
+    100,
+    50
+   ],
+   "treated": false,
+   "variant": "sawn",
+   "x": [
+    1,
+    0,
+    0
+   ],
+   "y": [
+    0,
+    1,
+    0
+   ]
+  },
+  {
+   "cut_deg": [
+    0,
+    0
+   ],
+   "group": "g",
+   "id": "wall/stud-02",
+   "item": "50x100",
+   "kind": "stud",
+   "layer": "walls",
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "outline": null,
+   "size": [
+    1000,
+    100,
+    50
+   ],
+   "treated": false,
+   "variant": "sawn",
+   "x": [
+    1,
+    0,
+    0
+   ],
+   "y": [
+    0,
+    1,
+    0
+   ]
+  },
+  {
+   "cut_deg": [
+    0,
+    0
+   ],
+   "group": "g",
+   "id": "wall/stud-03",
+   "item": "50x100",
+   "kind": "stud",
+   "layer": "walls",
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "outline": null,
+   "size": [
+    1000,
+    100,
+    50
+   ],
+   "treated": false,
+   "variant": "sawn",
+   "x": [
+    1,
+    0,
+    0
+   ],
+   "y": [
+    0,
+    1,
+    0
+   ]
+  },
+  {
+   "cut_deg": [
+    0,
+    0
+   ],
+   "group": "g",
+   "id": "wall/stud-04",
+   "item": "50x100",
+   "kind": "stud",
+   "layer": "walls",
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "outline": null,
+   "size": [
+    1000,
+    100,
+    50
+   ],
+   "treated": false,
+   "variant": "sawn",
+   "x": [
+    1,
+    0,
+    0
+   ],
+   "y": [
+    0,
+    1,
+    0
+   ]
+  },
+  {
+   "cut_deg": [
+    0,
+    0
+   ],
+   "group": "g",
+   "id": "wall/stud-05",
+   "item": "50x100",
+   "kind": "stud",
+   "layer": "walls",
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "outline": null,
+   "size": [
+    1000,
+    100,
+    50
+   ],
+   "treated": false,
+   "variant": "sawn",
+   "x": [
+    1,
+    0,
+    0
+   ],
+   "y": [
+    0,
+    1,
+    0
+   ]
+  },
+  {
+   "cut_deg": [
+    0,
+    0
+   ],
+   "group": "g",
+   "id": "wall/stud-06",
+   "item": "50x100",
+   "kind": "stud",
+   "layer": "walls",
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "outline": null,
+   "size": [
+    1000,
+    100,
+    50
+   ],
+   "treated": false,
+   "variant": "sawn",
+   "x": [
+    1,
+    0,
+    0
+   ],
+   "y": [
+    0,
+    1,
+    0
+   ]
+  },
+  {
+   "cut_deg": [
+    0,
+    0
+   ],
+   "group": "g",
+   "id": "wall/stud-07",
+   "item": "50x100",
+   "kind": "stud",
+   "layer": "walls",
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "outline": null,
+   "size": [
+    1000,
+    100,
+    50
+   ],
+   "treated": false,
+   "variant": "sawn",
+   "x": [
+    1,
+    0,
+    0
+   ],
+   "y": [
+    0,
+    1,
+    0
+   ]
+  },
+  {
+   "cut_deg": [
+    0,
+    0
+   ],
+   "group": "g",
+   "id": "wall/stud-08",
+   "item": "50x100",
+   "kind": "stud",
+   "layer": "walls",
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "outline": null,
+   "size": [
+    1000,
+    100,
+    50
+   ],
+   "treated": false,
+   "variant": "sawn",
+   "x": [
+    1,
+    0,
+    0
+   ],
+   "y": [
+    0,
+    1,
+    0
+   ]
+  },
+  {
+   "cut_deg": [
+    0,
+    0
+   ],
+   "group": "g",
+   "id": "wall/plate-bottom",
+   "item": "50x100",
+   "kind": "plate",
+   "layer": "walls",
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "outline": null,
+   "size": [
+    2400,
+    100,
+    50
+   ],
+   "treated": false,
+   "variant": "sawn",
+   "x": [
+    1,
+    0,
+    0
+   ],
+   "y": [
+    0,
+    1,
+    0
+   ]
+  },
+  {
+   "cut_deg": [
+    0,
+    0
+   ],
+   "group": "g",
+   "id": "wall/plate-top",
+   "item": "50x100",
+   "kind": "plate",
+   "layer": "walls",
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "outline": null,
+   "size": [
+    2400,
+    100,
+    50
+   ],
+   "treated": false,
+   "variant": "sawn",
+   "x": [
+    1,
+    0,
+    0
+   ],
+   "y": [
+    0,
+    1,
+    0
+   ]
+  },
+  {
+   "cut_deg": [
+    0,
+    0
+   ],
+   "group": "g",
+   "id": "skin/sheet-A",
+   "item": "osb-12",
+   "kind": "sheet",
+   "layer": "sheathing",
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "outline": null,
+   "size": [
+    2400,
+    1250,
+    12
+   ],
+   "treated": false,
+   "variant": "sawn",
+   "x": [
+    1,
+    0,
+    0
+   ],
+   "y": [
+    0,
+    1,
+    0
+   ]
+  },
+  {
+   "cut_deg": [
+    0,
+    0
+   ],
+   "group": "g",
+   "id": "skin/sheet-B",
+   "item": "osb-12",
+   "kind": "sheet",
+   "layer": "sheathing",
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "outline": null,
+   "size": [
+    1200,
+    1250,
+    12
+   ],
+   "treated": false,
+   "variant": "sawn",
+   "x": [
+    1,
+    0,
+    0
+   ],
+   "y": [
+    0,
+    1,
+    0
+   ]
+  },
+  {
+   "cut_deg": [
+    0,
+    0
+   ],
+   "group": "g",
+   "id": "skin/sheet-C",
+   "item": "osb-12",
+   "kind": "sheet",
+   "layer": "sheathing",
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "outline": null,
+   "size": [
+    1200,
+    1250,
+    12
+   ],
+   "treated": false,
+   "variant": "sawn",
+   "x": [
+    1,
+    0,
+    0
+   ],
+   "y": [
+    0,
+    1,
+    0
+   ]
+  },
+  {
+   "cut_deg": [
+    0,
+    0
+   ],
+   "group": "g",
+   "id": "skin/sheet-D",
+   "item": "osb-12",
+   "kind": "sheet",
+   "layer": "sheathing",
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "outline": null,
+   "size": [
+    1250,
+    2400,
+    12
+   ],
+   "treated": false,
+   "variant": "sawn",
+   "x": [
+    1,
+    0,
+    0
+   ],
+   "y": [
+    0,
+    1,
+    0
+   ]
+  },
+  {
+   "cut_deg": [
+    0,
+    0
+   ],
+   "group": "g",
+   "id": "skin/board-01",
+   "item": "shiplap-19x121",
+   "kind": "board",
+   "layer": "cladding",
+   "origin": [
+    0,
+    0,
+    0
+   ],
+   "outline": null,
+   "size": [
+    2900,
+    96,
+    19
+   ],
+   "treated": false,
+   "variant": "sawn",
+   "x": [
+    1,
+    0,
+    0
+   ],
+   "y": [
+    0,
+    1,
+    0
+   ]
+  }
+ ],
+ "name": "small-wall",
+ "region": "eu",
+ "schema": 1,
+ "spec": {},
+ "units": "metric"
+}

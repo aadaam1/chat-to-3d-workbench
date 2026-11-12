@@ -1,0 +1,15 @@
+{
+  "size": [900, 600],
+  "fps": 10,
+  "colors": 128,
+  "loop": true,
+  "frames": 48,
+  "defaults": {"view": "3d", "zoom": 1.0},
+  "keys": [
+    {"at": 0.0,  "az": -10, "layers": "floor,walls,roof,sheathing,cladding"},
+    {"at": 0.25, "az": -3,  "layers": "floor,walls,roof,sheathing"},
+    {"at": 0.5,  "az": 4,   "layers": "floor,walls,roof"},
+    {"at": 0.75, "az": 11,  "layers": "floor,walls,roof"},
+    {"at": 1.0,  "az": 18}
+  ]
+}

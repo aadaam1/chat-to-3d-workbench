@@ -1,0 +1,16 @@
+{
+  "size": [800, 534],
+  "fps": 14,
+  "colors": 112,
+  "loop": true,
+  "frames": 52,
+  "defaults": {"view": "3d", "layers": "floor,walls,roof,sheathing,cladding"},
+  "keys": [
+    {"at": 0.0,  "az": 0,   "explode": 0, "zoom": 1.0, "ease": "smooth"},
+    {"at": 0.12, "az": 43,  "explode": 0, "zoom": 1.0, "ease": "smooth"},
+    {"at": 0.5,  "az": 180, "explode": 0.45, "zoom": 0.85},
+    {"at": 0.62, "az": 223, "explode": 0.45, "zoom": 0.85, "ease": "smooth"},
+    {"at": 0.95, "az": 342, "explode": 0, "zoom": 1.0},
+    {"at": 1.0,  "az": 360, "explode": 0, "zoom": 1.0}
+  ]
+}

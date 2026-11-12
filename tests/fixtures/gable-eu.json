@@ -1,0 +1,20 @@
+{
+  "type": "gable-shed",
+  "name": "gable-eu",
+  "region": "eu",
+  "units": "metric",
+  "width": 3000,
+  "depth": 2400,
+  "height_eaves": 2320,
+  "stud_spacing": 600,
+  "joist_spacing": 400,
+  "rafter_spacing": 600,
+  "overhang": 150,
+  "overhang_side": 150,
+  "roof_deck": "osb-15",
+  "openings": [
+    { "wall": "left", "kind": "door", "x": 800, "width": 800, "height": 1950 },
+    { "wall": "front", "kind": "window", "x": 1000, "sill": 1000, "width": 800, "height": 600 }
+  ],
+  "loads": { "snow_kn_m2": 1.0, "floor_kn_m2": 1.5 }
+}

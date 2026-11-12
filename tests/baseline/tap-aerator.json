@@ -1,0 +1,240 @@
+{
+ "aerator_G1.stl": {
+  "bodies": 1,
+  "size_mm": [
+   42.0,
+   42.0,
+   51.2
+  ],
+  "verdicts": {
+   "fdm_asa": "check",
+   "mjf_pa12": "check",
+   "resin_sla": "check",
+   "slm_316l": "check",
+   "slm_alsi10mg": "check"
+  },
+  "volume_cm3": 38.35,
+  "watertight": true
+ },
+ "aerator_G1_compact.stl": {
+  "bodies": 1,
+  "size_mm": [
+   42.0,
+   42.0,
+   42.2
+  ],
+  "verdicts": {
+   "fdm_asa": "check",
+   "mjf_pa12": "check",
+   "resin_sla": "check",
+   "slm_316l": "check",
+   "slm_alsi10mg": "check"
+  },
+  "volume_cm3": 30.15,
+  "watertight": true
+ },
+ "aerator_G1_metal.stl": {
+  "bodies": 1,
+  "size_mm": [
+   38.5,
+   38.5,
+   51.2
+  ],
+  "verdicts": {
+   "fdm_asa": "check",
+   "mjf_pa12": "check",
+   "resin_sla": "check",
+   "slm_316l": "check",
+   "slm_alsi10mg": "check"
+  },
+  "volume_cm3": 29.33,
+  "watertight": true
+ },
+ "aerator_G1_metal_compact.stl": {
+  "bodies": 1,
+  "size_mm": [
+   38.5,
+   38.5,
+   42.2
+  ],
+  "verdicts": {
+   "fdm_asa": "check",
+   "mjf_pa12": "check",
+   "resin_sla": "check",
+   "slm_316l": "check",
+   "slm_alsi10mg": "check"
+  },
+  "volume_cm3": 23.08,
+  "watertight": true
+ },
+ "aerator_G34.stl": {
+  "bodies": 1,
+  "size_mm": [
+   42.0,
+   42.0,
+   51.3
+  ],
+  "verdicts": {
+   "fdm_asa": "check",
+   "mjf_pa12": "check",
+   "resin_sla": "check",
+   "slm_316l": "fail",
+   "slm_alsi10mg": "fail"
+  },
+  "volume_cm3": 39.98,
+  "watertight": true
+ },
+ "fluid_domain.stl": {
+  "bodies": 1,
+  "size_mm": [
+   26.0,
+   26.0,
+   126.4
+  ],
+  "verdicts": {
+   "fdm_asa": "check",
+   "mjf_pa12": "check",
+   "resin_sla": "check",
+   "slm_316l": "fail",
+   "slm_alsi10mg": "fail"
+  },
+  "volume_cm3": 53.07,
+  "watertight": true
+ },
+ "gauge_G1_0.20.stl": {
+  "bodies": 1,
+  "size_mm": [
+   42.0,
+   42.0,
+   12.0
+  ],
+  "verdicts": {
+   "fdm_asa": "fail",
+   "mjf_pa12": "fail",
+   "resin_sla": "fail",
+   "slm_316l": "fail",
+   "slm_alsi10mg": "fail"
+  },
+  "volume_cm3": 5.97,
+  "watertight": true
+ },
+ "gauge_G1_0.25.stl": {
+  "bodies": 1,
+  "size_mm": [
+   42.0,
+   42.0,
+   12.0
+  ],
+  "verdicts": {
+   "fdm_asa": "fail",
+   "mjf_pa12": "fail",
+   "resin_sla": "fail",
+   "slm_316l": "fail",
+   "slm_alsi10mg": "fail"
+  },
+  "volume_cm3": 5.91,
+  "watertight": true
+ },
+ "gauge_G1_0.30.stl": {
+  "bodies": 1,
+  "size_mm": [
+   42.0,
+   42.0,
+   12.0
+  ],
+  "verdicts": {
+   "fdm_asa": "fail",
+   "mjf_pa12": "fail",
+   "resin_sla": "fail",
+   "slm_316l": "fail",
+   "slm_alsi10mg": "fail"
+  },
+  "volume_cm3": 5.84,
+  "watertight": true
+ },
+ "gauge_G1_0.35.stl": {
+  "bodies": 1,
+  "size_mm": [
+   42.0,
+   42.0,
+   12.0
+  ],
+  "verdicts": {
+   "fdm_asa": "fail",
+   "mjf_pa12": "fail",
+   "resin_sla": "fail",
+   "slm_316l": "fail",
+   "slm_alsi10mg": "fail"
+  },
+  "volume_cm3": 5.78,
+  "watertight": true
+ },
+ "gauge_G1_0.40.stl": {
+  "bodies": 1,
+  "size_mm": [
+   42.0,
+   42.0,
+   12.0
+  ],
+  "verdicts": {
+   "fdm_asa": "fail",
+   "mjf_pa12": "fail",
+   "resin_sla": "fail",
+   "slm_316l": "fail",
+   "slm_alsi10mg": "fail"
+  },
+  "volume_cm3": 5.71,
+  "watertight": true
+ },
+ "gauge_G34_0.25.stl": {
+  "bodies": 1,
+  "size_mm": [
+   42.0,
+   42.0,
+   12.0
+  ],
+  "verdicts": {
+   "fdm_asa": "fail",
+   "mjf_pa12": "fail",
+   "resin_sla": "fail",
+   "slm_316l": "fail",
+   "slm_alsi10mg": "fail"
+  },
+  "volume_cm3": 9.56,
+  "watertight": true
+ },
+ "gauge_G34_0.30.stl": {
+  "bodies": 1,
+  "size_mm": [
+   42.0,
+   42.0,
+   12.0
+  ],
+  "verdicts": {
+   "fdm_asa": "fail",
+   "mjf_pa12": "fail",
+   "resin_sla": "fail",
+   "slm_316l": "fail",
+   "slm_alsi10mg": "fail"
+  },
+  "volume_cm3": 9.51,
+  "watertight": true
+ },
+ "gauge_G34_0.35.stl": {
+  "bodies": 1,
+  "size_mm": [
+   42.0,
+   42.0,
+   12.0
+  ],
+  "verdicts": {
+   "fdm_asa": "fail",
+   "mjf_pa12": "fail",
+   "resin_sla": "fail",
+   "slm_316l": "fail",
+   "slm_alsi10mg": "fail"
+  },
+  "volume_cm3": 9.45,
+  "watertight": true
+ }
+}

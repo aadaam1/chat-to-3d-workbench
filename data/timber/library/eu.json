@@ -1,0 +1,678 @@
+{
+  "schema": 1,
+  "region": "eu",
+  "name": "Europe (metric sections, 600 mm spacing, 1250 × 2500 sheets)",
+  "units": "metric",
+  "sections": {
+    "25x50": {
+      "name": "25×50",
+      "thickness_mm": 25,
+      "width_mm": 50,
+      "stock_lengths_mm": [
+        3000,
+        4000,
+        5000
+      ],
+      "uses": [
+        "roof and cladding battens"
+      ],
+      "sources": [
+        "szekely-lumber"
+      ]
+    },
+    "25x100": {
+      "name": "25×100",
+      "thickness_mm": 25,
+      "width_mm": 100,
+      "stock_lengths_mm": [
+        2000,
+        3000,
+        4000,
+        5000,
+        6000
+      ],
+      "uses": [
+        "cladding, fencing"
+      ],
+      "sources": [
+        "szekely-lumber"
+      ]
+    },
+    "50x50": {
+      "name": "50×50",
+      "thickness_mm": 50,
+      "width_mm": 50,
+      "stock_lengths_mm": [
+        4000,
+        5000,
+        6000
+      ],
+      "uses": [
+        "light framing, noggins, counter battens"
+      ],
+      "sources": [
+        "szekely-lumber"
+      ]
+    },
+    "50x100": {
+      "name": "50×100",
+      "thickness_mm": 50,
+      "width_mm": 100,
+      "stock_lengths_mm": [
+        2000,
+        3000,
+        4000,
+        5000,
+        6000
+      ],
+      "uses": [
+        "wall studs",
+        "plates",
+        "light joists"
+      ],
+      "sources": [
+        "szekely-lumber"
+      ]
+    },
+    "50x150": {
+      "name": "50×150",
+      "thickness_mm": 50,
+      "width_mm": 150,
+      "stock_lengths_mm": [
+        2000,
+        3000,
+        4000,
+        5000,
+        6000,
+        7000,
+        8000,
+        9000
+      ],
+      "uses": [
+        "floor joists",
+        "rafters"
+      ],
+      "sources": [
+        "szekely-lumber"
+      ]
+    },
+    "50x200": {
+      "name": "50×200",
+      "thickness_mm": 50,
+      "width_mm": 200,
+      "stock_lengths_mm": [
+        2000,
+        3000,
+        4000,
+        5000,
+        6000,
+        7000,
+        8000,
+        9000
+      ],
+      "uses": [
+        "floor joists and rafters over longer spans"
+      ],
+      "sources": [
+        "szekely-lumber"
+      ]
+    },
+    "100x100": {
+      "name": "100×100",
+      "thickness_mm": 100,
+      "width_mm": 100,
+      "stock_lengths_mm": [
+        2000,
+        3000,
+        4000,
+        5000,
+        6000
+      ],
+      "uses": [
+        "posts",
+        "sills"
+      ],
+      "sources": [
+        "szekely-lumber"
+      ]
+    },
+    "50x75": {
+      "name": "50×75",
+      "thickness_mm": 50,
+      "width_mm": 75,
+      "stock_lengths_mm": [
+        3000,
+        4000,
+        5000,
+        6000
+      ],
+      "uses": [
+        "light framing, noggins"
+      ],
+      "sources": [
+        "plan"
+      ],
+      "unverified": true,
+      "note": "Not stocked at the snapshot supplier; stock lengths are a typical-range assumption."
+    },
+    "75x75": {
+      "name": "75×75",
+      "thickness_mm": 75,
+      "width_mm": 75,
+      "stock_lengths_mm": [
+        3000,
+        4000,
+        5000,
+        6000
+      ],
+      "uses": [
+        "posts",
+        "sills"
+      ],
+      "sources": [
+        "plan"
+      ],
+      "unverified": true,
+      "note": "Not stocked at the snapshot supplier; stock lengths are a typical-range assumption."
+    }
+  },
+  "sheets": {
+    "osb-12": {
+      "name": "OSB/3 12 mm",
+      "material": "osb3",
+      "thickness_mm": 12,
+      "size_mm": [
+        1250,
+        2500
+      ],
+      "can_rotate": true,
+      "sources": [
+        "szekely-osb"
+      ]
+    },
+    "osb-15": {
+      "name": "OSB/3 15 mm",
+      "material": "osb3",
+      "thickness_mm": 15,
+      "size_mm": [
+        1250,
+        2500
+      ],
+      "can_rotate": true,
+      "sources": [
+        "szekely-osb"
+      ]
+    },
+    "osb-18": {
+      "name": "OSB/3 18 mm",
+      "material": "osb3",
+      "thickness_mm": 18,
+      "size_mm": [
+        1250,
+        2500
+      ],
+      "can_rotate": true,
+      "sources": [
+        "szekely-osb"
+      ]
+    },
+    "osb-22": {
+      "name": "OSB/3 22 mm",
+      "material": "osb3",
+      "thickness_mm": 22,
+      "size_mm": [
+        1250,
+        2500
+      ],
+      "can_rotate": true,
+      "sources": [
+        "szekely-osb"
+      ]
+    }
+  },
+  "cladding": {
+    "shiplap-19x121": {
+      "name": "Shiplap cladding 19 × 121 mm",
+      "profile": "shiplap",
+      "thickness_mm": 19,
+      "face_width_mm": 121,
+      "cover_width_mm": 96,
+      "stock_lengths_mm": [
+        3000,
+        4000,
+        5000
+      ],
+      "can_rotate": false,
+      "sources": [
+        "plan"
+      ],
+      "unverified": true,
+      "note": "Overall width 121 mm is the product name; the 96 mm cover width and the stock lengths are typical values not read from a supplier page."
+    }
+  },
+  "sheet_spans": {
+    "osb-12": {
+      "floor_mm": 300,
+      "roof_mm": 400,
+      "wall_mm": 600,
+      "sources": [
+        "plan"
+      ],
+      "unverified": true
+    },
+    "osb-15": {
+      "floor_mm": 400,
+      "roof_mm": 600,
+      "wall_mm": 600,
+      "sources": [
+        "nhbc-floor-decking"
+      ],
+      "unverified": true
+    },
+    "osb-18": {
+      "floor_mm": 600,
+      "roof_mm": 600,
+      "wall_mm": 600,
+      "sources": [
+        "nhbc-floor-decking"
+      ],
+      "unverified": true
+    },
+    "osb-22": {
+      "floor_mm": 600,
+      "roof_mm": 600,
+      "wall_mm": 600,
+      "sources": [
+        "nhbc-floor-decking"
+      ],
+      "unverified": true
+    },
+    "_meta": {
+      "sources": [
+        "nhbc-floor-decking"
+      ],
+      "unverified": true,
+      "note": "Largest support spacing for each OSB/3 thickness, by use. Rules of thumb for the T4 checks, NOT read from a manufacturer's table: floor 15 mm at 400 and 18 mm at 600 follow the NHBC excerpt; the 12 mm rows, the roof and wall limits are the workbench's conservative guesses. Check the sheet maker's own span table for the product you buy."
+    }
+  },
+  "fasteners": {
+    "nail-framing": {
+      "name": "Framing nail 3.1 × 90 mm, bright smooth, flat head",
+      "type": "nail",
+      "diameter_mm": 3.1,
+      "length_mm": 90,
+      "sold_by": "weight",
+      "weight_unit": "kg",
+      "pcs_per_kg": 180,
+      "box_kg": [
+        1,
+        2.5,
+        5
+      ],
+      "sources": [
+        "plan"
+      ],
+      "unverified": true,
+      "use": "framing joints (end nails, face nails)",
+      "note": "Count per kg computed, not read from a catalogue: 7.85 g/cm3 steel x shank volume x 1.03 for the head (the same formula gives 47/lb for 16d and 102/lb for 8d common, matching published 47 and 101); a supplier's figure may differ by 5-10%."
+    },
+    "nail-toe": {
+      "name": "Toe nail 2.8 × 65 mm, bright smooth",
+      "type": "nail",
+      "diameter_mm": 2.8,
+      "length_mm": 65,
+      "sold_by": "weight",
+      "weight_unit": "kg",
+      "pcs_per_kg": 310,
+      "box_kg": [
+        1,
+        2.5,
+        5
+      ],
+      "sources": [
+        "plan"
+      ],
+      "unverified": true,
+      "use": "toe nailing, fascia and bargeboards",
+      "note": "Count per kg computed, not read from a catalogue: 7.85 g/cm3 steel x shank volume x 1.03 for the head (the same formula gives 47/lb for 16d and 102/lb for 8d common, matching published 47 and 101); a supplier's figure may differ by 5-10%."
+    },
+    "nail-sheathing": {
+      "name": "Sheathing nail 2.8 × 50 mm, ring shank, galvanized",
+      "type": "nail",
+      "diameter_mm": 2.8,
+      "length_mm": 50,
+      "sold_by": "weight",
+      "weight_unit": "kg",
+      "pcs_per_kg": 400,
+      "box_kg": [
+        1,
+        2.5,
+        5
+      ],
+      "sources": [
+        "plan"
+      ],
+      "unverified": true,
+      "use": "OSB sheets onto framing",
+      "note": "Count per kg computed, not read from a catalogue: 7.85 g/cm3 steel x shank volume x 1.03 for the head (the same formula gives 47/lb for 16d and 102/lb for 8d common, matching published 47 and 101); a supplier's figure may differ by 5-10%."
+    },
+    "nail-cladding": {
+      "name": "Cladding nail 2.8 × 60 mm, ring shank, stainless or hot-dip galvanized",
+      "type": "nail",
+      "diameter_mm": 2.8,
+      "length_mm": 60,
+      "sold_by": "weight",
+      "weight_unit": "kg",
+      "pcs_per_kg": 335,
+      "box_kg": [
+        1,
+        2.5,
+        5
+      ],
+      "sources": [
+        "plan"
+      ],
+      "unverified": true,
+      "use": "cladding boards onto framing",
+      "note": "Count per kg computed, not read from a catalogue: 7.85 g/cm3 steel x shank volume x 1.03 for the head (the same formula gives 47/lb for 16d and 102/lb for 8d common, matching published 47 and 101); a supplier's figure may differ by 5-10%."
+    },
+    "screw-rafter": {
+      "name": "Structural screw 8 × 160 mm, fully threaded, countersunk",
+      "type": "screw",
+      "diameter_mm": 8,
+      "length_mm": 160,
+      "pack_sizes": [
+        50,
+        100
+      ],
+      "sources": [
+        "plan"
+      ],
+      "unverified": true,
+      "use": "rafter to wall plate (uplift)",
+      "note": "Pack sizes are an assumption, not a supplier's catalogue. Size from typical rafter screws; check the maker's load table before relying on it."
+    },
+    "screw-corner": {
+      "name": "Structural screw 6 × 120 mm, partly threaded, countersunk",
+      "type": "screw",
+      "diameter_mm": 6,
+      "length_mm": 120,
+      "pack_sizes": [
+        50,
+        100
+      ],
+      "sources": [
+        "plan"
+      ],
+      "unverified": true,
+      "use": "wall panels to each other at the corners",
+      "note": "Pack sizes are an assumption, not a supplier's catalogue."
+    }
+  },
+  "joint_rules": {
+    "stud-plate": {
+      "fastener": "nail-framing",
+      "per_joint": 2,
+      "note": "end nails through the plate into the stud end"
+    },
+    "plate-plate": {
+      "fastener": "nail-framing",
+      "per_joint": 2,
+      "note": "top plates lapped at a corner: 2 face nails"
+    },
+    "joist-rim": {
+      "fastener": "nail-framing",
+      "per_joint": 3,
+      "note": "end nails through the rim into the joist end, or blocking"
+    },
+    "rafter-plate": {
+      "fastener": "nail-toe",
+      "per_joint": 2,
+      "also": [
+        {
+          "fastener": "screw-rafter",
+          "per_joint": 1
+        }
+      ],
+      "note": "2 toe nails hold the rafter while it is fixed; 1 structural screw per rafter and plate resists uplift"
+    },
+    "header-trimmer": {
+      "fastener": "nail-toe",
+      "per_joint": 4,
+      "note": "header or sill to king or jack stud: 4 toe nails"
+    },
+    "sheet-frame": {
+      "fastener": "nail-sheathing",
+      "every_mm": 150,
+      "note": "one spacing for the whole sheet: the 6 in. edge spacing; field nails could be 12 in. (the joint carries only the length, not edge or field)"
+    },
+    "board-frame": {
+      "fastener": "nail-cladding",
+      "per_crossing": 2,
+      "note": "2 nails where a board crosses a stud"
+    },
+    "king-jack": {
+      "fastener": "nail-framing",
+      "every_mm": 600,
+      "note": "built-up stud, face nailed at 24 in. o.c."
+    },
+    "jack-header": {
+      "fastener": "nail-framing",
+      "per_joint": 2,
+      "note": "header bears on the jack stud; end nails through the header"
+    },
+    "plate-lap": {
+      "fastener": "nail-framing",
+      "every_mm": 400,
+      "note": "doubled top plate face nailed at 16 in. o.c."
+    },
+    "corner-stud": {
+      "fastener": "screw-corner",
+      "every_mm": 500,
+      "note": "the wall panels are fixed to each other at the corners after they are stood up"
+    },
+    "blocking-rafter": {
+      "fastener": "nail-framing",
+      "per_joint": 3,
+      "note": "blocking or outrigger end nailed through the rafter"
+    },
+    "fascia-rafter": {
+      "fastener": "nail-toe",
+      "per_joint": 2,
+      "note": "board face nailed to each rafter end"
+    },
+    "barge-rafter": {
+      "fastener": "nail-toe",
+      "every_mm": 400,
+      "note": "board face nailed along the rafter"
+    },
+    "rafter-ridge": {
+      "fastener": "nail-toe",
+      "per_joint": 4,
+      "also": [
+        {
+          "fastener": "nail-framing",
+          "per_joint": 3
+        }
+      ],
+      "note": "rafter plumb-cut against the ridge board: 4 toe nails and 3 end nails through the ridge board (unverified, from the IRC rafter-to-ridge row)"
+    },
+    "tie-rafter": {
+      "fastener": "nail-framing",
+      "per_joint": 4,
+      "note": "tie (ceiling joist) face nailed to the rafter at the heel: 4 nails per joint (unverified: the IRC heel joint connection table R802.5.1(9) was not read)"
+    },
+    "tie-plate": {
+      "fastener": "nail-toe",
+      "per_joint": 3,
+      "note": "tie (ceiling joist) toe nailed to the top plate: 3 nails per joint (unverified: from the IRC ceiling-joist-to-plate row, not read)"
+    },
+    "_meta": {
+      "sources": [
+        "plan",
+        "irc2021-nailing"
+      ],
+      "unverified": true,
+      "note": "Nail and screw counts per joint follow the IRC 2021 fastening schedule R602.3(1) as read from a distributor's chart and the ICC code-change proposal text (see docs/research/timber-structures.md), adapted to the joints the generator records. They are workbench rules, not a code check. Nails are sold by weight, structural screws only where they are stronger (rafter to plate, wall corners). Review before relying on them."
+    }
+  },
+  "grades": {
+    "C24": {
+      "name": "C24",
+      "standard": "EN 338:2016",
+      "basis": "characteristic",
+      "bending_mpa": 24,
+      "e_mean_mpa": 11000,
+      "density_kg_m3": 350,
+      "density_mean_kg_m3": 420,
+      "sources": [
+        "en338",
+        "tm-strength-sheet"
+      ],
+      "note": "bending and E_0,mean from the EN 338 Table 1 page; characteristic (5-percentile) density 350 from the Taylor Maxwell sheet, mean 420 on both."
+    }
+  },
+  "defaults": {
+    "stud_spacing_mm": 600,
+    "joist_spacing_mm": 400,
+    "rafter_spacing_mm": 600,
+    "overhang_mm": 150,
+    "overhang_side_mm": 150,
+    "items": {
+      "frame": "50x100",
+      "plate": "50x100",
+      "floor": "50x150",
+      "rafter": "50x150",
+      "sheathing": "osb-12",
+      "floor_deck": "osb-18",
+      "roof_deck": "osb-15",
+      "cladding": "shiplap-19x121"
+    },
+    "grade": "C24",
+    "treated_floor": true,
+    "spare_percent": 10,
+    "kerf_mm": 4,
+    "loads": {
+      "snow_kn_m2": 1.0,
+      "floor_kn_m2": 1.5
+    },
+    "pitch_deg": 25,
+    "min_roof_pitch_deg": {
+      "roofing-felt": 5,
+      "metal-sheet": 5,
+      "asphalt-shingle": 15
+    },
+    "sources": [
+      "plan"
+    ],
+    "unverified": true,
+    "note": "Spacings, items, spare and kerf are workbench defaults from the plan. Loads are placeholder values to be set per site; roof pitch limits per covering were not read from a manufacturer or code and must be checked.",
+    "details": {
+      "corner": "three-stud",
+      "top_plate": "double",
+      "note": "Platform framing defaults: corner assembly and a double top plate lapped at the corners."
+    }
+  },
+  "bought": {
+    "roofing-felt": {
+      "name": "Roofing felt (bitumen)",
+      "unit": "m2",
+      "sources": [
+        "plan"
+      ]
+    },
+    "drip-edge": {
+      "name": "Drip edge / roof edge trim",
+      "unit": "m",
+      "sources": [
+        "plan"
+      ]
+    },
+    "ridge-cap": {
+      "name": "Ridge cap / ridge trim",
+      "unit": "m",
+      "sources": [
+        "plan"
+      ]
+    },
+    "hinge": {
+      "name": "Door hinge",
+      "unit": "pcs",
+      "sources": [
+        "plan"
+      ]
+    },
+    "latch": {
+      "name": "Door latch",
+      "unit": "pcs",
+      "sources": [
+        "plan"
+      ]
+    },
+    "door": {
+      "name": "Door leaf",
+      "unit": "pcs",
+      "sources": [
+        "plan"
+      ]
+    },
+    "window": {
+      "name": "Window",
+      "unit": "pcs",
+      "sources": [
+        "plan"
+      ]
+    }
+  },
+  "sources": [
+    {
+      "id": "en338",
+      "title": "EN 338:2016 Structural timber - Strength classes, Table 1 (C24 row), as reproduced by the 'blueprints' EN 338 implementation docs",
+      "url": "https://blueprints.readthedocs.io/en/stable/API%20reference/codes/eurocode/en_338_2016/chapter_5_classification_of_structural_timber/table_1/",
+      "read": "2026-11-11",
+      "note": "Page shows C24: bending f_m,k 24, E_0,mean 11.0 (GPa), mean density 420 kg/m3. The standard itself was not read; this is a published implementation of its table."
+    },
+    {
+      "id": "tm-strength-sheet",
+      "title": "Taylor Maxwell, Strength data C16, C24 and TR26 (PDF, dated 2022-04-26)",
+      "url": "https://www.taylormaxwell.co.uk/uploads/files/Strength-data-C16-C24-TR26.pdf",
+      "read": "2026-11-11",
+      "note": "Used only for C24 5-percentile density 350 kg/m3 (and mean 420, which agrees with the EN 338 page). Its stress figures are a different, permissible-stress basis and are NOT used."
+    },
+    {
+      "id": "szekely-lumber",
+      "title": "Szekely Fatelep, Budapest: Pallo (plank) page and price list: sections 5x10, 5x15, 5x20 cm and others, lengths 2-9 m",
+      "url": "https://szekelyfatelep.hu/fatelep/pallo/",
+      "read": "2026-11-10",
+      "note": "Stock lengths come from data/timber/prices/hu-szekely-fatelep-2026-11-10.csv (sawn rows)."
+    },
+    {
+      "id": "szekely-osb",
+      "title": "Szekely Fatelep, Budapest: OSB-3 page: 6-30 mm, sheet 1250 x 2500 mm",
+      "url": "https://szekelyfatelep.hu/fatelep/osb/",
+      "read": "2026-11-10",
+      "note": "From data/timber/prices/raw/hu-szekely-fatelep-2026-11-10.txt."
+    },
+    {
+      "id": "plan",
+      "title": "Workbench build plan, docs/research/timber-structures.md",
+      "url": "docs/research/timber-structures.md",
+      "read": "2026-11-11",
+      "note": "Region scope (600 mm spacing, 1250 x 2500 sheets, 16 in on centre, 4 x 8 ft sheets), item keys, 10% spare and the packs of 100/200/500 come from the plan. These are workbench decisions, not measured facts."
+    },
+    {
+      "id": "nhbc-floor-decking",
+      "title": "NHBC Standards 2024, 6.4.19 Floor decking (OSB/3 and chipboard thickness against joist centres, domestic 1.5 kN/m2), as found through a search summary",
+      "url": "https://nhbc-standards.co.uk/6-superstructure-excluding-roofs/6-4-timber-and-concrete-upper-floors/6-4-19-floor-decking/",
+      "read": "2026-11-11",
+      "note": "Only a search excerpt was read, not the table: OSB/3 15 mm at 400 and 450 mm centres, 18-19 mm at 600 mm. Roof and wall limits and the 12 mm and 22 mm rows are not from it."
+    },
+    {
+      "id": "irc2021-nailing",
+      "title": "Framing nailing schedule labelled IRC 2021 Table R602.3(1) (distributor chart, Albany County Fasteners); ICC Building Code Action Committee proposal text for the 2012/13 cycle of the same table",
+      "url": "https://www.albanycountyfasteners.com/media/b2/9a/b9/1764612166/nailing-schedule-chart.pdf",
+      "read": "2026-11-12",
+      "note": "codes.iccsafe.org returned 403 (not readable here), so the table was read second-hand: a distributor's chart labelled IRC 2021 and ICC's 2012/13 proposal (https://www.iccsafe.org/wp-content/uploads/bcac/IRC-TableR60231.pdf). Rows differ a little between editions; check the adopted edition."
+    }
+  ]
+}

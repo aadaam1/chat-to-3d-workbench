@@ -1,0 +1,98 @@
+================================================================
+  GARDEN TAP AERATOR - PRINTING INSTRUCTIONS
+  Everything you need is in this folder. Nothing to design.
+================================================================
+
+WHAT IT IS
+  A small plastic nozzle that screws onto a garden tap and makes
+  the water come out as an even stream instead of a spiral.
+
+  It is ONE part. No assembly, no supports, no glue.
+
+
+----------------------------------------------------------------
+  STEP 1 - PRINT THE THREE GAUGES FIRST
+----------------------------------------------------------------
+
+  Folder:  1-gauges-print-these-first/
+  Files:   gauge_0.25.stl, gauge_0.30.stl, gauge_0.35.stl
+  Time:    about 30 minutes for all three, ~18 g
+
+  These are little test rings. They check that the printed
+  thread fits the real tap. Print all three, hand them over,
+  and we will tell you which number fits.
+
+  If you would rather do it in one go, print gauge_0.30.stl
+  plus the part below - 0.30 is right on most machines.
+
+
+----------------------------------------------------------------
+  STEP 2 - PRINT THE PART
+----------------------------------------------------------------
+
+  Folder:  2-the-part/
+  Qty:     one of EACH of the two files below
+  Time:    about 1 h each, ~30-40 g
+
+    aerator_G1_fit0.30.stl            standard, 51 mm tall
+    aerator_G1_fit0.30_COMPACT.stl    9 mm shorter, 42 mm tall
+    (.step of each: the same parts as CAD solids, for Fusion)
+
+  Changed after the last print: the thread is 5 mm instead of 11,
+  to match the tap's short thread, so the top no longer stands
+  proud and holds water. The compact one also has a shorter
+  chamber; print both and keep whichever gives the better stream.
+
+
+----------------------------------------------------------------
+  SETTINGS - Bambu Studio
+----------------------------------------------------------------
+
+  MATERIAL       ASA.  It lives outdoors in the sun.
+                 PETG is an acceptable substitute.
+                 NOT PLA - it creeps under water pressure and
+                 falls apart in UV within a season.
+
+  ORIENTATION    As supplied. Drop it on the plate and do not
+                 rotate it. The flat face with all the small
+                 holes goes DOWN on the bed, threaded end up.
+                 The inside is laid out for exactly this - turn
+                 it and it needs support in a cavity you can
+                 never get the support out of.
+
+  SUPPORTS       None. Turn them OFF.
+
+  LAYER HEIGHT   0.16 mm     (0.20 works, 0.16 seals better)
+
+  WALL LOOPS     5           <- the important one. This part
+                                holds mains water pressure and
+                                must not weep through its walls.
+
+  TOP/BOTTOM     6 layers
+  INFILL         30% gyroid
+  SPEED          slow the outer walls to 40-50 mm/s
+
+  Everything else: stock profile is fine.
+
+
+----------------------------------------------------------------
+  HOW TO TELL IT PRINTED PROPERLY
+----------------------------------------------------------------
+
+  - The bottom face has 36 holes, all open. Hold it up to a
+    light. A 2.0 mm drill bit should pass through them.
+  - Look in the threaded end: a post up the middle and four blades
+    in a cross, and straight down to the holes. No plate.
+  - The thread should look clean, not stringy.
+  - Nothing should rattle. It is one solid piece.
+
+
+----------------------------------------------------------------
+  THANK YOU
+----------------------------------------------------------------
+
+  Design files, and the reasoning behind every dimension:
+  https://github.com/aadaam1/chat-to-3d-workbench/tree/main/examples/tap-aerator
+
+  Note: not water-tested yet. If something looks wrong on the
+  plate, say so before you spend the filament.

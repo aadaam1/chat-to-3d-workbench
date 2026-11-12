@@ -1,0 +1,19 @@
+# Build output: every project rebuilds its own. Print packs are sent as zips.
+# Your own designs live in projects/ and are never committed (see projects/README.md)
+projects/*
+!projects/README.md
+**/out/
+*.stl.bak
+
+# Scratch models (prefix with _ to keep them local)
+examples/*/_*.scad
+
+__pycache__/
+.DS_Store
+
+# Python env made by tools/setup.sh on macOS
+.venv/
+
+# Worktrees for parallel sessions (see the repo-routine skill)
+.worktrees/
+.pytest_cache/

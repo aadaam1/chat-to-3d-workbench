@@ -1,0 +1,4 @@
+{
+  "size": [1200, 800],
+  "frames": [{"view": "3d", "az": 20, "el": 24, "zoom": 1.0, "layers": "floor,walls,roof"}]
+}
