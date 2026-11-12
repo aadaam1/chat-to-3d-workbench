@@ -9,6 +9,10 @@ workbench is a working prototype, and anything may still change.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-12
+
+First public release: printed parts and garden sheds (single-slope and gable roofs), designed in chat and iterated in a 3D preview
+
 ### Added
 - A gable-roof shed (`"type": "gable-shed"`).
 - Preview capture mode, and `tools/viewer_gif.py` to turn it into GIFs and stills.
@@ -108,3 +112,6 @@ The first version.
 - Tools: per-process builds, a printability checker with a wall-thickness heatmap and rough price, STEP export, the preview page.
 - The tap aerator example.
 - Setup for macOS and Linux, a copy-paste setup prompt, and a self-test.
+
+[Unreleased]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/aadaam1/chat-to-3d-workbench/releases/tag/v0.6.0
