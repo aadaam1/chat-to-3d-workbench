@@ -127,8 +127,9 @@ class BoardPlatform:
     joists' underside, where the bearers' tops must be)."""
 
     def __init__(self, frame, lib, W, D, joist_item, board_item, spacing, top, gap=None,
-                 group="deck", treated=True):
+                 group="deck", treated=True, origin=(0.0, 0.0)):
         self.fr, self.lib, self.W, self.D = frame, lib, W, D
+        self.ox, self.oy = origin                  # where the deck's front-left corner is (a floor inside a larger frame)
         self.ji, self.bi = tl.item(lib, joist_item), tl.item(lib, board_item)
         self.joist_item, self.board_item = joist_item, board_item
         self.tj, self.hj = self.ji["thickness_mm"], self.ji["width_mm"]
@@ -143,11 +144,12 @@ class BoardPlatform:
         centre lines the joists bear on (for the span record)."""
         fr, W, D, tj, hj = self.fr, self.W, self.D, self.tj, self.hj
         z0, z1 = self.bottom, self.bottom + hj
+        ox, oy = self.ox, self.oy
         self.joist_x = layout(W, tj, self.spacing)
         self.joist_ids = []
         for i, x0 in enumerate(self.joist_x, 1):
             self.joist_ids.append(fr.box(f"deck/joist-{i:02d}", "joist", self.group, "floor", self.joist_item,
-                                         (x0, 0, z0), (x0 + tj, D, z1), 1, 2, **self.kw))
+                                         (ox + x0, oy, z0), (ox + x0 + tj, oy + D, z1), 1, 2, **self.kw))
         stock = max(self.bi["stock_lengths_mm"])
         cand = [x0 + tj / 2 for x0 in self.joist_x]
         rows = board_rows(D, self.bw, self.gap)
@@ -159,7 +161,7 @@ class BoardPlatform:
                 b = x1 - (self.gap / 2 if k < len(cuts) - 1 else 0)
                 bid = f"deck/board-{r + 1:02d}" + (f"-{k + 1}" if len(cuts) > 1 else "")
                 fr.box(bid, "deckboard", self.group, "deck", self.board_item,
-                       (a, y0, self.top - self.td), (b, y1, self.top), 0, 1, **self.kw)
+                       (ox + a, oy + y0, self.top - self.td), (ox + b, oy + y1, self.top), 0, 1, **self.kw)
                 self.boards.append((bid, r, a, b, y0, y1))
                 for jid, jx in zip(self.joist_ids, self.joist_x):
                     if _ov(a, b, jx, jx + tj) > EPS:

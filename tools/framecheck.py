@@ -295,8 +295,20 @@ def deck_of(frame, kind, spec_key):
     return sp["deck"] if sp else frame["spec"][spec_key]
 
 
+def is_kitchen(frame):
+    return frame["spec"].get("type") == "summer-kitchen"
+
+
 def is_gable(frame):
-    return frame["spec"].get("type") == "gable-shed"
+    sp = frame["spec"]
+    return sp.get("type") == "gable-shed" or (sp.get("type") == "summer-kitchen" and sp.get("roof") == "gable")
+
+
+def spec_openings(spec):
+    """The doors and windows of the description as a flat list with their wall (a summer kitchen lists them per wall)."""
+    if "walls" in spec:
+        return [dict(o, wall=w["side"]) for w in spec["walls"] for o in w["openings"]]
+    return spec.get("openings", [])
 
 
 def rafter_run(frame):
@@ -364,9 +376,12 @@ def check_rafters(f):
     ang = roof_slope(fr)
     cos_a = math.cos(ang)
     m = rafters[0]
+    sp = span_of(fr, "rafter")
     plates = {p["id"]: p for p in fr["members"] if p["id"] in ("wall-front/plate-top", "wall-back/plate-top")}   # same line as any upper plate
     if is_gable(fr):
         span = rafter_run(fr)
+    elif sp and "span_mm" in sp:
+        span = sp["span_mm"]                    # a roof on beams records its span
     elif len(plates) == 2:
         ys = [p["origin"][1] + p["size"][1] / 2.0 for p in plates.values()]   # plates lie flat, width along Y
         span = abs(ys[0] - ys[1])               # centre to centre of the bearing plates, horizontal
@@ -386,8 +401,9 @@ def check_rafters(f):
     verdict = {"ok": "That is comfortable.",
                "check": "That is close to the limit: use a deeper section or closer rafters if heavy snow is likely.",
                "fix": "That is too long: use a deeper section or closer rafters."}[level]
-    where = ("from the eave wall's outer face to the ridge board; the overhang is ignored, which errs on the safe side"
-             if is_gable(fr) else "between the centres of the front and back top plates; "
+    bearer = "beam" if is_kitchen(fr) else "wall"
+    where = (f"from the eave {bearer}'s outer face to the ridge board; the overhang is ignored, which errs on the safe side"
+             if is_gable(fr) else f"between the centres of the front and back {'beams' if is_kitchen(fr) else 'top plates'}; "
              "the overhang is ignored, which errs on the safe side")
     f.add("span-rafters", level, f"Rafters: {name} at {f.length(spacing)}",
           f"Rafters span {f.length(span)} horizontally ({where}). This section is good for about "
@@ -437,9 +453,14 @@ def check_sheet_spacing(f):
     lib, spec = f.lib, f.frame["spec"]
     limits = lib.get("sheet_spans", {})
     fr = f.frame
-    jobs = [("floor", deck_of(fr, "joist", "floor_deck"), spacing_of(fr, "joist", "joist_spacing"), "floor joists", "floor"),
-            ("roof", deck_of(fr, "rafter", "roof_deck"), spacing_of(fr, "rafter", "rafter_spacing"), "rafters", "roof"),
-            ("wall", deck_of(fr, "stud", "sheathing"), spacing_of(fr, "stud", "stud_spacing"), "studs", None)]
+    if is_kitchen(fr):                  # a floor of boards has no sheet limit; the walls are there only when listed
+        jobs = [("roof", deck_of(fr, "rafter", "roof_deck"), spacing_of(fr, "rafter", "rafter_spacing"), "rafters", "roof")]
+        if span_of(fr, "stud"):
+            jobs.append(("wall", deck_of(fr, "stud", "sheathing"), spacing_of(fr, "stud", "stud_spacing"), "studs", None))
+    else:
+        jobs = [("floor", deck_of(fr, "joist", "floor_deck"), spacing_of(fr, "joist", "joist_spacing"), "floor joists", "floor"),
+                ("roof", deck_of(fr, "rafter", "roof_deck"), spacing_of(fr, "rafter", "rafter_spacing"), "rafters", "roof"),
+                ("wall", deck_of(fr, "stud", "sheathing"), spacing_of(fr, "stud", "stud_spacing"), "studs", None)]
     bad, lines, unv = [], [], False
     for role, key, spacing, what, group in jobs:
         rec = limits.get(key, {})
@@ -554,7 +575,7 @@ def check_stock_length(f):
 def check_openings(f):
     spec, fr = f.frame["spec"], f.frame
     bad, lines = [], []
-    for i, op in enumerate(spec.get("openings", []), 1):
+    for i, op in enumerate(spec_openings(spec), 1):
         wall = op["wall"]
         axis = 0 if wall in ("front", "back") else 1
         lo, hi = op["x"], op["x"] + op["width"]
@@ -699,6 +720,8 @@ def check_bay_blocking(f):
     open_, walls = [], {}
     for wall in ("front", "back"):
         plates = [m for m in fr["members"] if m["group"] == f"wall-{wall}" and m["kind"] == "plate"]
+        if not plates and is_kitchen(fr):      # the roof bears on the beams
+            plates = [m for m in fr["members"] if m["id"].startswith("beams/beam-" + ("01" if wall == "front" else "02"))]
         if plates:
             walls[wall] = _extent(plates, 1)
     for wall, (y0, y1) in walls.items():
@@ -909,6 +932,8 @@ def check_ground(f):
         if m["kind"] in ("sheet",):
             continue
         zmin = float(box_corners(m)[:, 2].min())
+        if m["kind"] in ("ground-screw", "pier", "footing", "post-base"):
+            continue                    # bought footings are not timber
         if zmin < near - 0.5 and not m.get("treated"):
             bad.append(m)
     if bad:
@@ -950,7 +975,12 @@ def check_pitch(f):
 
 def check_wall_bracing(f):
     bad = []
-    for wall in ("front", "back", "left", "right"):
+    spec = f.frame["spec"]
+    sides = [w["side"] for w in spec["walls"]] if "walls" in spec else ["front", "back", "left", "right"]
+    if not sides:
+        f.add("wall-bracing", "ok", "Wall bracing", "There are no walls: the open sides are braced with knee braces instead.")
+        return
+    for wall in sides:
         grp = f"wall-{wall}"
         if not any(m["group"] == grp and m["kind"] in ("sheet", "brace") for m in f.frame["members"]):
             bad.append(wall)
@@ -1029,10 +1059,10 @@ def check_terrace_joists(f):
           f"Counted as simply supported between beams; the overhang past the end beams only helps.", [m["id"]])
 
 
-def check_terrace_beams(f):
+def check_terrace_beams(f, atype="beams"):
     fr, lib, spec = f.frame, f.lib, f.frame["spec"]
     ld = terrace_loads(lib, spec)
-    rows = [sp for a in fr.get("assemblies", []) if a["type"] == "beams" for sp in a["spans"] if sp["kind"] == "beam"]
+    rows = [sp for a in fr.get("assemblies", []) if a["type"] == atype for sp in a["spans"] if sp["kind"] == "beam"]
     if not rows:
         f.add("span-beams", "check", "Beams", "There are no beams in this frame, so no beam span was checked.")
         return
@@ -1101,13 +1131,19 @@ def check_post_footing(f):
               "the footings' load capacity is not checked).")
 
 
-def check_beam_bearing(f, max_end=300.0):
+def check_beam_bearing(f, max_end=300.0, atype="beams", prefix=None, fid="beam-bearing", label="Beam"):
+    """Every beam end over a post or footing. `atype` the beams' assembly type; `prefix` (a summer
+    kitchen) the id prefixes of the posts and post bases they bear on, e.g. ("posts/", "foundations/")."""
     fr = f.frame
-    recs = [sp for a in fr.get("assemblies", []) if a["type"] == "beams" for sp in a["spans"] if sp["kind"] == "beam"]
+    recs = [sp for a in fr.get("assemblies", []) if a["type"] == atype for sp in a["spans"] if sp["kind"] == "beam"]
     if not recs:
-        f.add("beam-bearing", "ok", "Beam bearing", "There are no beams in this frame.")
+        f.add(fid, "ok", f"{label} bearing", "There are no beams in this frame.")
         return
-    sup = _members(f, "post") or _members(f, "post-base")
+    if prefix:
+        sup = [m for m in _members(f, "post") if m["id"].startswith(prefix[0])] or \
+            [m for m in _members(f, "post-base") if m["id"].startswith(prefix[1])]
+    else:
+        sup = _members(f, "post") or _members(f, "post-base")
     by = f.by_id
     bad = []
     for r in recs:
@@ -1122,17 +1158,17 @@ def check_beam_bearing(f, max_end=300.0):
         if not cl or min(cl) - lo > max_end + 0.5 or hi - max(cl) > max_end + 0.5:
             bad.append(b)
     if bad:
-        f.add("beam-bearing", "fix", "Beam end with no support",
+        f.add(fid, "fix", "Beam end with no support",
               f"{len(bad)} beam(s) reach more than {f.length(max_end)} past their last post or have none under them "
               f"(first: {bad[0]['id']}). Every beam end must be over a post or footing, or within a short overhang of one.",
               [m["id"] for m in bad][:50])
     else:
-        f.add("beam-bearing", "ok", "Beam bearing",
-              f"Every beam is over a post or footing at both ends, overhanging by no more than {f.length(max_end)}.")
+        f.add(fid, "ok", f"{label} bearing",
+              f"Every {label.lower()} is over a post or footing at both ends, overhanging by no more than {f.length(max_end)}.")
 
 
-def check_railing(f):
-    h = f.frame["spec"]["height"]
+def check_railing(f, h=None):
+    h = f.frame["spec"]["height"] if h is None else h
     lim = f.lib["defaults"]["terrace"]["railing_height_mm"]
     if h > lim + 0.5:
         f.add("railing", "check", "A railing is usually required",
@@ -1271,14 +1307,18 @@ def check_open_bracing(f):
         ax = 0 if abs(beam["x"][0]) > 0.5 else 1
         ends = box_corners(beam)[:, ax]
         lo, hi = float(ends.min()), float(ends.max())
+        kit = is_kitchen(fr)
+        walled = {w["side"] for w in fr["spec"].get("walls", []) if any(m["group"] == f"wall-{w['side']}" for m in fr["members"])}
         for p in posts:
             c = centre(p)
             if abs(c[1 - ax] - r["line"]) > 1.0 or contact(p, beam, 1.0) is None:
                 continue
             pe = box_corners(p)[:, ax]
             half = float(pe.max() - pe.min()) / 2.0
+            back_line = kit and r["line"] > fr["spec"]["depth"] / 2.0
+            end_wall = kit and ((c[ax] - half <= lo + 1.0 and "left" in walled) or (c[ax] + half >= hi - 1.0 and "right" in walled))
             for side, clear in ((1, hi - (c[ax] + half)), (-1, (c[ax] - half) - lo)):
-                if clear < MIN_BRACE_CLEAR:
+                if clear < MIN_BRACE_CLEAR or (back_line and "back" in walled):
                     continue
                 total += 1
                 ok = any(contact(b, p, 1.0) is not None and contact(b, beam, 1.0) is not None
@@ -1287,13 +1327,14 @@ def check_open_bracing(f):
                 if not ok:
                     missing.append((p["id"], "along the beam"))
             other = [x for x in lines if abs(x - r["line"]) > 1.0]
-            if other:
+            if other and not end_wall:
                 inward = 1 if other[0] > r["line"] else -1
                 pc = box_corners(p)[:, 1 - ax]
                 if abs(other[0] - r["line"]) - float(pc.max() - pc.min()) >= MIN_BRACE_CLEAR:
                     total += 1
                     ok = any(contact(b, p, 1.0) is not None and any(contact(b, q, 1.0) is not None for q in rafters)
-                             and (centre(b)[1 - ax] - c[1 - ax]) * inward > 0 and abs(centre(b)[ax] - c[ax]) <= 1.0
+                             and (centre(b)[1 - ax] - c[1 - ax]) * inward > 0
+                             and abs(centre(b)[ax] - c[ax]) <= (half + 1.0 if kit else 1.0)
                              for b in braces)
                     if not ok:
                         missing.append((p["id"], "across the beams"))
@@ -1301,13 +1342,166 @@ def check_open_bracing(f):
         names = ", ".join(sorted({f"{m[0]} ({m[1]})" for m in missing}))
         f.add("open-bracing", "fix", "Post corner with no knee brace",
               f"{len(missing)} post corner(s) have no knee brace touching both the post and what it braces against "
-              f"(posts: {names}). A pergola has no wall to stop it racking, so every post needs a 45 degree brace up "
+              f"(posts: {names}). An open side has no wall to stop it racking, so every post needs a 45 degree brace up "
               "to the beam on each side where the beam runs on, and one across the beams up to the rafter over the "
               "post. Add the brace, or turn `braces` back on.", [missing[0][0]])
     else:
         f.add("open-bracing", "ok", "Open bracing",
               f"All {total} post corners that have room carry a knee brace, along the beams and across them, "
               "touching both the post and the beam or rafter.")
+
+
+def kitchen_roof_dead_kn_m2(lib, spec):
+    """Permanent roof load of a summer kitchen in kN per m2 of plan: deck, covering, rafters."""
+    cos_a = math.cos(math.radians(spec["pitch_deg"]))
+    deck = lib["sheets"][spec["roof_deck"]]["thickness_mm"]
+    deck_kn = deck / 1000.0 * _f("common", "sheet_density_kg_m3") * _f("common", "g") / 1000.0
+    cov = _f("common", "covering_kn_m2").get(spec.get("roofing"), 0.10)
+    r = lib["sections"][spec["rafter_item"]]
+    rafter = own_weight_kn_m(lib, r["thickness_mm"], r["width_mm"]) / (spec["rafter_spacing"] / 1000.0)
+    return (deck_kn + cov + rafter) / cos_a
+
+
+def kitchen_beam_trib_mm(lib, spec):
+    """The width of roof (plan) each roof beam carries: half the span between the beams plus the overhang."""
+    bw = spec["beam_plies"] * lib["sections"][spec["beam_item"]]["thickness_mm"]
+    pty = lib["sections"][spec["post_item"]]["width_mm"]
+    return (spec["depth"] - pty) / 2.0 + spec["overhang"]
+
+
+def kitchen_beam_allowed(lib, spec, detail=False):
+    """Longest span in mm of a summer kitchen's roof beam between posts, under snow and the roof's weight."""
+    b = lib["sections"][spec["beam_item"]]
+    t = kitchen_beam_trib_mm(lib, spec) / 1000.0
+    res = allowable_span(lib, b["thickness_mm"] * spec["beam_plies"], b["width_mm"],
+                         kitchen_roof_dead_kn_m2(lib, spec) * t, spec["loads"]["snow_kn_m2"] * t, "snow", repetitive=False)
+    return res if detail else res["span_mm"]
+
+
+# ======================================================== SUMMER KITCHEN
+# Posts and beams under a mono or gable roof, with an optional terrace floor and
+# up to three walls between the posts. The roof's rafter, ridge, tie, edge and
+# pitch checks are the sheds'; the beams are checked under the roof's load; the
+# floor's under the terrace's; the walls are infill (the beams rest on the posts)
+# and braced by their sheathing; every open side has its knee braces.
+
+def check_kitchen_beams(f):
+    fr, lib, spec = f.frame, f.lib, f.frame["spec"]
+    rows = [sp for a in fr.get("assemblies", []) if a["type"] == "beams" for sp in a["spans"] if sp["kind"] == "beam"]
+    if not rows:
+        f.add("span-beams", "check", "Beams", "There are no beams in this frame, so no beam span was checked.")
+        return
+    res = kitchen_beam_allowed(lib, spec, detail=True)
+    snow = spec["loads"]["snow_kn_m2"]
+    for r in sorted(rows, key=lambda r: r["id"]):
+        span, allowed = r["span_mm"], res["span_mm"]
+        level = level_for(span, allowed)
+        verdict = {"ok": "That is comfortable.",
+                   "check": "That is close to the limit: use a deeper beam or put a post in sooner.",
+                   "fix": "That is too long: use a deeper beam, more plies or more posts."}[level]
+        name = section_name(lib, r["item"]) + (f", {r['plies']} together" if r["plies"] > 1 else "")
+        f.add(f"span-{r['id'].replace('/', '-')}", level, f"Roof beam {r['id'].split('/')[-1]}: {name}",
+              f"The beam spans {f.length(span)} between posts and carries {f.length(r['trib_mm'])} of roof (half the span "
+              f"between the beams plus the overhang) at a snow load of {f.load(snow)}. This section is good for about "
+              f"{f.length(allowed)} (limited by {res['governs']}). {verdict}", [r["id"]] if r["id"] in f.by_id else [])
+
+
+def check_kitchen_ties(f):
+    """A gable kitchen's ties (ceiling joists): one beside every rafter pair that is not over a walled end,
+    level on top of both beams from outer face to outer face and fixed to both rafters and both beams."""
+    fr, by, spec = f.frame, f.by_id, f.frame["spec"]
+    walled = {w["side"] for w in spec["walls"]}
+    ptx = f.lib["sections"][spec["post_item"]]["thickness_mm"]
+    W, D = spec["width"], spec["depth"]
+    beams = {k: [m for m in fr["members"] if m["id"].startswith(f"beams/beam-{k}")] for k in ("01", "02")}
+    if not all(beams.values()):
+        f.add("rafter-ties", "ok", "Rafter ties", "There are no roof beams to tie.")
+        return
+    top = max(_extent([m], 2)[1] for ms in beams.values() for m in ms)
+    joined = {frozenset((j["a"], j["b"])) for j in fr["joints"] if j["type"] in ("tie-rafter", "tie-plate")}
+    missing, loose, over = [], [], 0
+    for a, b in _rafter_pairs(f):
+        lo, hi = _extent([a], 0)
+        if ("left" in walled and lo < ptx - 1.0) or ("right" in walled and hi > W - ptx + 1.0):
+            over += 1
+            continue
+        tie = by.get(a["id"].replace("rafter-front-", "tie-"))
+        if tie is None:
+            missing.append(a["id"])
+            continue
+        ys, zs = _extent([tie], 1), _extent([tie], 2)
+        ok = abs(zs[0] - top) <= 1.0 and abs(ys[0]) <= 1.0 and abs(ys[1] - D) <= 1.0 and b is not None
+        ok = ok and all(any(frozenset((tie["id"], m["id"])) in joined for m in ms) for ms in beams.values())
+        ok = ok and all(frozenset((tie["id"], m["id"])) in joined for m in (a, b))
+        if not ok:
+            loose.append(tie["id"])
+    if missing or loose:
+        text = []
+        if missing:
+            text.append(f"{len(missing)} rafter pair(s) have no tie (first: {missing[0]})")
+        if loose:
+            text.append(f"{len(loose)} tie(s) do not run level on both beams from outer face to outer face, fixed to both "
+                        f"rafters and both beams (first: {loose[0]})")
+        f.add("rafter-ties", "fix", "Rafter pair without a tie",
+              "; ".join(text).capitalize() + ". With a ridge board (not a ridge beam), the weight of the roof pushes the beams "
+              "outward; a ceiling joist or tie across the building on the beams, fixed to both rafters of every pair, holds them in.",
+              (missing + loose)[:10])
+    else:
+        f.add("rafter-ties", "ok", "Rafter ties",
+              "Every rafter pair has a full-length tie (ceiling joist) beside it, on both beams, fixed to both rafters"
+              + (f"; the {over} pair(s) over a walled end are held by that wall." if over else "."))
+
+
+def check_kitchen_walls(f):
+    spec = f.frame["spec"]
+    if not spec["walls"]:
+        f.add("wall-infill", "ok", "Walls", "There are no walls: every side is open and braced with knee braces.")
+        return
+    sides = " and ".join(w["side"] for w in spec["walls"])
+    f.add("wall-infill", "ok", "Walls are infill between the posts",
+          f"The {sides} wall{'s are' if len(spec['walls']) > 1 else ' is'} framed between the posts, on a treated sole plate. "
+          "The beams rest on the posts alone and the top plates only touch them, so a header over a door or window carries no "
+          "roof load and is not checked; the posts, not the walls, hold the roof up.")
+
+
+def run_kitchen(f):
+    fr = f.frame
+    spec = fr["spec"]
+    check_rafters(f)
+    check_kitchen_beams(f)
+    if is_gable(fr):
+        check_ridge(f)
+        check_kitchen_ties(f)
+    check_fascia(f)
+    check_pitch(f)
+    check_sheet_spacing(f)
+    check_sheet_edges(f)
+    check_stock_length(f)
+    check_openings(f)
+    check_wall_bracing(f)
+    check_kitchen_walls(f)
+    check_bay_blocking(f)
+    check_ground(f)
+    if spec["floor"] == "terrace":
+        check_terrace_joists(f)
+        check_terrace_beams(f, atype="floor-beams")
+        check_deck_boards(f)
+        check_railing(f, spec["floor_height"])
+    check_post_footing(f)
+    check_beam_bearing(f, max_end=PERGOLA_MAX_BEAM_END, prefix=("posts/", "foundations/"))
+    if spec["floor"] == "terrace":
+        check_beam_bearing(f, atype="floor-beams", prefix=("floor-posts/", "floor-foundations/"),
+                           fid="floor-beam-bearing", label="Floor beam")
+    check_open_bracing(f)
+    check_floating(f)
+
+
+DISCLAIMER_KITCHEN = ("This is guidance from simple formulas, not structural engineering. Rafters, beams, deck joists and "
+                      "headers were treated as beams under an even load (snow on the roof, people on the floor); wind and uplift "
+                      "(an open roof can act like a sail), racking, the footings (ground screws, blocks, poured piers), the soil, "
+                      "frost, fixings, the knee braces' strength and the walls' fire and moisture detailing were not checked, and "
+                      "local building rules may apply (permits, distance from boundaries, a cooking fire or chimney). Anything people "
+                      "shelter under, or that has a stove or a flue, should be checked by a qualified person.")
 
 
 def run_pergola(f):
@@ -1343,6 +1537,11 @@ DISCLAIMER_PERGOLA = ("This is guidance from simple formulas, not structural eng
 def run(frame):
     lib = tl.load(frame["region"])
     f = Findings(frame, lib)
+    if is_kitchen(frame):
+        run_kitchen(f)
+        f.add("guidance-only", "ok", "Guidance only", DISCLAIMER_KITCHEN)
+        return {"schema": 1, "region": frame["region"], "units": frame["units"],
+                "factors": FACTORS["common"] | FACTORS[frame["region"]], "findings": f.items}
     if is_pergola(frame):
         run_pergola(f)
         f.add("guidance-only", "ok", "Guidance only", DISCLAIMER_PERGOLA)

@@ -720,6 +720,18 @@
       "unverified": true,
       "note": "Terrace defaults are workbench choices. The maximum post and row spacings are caps: the generator also keeps each span under 80% of what the span formulas allow. 'min_post_mm': a post shorter than this is left out and the beams sit on the post bases. 'railing_height_mm': a terrace higher than this is flagged as needing a railing."
     },
+    "summer_kitchen": {
+      "height_eaves_mm": 2200,
+      "pitch_deg_mono": 10,
+      "floor_height_mm": 610,
+      "sources": [
+        "pergola-practice",
+        "deck-practice",
+        "plan"
+      ],
+      "unverified": true,
+      "note": "Summer kitchen defaults are workbench choices; its posts, beams, braces, footings, floor and walls take the pergola, terrace and shed defaults. 'height_eaves_mm' is the underside of the lower beam above the ground, 'pitch_deg_mono' the slope of a mono roof (a gable roof takes 'pitch_deg'), 'floor_height_mm' the top of the terrace floor above the ground."
+    },
     "pergola": {
       "foundation": "ground_screw",
       "post_item": "6x6",

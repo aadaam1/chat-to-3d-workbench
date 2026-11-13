@@ -51,7 +51,16 @@ PERGOLA_KNOWN = ("type", "name", "region", "units", "width", "depth", "height", 
                  "post_item", "beam_item", "beam_plies", "beam_mount", "beam_axis", "rafter_item", "rafter_spacing",
                  "overhang", "beam_overhang", "slats", "braces", "brace_item", "brace_leg", "post_spacing",
                  "loads", "edits")
-TYPES = ("pent-shed", "gable-shed", "terrace", "pergola")
+KITCHEN_KNOWN = ("type", "name", "region", "units", "width", "depth", "roof", "floor", "floor_height", "walls",
+                 "height_eaves", "height_front", "height_back", "height_ridge", "pitch_deg",
+                 "foundation", "footing_item", "post_item", "beam_item", "beam_plies", "post_spacing",
+                 "rafter_item", "rafter_spacing", "overhang", "overhang_side", "fascia_item", "ridge_item", "tie_item",
+                 "roof_deck", "roofing", "braces", "brace_item", "brace_leg",
+                 "frame_item", "stud_spacing", "sheathing", "cladding", "top_plate", "header_item",
+                 "joist_item", "joist_spacing", "deck_board", "board_gap", "floor_beam_item", "floor_beam_plies",
+                 "floor_post_item", "loads", "edits")
+KITCHEN_WALLS = ("back", "left", "right")
+TYPES = ("pent-shed", "gable-shed", "terrace", "pergola", "summer-kitchen")
 GABLE_ONLY = ("height_eaves", "pitch_deg", "height_ridge", "ridge_item", "tie_item")
 PENT_ONLY = ("height_front", "height_back")
 MAX_PITCH_DEG = 60.0
@@ -91,6 +100,8 @@ def resolve_spec(raw):
         return _terrace_spec(raw)
     if raw["type"] == "pergola":
         return _pergola_spec(raw)
+    if raw["type"] == "summer-kitchen":
+        return _kitchen_spec(raw)
     for k in raw:
         if k not in KNOWN:
             raise SpecError(f"{k}: unknown field (known: {', '.join(KNOWN)})")
@@ -244,6 +255,267 @@ def _shed_foundation(raw, s, lib):
             raise SpecError("footing_spacing: must be at least 300 mm")
     else:
         s["footing_spacing"] = float(lib["defaults"]["terrace"]["footing_spacing_shed_mm"])
+
+
+def _pick_item(raw, lib, field, default, cats=("sections",), what="a timber section"):
+    """The library key for a field: the description's, else the default; it must be in `cats`."""
+    key = raw.get(field, default)
+    try:
+        it = tl.item(lib, key) if isinstance(key, str) else None
+    except KeyError:
+        it = None
+    if not it or it["category"] not in cats:
+        raise SpecError(f"{field}: {key!r} is not {what} in the {lib['region']} library")
+    return key
+
+
+def _kitchen_spec(raw):
+    """A summer kitchen description with every missing field filled from the library (the
+    pergola, terrace and shed defaults and defaults.summer_kitchen), lengths in mm, the post
+    spacing worked out from the beam span formula, the roof's slope worked out. Returns (spec, library)."""
+    import framecheck as fc
+    from timber.foundations import footing_item
+    for k in ("width", "depth"):
+        if k not in raw:
+            raise SpecError(f"{k}: required")
+    for k in raw:
+        if k not in KITCHEN_KNOWN:
+            raise SpecError(f"{k}: unknown field for a summer kitchen (known: {', '.join(KITCHEN_KNOWN)})")
+    region = raw.get("region", "eu")
+    try:
+        lib = tl.load(region)
+    except ValueError as e:
+        raise SpecError(f"region: {e}")
+    d = lib["defaults"]
+    kd, pg, tt = d["summer_kitchen"], d["pergola"], d["terrace"]
+    s = {"type": "summer-kitchen", "region": region, "units": raw.get("units", lib.get("units", "metric"))}
+    if s["units"] not in ("metric", "imperial"):
+        raise SpecError(f"units: must be 'metric' or 'imperial', not {s['units']!r}")
+    if "name" in raw and (not isinstance(raw["name"], str) or not raw["name"].strip()):
+        raise SpecError("name: must be text")
+    s["name"] = raw.get("name", "summer-kitchen").strip()
+    for k in ("width", "depth"):
+        s[k] = _length(raw, k)
+        if not s[k] > 0:
+            raise SpecError(f"{k}: must be greater than 0")
+    s["roof"] = raw.get("roof", "gable")
+    if s["roof"] not in ("mono", "gable"):
+        raise SpecError("roof: use mono (the front higher, like the pent shed) or gable (a ridge along the width)")
+    s["floor"] = raw.get("floor", "none")
+    if s["floor"] not in ("none", "terrace"):
+        raise SpecError("floor: use none or terrace (a board deck on its own beams and footings)")
+    gable = s["roof"] == "gable"
+    for k in (("height_front", "height_back") if gable else ("height_ridge",)):
+        if k in raw:
+            raise SpecError(f"{k}: only for a {'mono' if gable else 'gable'} roof"
+                            + (" (a gable roof has height_eaves: both eave beams are the same height)" if gable else ""))
+    # items
+    items = d["items"]
+    s["frame_item"] = _pick_item(raw, lib, "frame_item", items["frame"])
+    s["rafter_item"] = _pick_item(raw, lib, "rafter_item", items["rafter"])
+    s["header_item"] = _pick_item(raw, lib, "header_item", s["frame_item"])
+    s["fascia_item"] = _pick_item(raw, lib, "fascia_item", d.get("details", {}).get("fascia_item", s["rafter_item"]))
+    s["sheathing"] = _pick_item(raw, lib, "sheathing", items["sheathing"], ("sheets",), "a sheet")
+    s["roof_deck"] = _pick_item(raw, lib, "roof_deck", items["roof_deck"], ("sheets",), "a sheet")
+    s["cladding"] = _pick_item(raw, lib, "cladding", items["cladding"], ("cladding",), "cladding")
+    s["post_item"] = _pick_item(raw, lib, "post_item", pg["post_item"])
+    s["beam_item"] = _pick_item(raw, lib, "beam_item", pg["beam_item"])
+    s["brace_item"] = _pick_item(raw, lib, "brace_item", pg["brace_item"])
+    roofing = raw.get("roofing", "roofing-felt")
+    try:
+        r = tl.item(lib, roofing)
+    except KeyError:
+        r = None
+    if not (r and r["category"] == "bought" and r["unit"] == "m2"):
+        raise SpecError(f"roofing: {roofing!r} is not a roofing item sold by area in the {region} library")
+    s["roofing"] = roofing
+    s["foundation"] = raw.get("foundation", pg["foundation"])
+    s["footing_item"] = footing_item(lib, s["foundation"], raw.get("footing_item"))["key"]
+    plies = raw.get("beam_plies", pg["beam_plies"])
+    if plies not in (1, 2) or isinstance(plies, bool):
+        raise SpecError("beam_plies: use 1 or 2")
+    s["beam_plies"] = plies
+    for k, dk in (("stud_spacing", "stud_spacing_mm"), ("rafter_spacing", "rafter_spacing_mm"),
+                  ("overhang", "overhang_mm"), ("overhang_side", "overhang_side_mm")):
+        s[k] = _length(raw, k) if k in raw else float(d.get(dk, d["overhang_mm"]))
+    for k in ("stud_spacing", "rafter_spacing"):
+        sec = tl.item(lib, s["frame_item"] if k == "stud_spacing" else s["rafter_item"])
+        if s[k] < 2 * sec["thickness_mm"]:
+            raise SpecError(f"{k}: {s[k]:g} mm is closer than two {sec['name']} members")
+    if not 0 <= s["overhang"] <= 1200:
+        raise SpecError("overhang: use 0 to 1200 mm")
+    tr = tl.item(lib, s["rafter_item"])["thickness_mm"]
+    os_ = s["overhang_side"]
+    if os_ and not (tr + fr.MIN_OUTRIGGER - EPS <= os_ <= fr.OVERHANG_SIDE_MAX + EPS):
+        raise SpecError(f"overhang_side: {os_:g} mm does not work; use 0 (no side overhang) or "
+                        f"{tr + fr.MIN_OUTRIGGER:g} to {fr.OVERHANG_SIDE_MAX:g} mm (a flying rafter on outriggers)")
+    det = d.get("details", {})
+    tp = raw.get("top_plate", det.get("top_plate", TOP_PLATES[0]))
+    if tp not in TOP_PLATES:
+        raise SpecError(f"top_plate: must be one of {', '.join(TOP_PLATES)}, not {tp!r}")
+    s["top_plate"] = tp
+    br = raw.get("braces", True)
+    if not isinstance(br, bool):
+        raise SpecError("braces: use true or false")
+    s["braces"] = br
+    v = _length(raw, "brace_leg") if "brace_leg" in raw else float(pg["brace_leg_mm"])
+    if not 250 <= v <= 1500:
+        raise SpecError("brace_leg: use 250 to 1500 mm")
+    s["brace_leg"] = v
+    # the posts and beams fix the roof's geometry
+    post, beam_it = tl.item(lib, s["post_item"]), tl.item(lib, s["beam_item"])
+    pty = post["width_mm"]
+    bw, hbeam = plies * beam_it["thickness_mm"], beam_it["width_mm"]
+    if bw > pty + EPS:
+        raise SpecError(f"beam_item: {plies} x {beam_it['name']} is {bw:g} mm wide, wider than the {post['name']} posts "
+                        f"({pty:g} mm); use one ply, a thinner beam or a bigger post_item")
+    e = (pty - bw) / 2.0
+    if s["width"] < 2 * post["thickness_mm"] + 600:
+        raise SpecError(f"width: {s['width']:g} mm is too small; it needs two posts and at least 600 mm between them")
+    if s["depth"] < 2 * pty + 1200:
+        raise SpecError(f"depth: {s['depth']:g} mm is too small; it needs two rows of posts and at least 1200 mm between them")
+    for k in ("height_eaves", "height_front", "height_back", "height_ridge"):
+        if k in raw:
+            s[k] = _length(raw, k)
+            if not s[k] > 0:
+                raise SpecError(f"{k}: must be greater than 0")
+    low = s.pop("height_eaves", float(kd["height_eaves_mm"]))
+    if gable:
+        s["height_eaves"] = low
+        top = low + hbeam                                      # the beams' top: where the rafters bear
+        save = {k: s.get(k) for k in ("height_eaves", "depth")}
+        s["height_eaves"], s["depth"] = top, s["depth"] - 2 * e   # the formulas see the eave line as the top of the beam
+        try:
+            _gable_roof(raw, s, lib, d)
+        finally:
+            s["height_eaves"], s["depth"] = save["height_eaves"], save["depth"]
+    else:
+        if "height_back" in raw and "height_eaves" in raw and abs(s["height_back"] - low) > EPS:
+            raise SpecError("height_back: for a mono roof this is the same as height_eaves (the lower beam); give one")
+        hb_ = s["height_back"] if "height_back" in raw else low
+        run = s["depth"] - pty                                 # between the beams' centre lines
+        if "height_front" in raw:
+            if "pitch_deg" in raw:
+                raise SpecError("pitch_deg: give the pitch or height_front, not both")
+            hf_ = s["height_front"]
+            if hf_ < hb_ - EPS:
+                raise SpecError(f"height_front: {hf_:g} mm is lower than the back beam ({hb_:g} mm); a mono roof falls to the back")
+        else:
+            pitch = raw.get("pitch_deg", kd["pitch_deg_mono"])
+            if isinstance(pitch, bool) or not isinstance(pitch, (int, float)) or not 0 < pitch <= MAX_PITCH_DEG:
+                raise SpecError(f"pitch_deg: use more than 0 and up to {MAX_PITCH_DEG:g} degrees")
+            hf_ = round(hb_ + run * math.tan(math.radians(pitch)), 1)
+        s["height_front"], s["height_back"] = hf_, hb_
+        s["pitch_deg"] = round(math.degrees(math.atan((hf_ - hb_) / run)), 4)
+    # loads
+    loads = {"snow_kn_m2": float(d["loads"]["snow_kn_m2"]), "floor_kn_m2": float(tt["floor_kn_m2"])}
+    if "loads" in raw:
+        if not isinstance(raw["loads"], dict):
+            raise SpecError("loads: must be an object")
+        for k, v in raw["loads"].items():
+            if k not in loads:
+                raise SpecError(f"loads.{k}: unknown load (known: {', '.join(loads)})")
+            if isinstance(v, bool) or not isinstance(v, (int, float)) or v <= 0:
+                raise SpecError(f"loads.{k}: must be a number of kN/m2, more than 0")
+            loads[k] = float(v)
+    s["loads"] = loads
+    # the floor
+    if s["floor"] == "terrace":
+        s["floor_height"] = _length(raw, "floor_height") if "floor_height" in raw else float(kd["floor_height_mm"])
+        if not s["floor_height"] > 0:
+            raise SpecError("floor_height: must be greater than 0")
+        s["joist_item"] = _pick_item(raw, lib, "joist_item", tt["joist_item"])
+        s["deck_board"] = _pick_item(raw, lib, "deck_board", tt["deck_board"])
+        if "deck" not in tl.item(lib, s["deck_board"]):
+            raise SpecError(f"deck_board: {s['deck_board']!r} is not a deck board in the {region} library")
+        s["floor_beam_item"] = _pick_item(raw, lib, "floor_beam_item", tt["beam_item"])
+        s["floor_post_item"] = _pick_item(raw, lib, "floor_post_item", tt["post_item"])
+        fp = raw.get("floor_beam_plies", tt["beam_plies"])
+        if fp not in (1, 2) or isinstance(fp, bool):
+            raise SpecError("floor_beam_plies: use 1 or 2")
+        s["floor_beam_plies"] = fp
+        board = tl.item(lib, s["deck_board"])
+        s["joist_spacing"] = _length(raw, "joist_spacing") if "joist_spacing" in raw else float(board["deck"]["max_joist_spacing_mm"])
+        s["board_gap"] = _length(raw, "board_gap") if "board_gap" in raw else float(board["deck"]["gap_mm"])
+        if s["joist_spacing"] < 2 * tl.item(lib, s["joist_item"])["thickness_mm"]:
+            raise SpecError(f"joist_spacing: {s['joist_spacing']:g} mm is closer than two joists")
+        if not 0 <= s["board_gap"] <= 20:
+            raise SpecError("board_gap: use 0 to 20 mm")
+        tspec = {"deck_board": s["deck_board"], "joist_item": s["joist_item"], "joist_spacing": s["joist_spacing"],
+                 "beam_item": s["floor_beam_item"], "beam_plies": s["floor_beam_plies"], "loads": s["loads"]}
+        ld = fc.terrace_loads(lib, tspec)
+        row = min(tt["max_row_spacing_mm"], fc.SPACING_SHARE * fc.joist_allowed(lib, tspec, ld))
+        if row < 600:
+            raise SpecError(f"joist_item: {s['joist_item']!r} at {s['joist_spacing']:g} mm carries only about "
+                            f"{row / 1000:.2f} m between beams; use a deeper joist or closer spacing")
+        s["floor_row_spacing"] = float(math.floor(row / 50) * 50)
+        fpost = min(tt["max_post_spacing_mm"], fc.SPACING_SHARE * fc.beam_allowed(lib, tspec, ld, s["floor_row_spacing"]))
+        if fpost < 600:
+            raise SpecError(f"floor_beam_item: {s['floor_beam_item']!r} carries only about {fpost / 1000:.2f} m between posts; "
+                            "use a deeper beam or more plies")
+        s["floor_post_spacing"] = float(math.floor(fpost / 50) * 50)
+    else:
+        for k in ("floor_height", "joist_item", "joist_spacing", "deck_board", "board_gap", "floor_beam_item",
+                  "floor_beam_plies", "floor_post_item"):
+            if k in raw:
+                raise SpecError(f"{k}: only with floor: terrace")
+    # the walls
+    s["walls"] = _kitchen_walls(raw.get("walls", []))
+    if s["walls"] and tl.item(lib, s["frame_item"])["width_mm"] > min(pty, post["thickness_mm"]) + EPS:
+        raise SpecError(f"frame_item: {s['frame_item']!r} is wider than the posts ({min(pty, post['thickness_mm']):g} mm); "
+                        "a wall's inner face lies flush with the posts' inner faces, so it must be no wider than they are")
+    # post spacing: under the beam span formula
+    if "post_spacing" in raw:
+        s["post_spacing"] = _length(raw, "post_spacing")
+        if s["post_spacing"] < 600:
+            raise SpecError("post_spacing: must be at least 600 mm")
+    else:
+        allowed = fc.kitchen_beam_allowed(lib, s)
+        post_sp = min(pg["max_post_spacing_mm"], fc.SPACING_SHARE * allowed)
+        if post_sp < 600:
+            raise SpecError(f"beam_item: {s['beam_item']!r} carries only about {post_sp / 1000:.2f} m between posts "
+                            "under this roof; use a deeper beam or shorter rafters")
+        s["post_spacing"] = float(math.floor(post_sp / 50) * 50)
+    def item_ok(key):
+        try:
+            return tl.item(lib, key)["category"] in ("sections", "sheets", "cladding")
+        except KeyError:
+            return False
+    try:
+        s["edits"] = fe.validate(raw.get("edits", []), item_ok)
+    except fe.EditError as e_:
+        raise SpecError(str(e_))
+    return s, lib
+
+
+def _kitchen_walls(raw):
+    """The walls list as stored: [{"side": ..., "openings": [...]}], each side at most once."""
+    if not isinstance(raw, list):
+        raise SpecError("walls: must be a list of sides (back, left, right), each a name or {\"side\": ..., \"openings\": [...]}")
+    out, seen = [], set()
+    for k, w in enumerate(raw):
+        if isinstance(w, str):
+            w = {"side": w}
+        if not isinstance(w, dict):
+            raise SpecError(f"walls[{k}]: must be a side name or an object")
+        for key in w:
+            if key not in ("side", "openings"):
+                raise SpecError(f"walls[{k}].{key}: unknown field (use side and openings)")
+        side = w.get("side")
+        if side not in KITCHEN_WALLS:
+            raise SpecError(f"walls[{k}].side: must be one of {', '.join(KITCHEN_WALLS)} (the front stays open)")
+        if side in seen:
+            raise SpecError(f"walls[{k}].side: {side!r} is listed twice")
+        seen.add(side)
+        ops = w.get("openings", [])
+        if not isinstance(ops, list):
+            raise SpecError(f"walls[{k}].openings: must be a list")
+        try:
+            ops = _openings([dict(o, wall=side) if isinstance(o, dict) else o for o in ops])
+        except SpecError as e:
+            raise SpecError(f"walls[{k}].{e}")
+        out.append({"side": side, "openings": [{kk: vv for kk, vv in o.items() if kk != "wall"} for o in ops]})
+    return out
 
 
 def _pergola_spec(raw):
@@ -616,6 +888,8 @@ def generate(raw):
         return recipes.terrace(spec, lib)
     if spec["type"] == "pergola":
         return recipes.pergola(spec, lib)
+    if spec["type"] == "summer-kitchen":
+        return recipes.summer_kitchen(spec, lib)
     _check_geometry(spec, lib)
     if spec["type"] == "gable-shed":
         return recipes.gable_shed(spec, lib)

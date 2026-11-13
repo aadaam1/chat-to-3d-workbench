@@ -51,6 +51,15 @@ class SlopeRoof:
         self.tr, self.wr, self.rdeck = lay.tr, lay.wr, lay.rdeck
         self.sin, self.cos, self.ang = line.sin, line.cos, line.ang
         self.add, self.box, self.joint, self.bought = frame.add, frame.box, frame.joint, frame.bought
+        self.rafter_xs = getattr(lay, "rafter_xs", None)    # given by a recipe that wants a rafter over each post
+        self.rafter_span = getattr(lay, "rafter_span", None)
+        self.eave_in = getattr(lay, "eave_inset", 0.0)         # the bearing's outer face is this far in from the footprint
+        self.bear_type = getattr(lay, "bear_type", "rafter-plate")   # what the rafters bear on: a wall plate or a beam
+
+    def on_bear(self, rid, bear):
+        """Record a rafter bearing on a member, or on each of several (the plies of a beam)."""
+        for b in ([bear] if isinstance(bear, str) else bear):
+            self.joint(self.bear_type, rid, b)
 
     def slope_underside(self, y):
         """Height of the rafter underside's line (extended) above Y."""
@@ -102,9 +111,11 @@ class MonoRoof(SlopeRoof):
 
     def build(self):
         self.roof()
-        self.fr.assembly("roof", "mono-roof", [
-            {"role": "rafters", "kind": "rafter", "spacing_mm": _norm(self.s["rafter_spacing"]),
-             "deck": self.s["roof_deck"], "deck_role": "roof", "deck_group": "roof"}])
+        rafters = {"role": "rafters", "kind": "rafter", "spacing_mm": _norm(self.s["rafter_spacing"]),
+                   "deck": self.s["roof_deck"], "deck_role": "roof", "deck_group": "roof"}
+        if self.rafter_span is not None:
+            rafters["span_mm"] = r1(self.rafter_span)
+        self.fr.assembly("roof", "mono-roof", [rafters])
         return self
 
     def roof(self):
@@ -116,14 +127,14 @@ class MonoRoof(SlopeRoof):
         tan_a = sn / cs
         self.p0 = p0 = (0.0, -oh, self.line.underside(-oh))
         ri = s["rafter_item"]
-        xs = layout(W, tr, s["rafter_spacing"])
+        xs = self.rafter_xs or layout(W, tr, s["rafter_spacing"])
         self.rafter_x, self.rafters = xs, []
         top_f, top_b = self.front_bear, self.back_bear
         for i, x0 in enumerate(xs, 1):
             rid = self.slope_member(f"roof/rafter-{i:02d}", "rafter", ri, x0, tr, wr)
             self.rafters.append(rid)
-            self.joint("rafter-plate", rid, top_f)
-            self.joint("rafter-plate", rid, top_b)
+            self.on_bear(rid, top_f)
+            self.on_bear(rid, top_b)
         for nm, rid in (("left", self.rafters[0]), ("right", self.rafters[-1])):
             for iid in self.infill[nm]:
                 self.joint("stud-plate", iid, rid)
@@ -145,7 +156,8 @@ class MonoRoof(SlopeRoof):
         self.deck_len = lu + 2 * ext
         seams = [u_off + u for u in rows[1:-1]]
         # blocking over the walls: outer face on the frame's outer face, front and back
-        eaves = [oh / cs + tr / 2, (D + oh - wr * sn) / cs - tr / 2]
+        e_in = self.eave_in
+        eaves = [(oh + e_in) / cs + tr / 2, (D - e_in + oh - wr * sn) / cs - tr / 2]
         eaves = [u for u in eaves if all(abs(u - v) >= tr for v in seams)]
         self.roof_blocks = []
         bl = 0

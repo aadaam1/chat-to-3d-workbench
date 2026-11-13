@@ -42,6 +42,6 @@ class Posts:
                 self.fr.joint("post-base", foot["base"], pid)
         return out
 
-    def assembly(self):
-        self.fr.assembly("posts", "posts", [
+    def assembly(self, aid="posts"):
+        self.fr.assembly(aid, aid, [
             {"role": "posts", "kind": "post", "count": len(self.records), "item": self.key}])

@@ -17,6 +17,37 @@ MIN_BRACE_LEG = 250.0        # mm, the shortest centreline run of a brace the ge
 BRACE_CLEAR_SHARE = 0.45     # a brace's foot may use at most this share of the gap to the next post
 
 
+def clip_half_plane(poly, f):
+    """`poly` ((s, z) points) clipped to f(p) >= 0, f linear (Sutherland-Hodgman)."""
+    out = []
+    for i, p in enumerate(poly):
+        q = poly[i - 1]
+        fp, fq = f(p), f(q)
+        if fp >= 0:
+            if fq < 0:
+                t = fq / (fq - fp)
+                out.append((q[0] + (p[0] - q[0]) * t, q[1] + (p[1] - q[1]) * t))
+            out.append(p)
+        elif fq >= 0:
+            t = fq / (fq - fp)
+            out.append((q[0] + (p[0] - q[0]) * t, q[1] + (p[1] - q[1]) * t))
+    return out
+
+
+def sloped_brace(leg, w, u0, m):
+    """A 45 degree brace under a sloping underside, in the plane (s horizontal out from a post
+    face, z up): a band `w` wide whose centreline rises at 45 degrees from the foot and meets the
+    underside z = u0 + m * s at s = leg, cut plumb against the post (s = 0) and along the
+    underside at the head. Returns the quadrilateral's corners as (s, z)."""
+    zc = u0 + m * leg - leg                       # centreline height at s = 0
+    hw = w * C45                                  # half the band's height measured vertically
+    big = 5000.0
+    poly = [(-big, zc - big - hw), (big, zc + big - hw), (big, zc + big + hw), (-big, zc - big + hw)]
+    poly = clip_half_plane(poly, lambda p: p[0])
+    poly = clip_half_plane(poly, lambda p: u0 + m * p[0] - p[1])
+    return poly
+
+
 class Axes:
     """Maps the local frame (u along the beams, v across, z up) to the world."""
 
@@ -168,6 +199,32 @@ class KneeBraces:
         self.records.append({"id": bid, "post": post_id, "side": side, "leg_mm": r1(leg), "line": r1(line),
                              "across": across})
         return bid
+
+    def add_sloped(self, u, v_face, side, leg, under, post_id, head_id, thick):
+        """A brace across the beams, in the plane at `u`, its foot on a post face at v = v_face (side
+        +1 toward higher v), its head under a sloping member (`head_id`, a rafter) whose underside
+        height is `under(v)`, a straight line over the brace. Cut plumb at the foot and along the
+        underside at the head. `thick` rips it to the rafter's thickness. Returns (id, lowest z)."""
+        u0 = under(v_face)
+        m = (under(v_face + side * 100.0) - u0) / 100.0
+        poly = sloped_brace(leg, self.w, u0, m)
+        c = C45
+        a = [((s_ + z_) * c, (-s_ + z_) * c) for s_, z_ in poly]      # (along, across) of each corner
+        a0, a1 = min(p[0] for p in a), max(p[0] for p in a)
+        b0, b1 = min(p[1] for p in a), max(p[1] for p in a)
+        La, wb = a1 - a0, b1 - b0
+        am, bm = (a0 + a1) / 2.0, (b0 + b1) / 2.0
+        sc, zc = (am - bm) * c, (am + bm) * c
+        T = self.t if thick is None else min(self.t, thick)
+        n = 1 + sum(1 for r in self.records if r["across"])
+        bid = self.fr.add(f"braces/cross-{n:02d}", "brace", self.group, "frame", self.key, [La, wb, T],
+                          self.ax.pt(u, v_face + side * sc, zc), self.ax.vec(0.0, side * c, c),
+                          self.ax.vec(0.0, -side * c, c), cut=(45, 45),
+                          outline=[(p[0] - a0, p[1] - b0) for p in a], **self.kw)
+        self.fr.joint("brace-post", bid, post_id)
+        self.fr.joint("brace-rafter", bid, head_id)
+        self.records.append({"id": bid, "post": post_id, "side": side, "leg_mm": r1(leg), "line": r1(u), "across": True})
+        return bid, min(p[1] for p in poly)
 
     def assembly(self):
         if self.records:

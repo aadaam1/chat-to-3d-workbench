@@ -95,8 +95,8 @@ class Footings:
                                "note": "foundation; load capacity not checked: check the maker's table for your soil"})
         self.fr.bought.append({"item": self.base_it["key"], "qty": n, "unit": "pcs", "note": "one per footing"})
 
-    def assembly(self):
-        self.fr.assembly("foundations", "foundations", [
+    def assembly(self, aid="foundations"):
+        self.fr.assembly(aid, aid, [
             {"role": "footings", "kind": "footing", "count": len(self.records), "item": self.it["key"],
              "foundation": self.f["kind"],
              "ground_mm": self.records[0]["ground"] if self.records else 0.0}])
