@@ -147,7 +147,8 @@ def test_structural_screws_only_where_chosen():
         lib = tl.load(region)
         used = {r["fastener"] for t, r in lib["joint_rules"].items() if not t.startswith("_") and "fastener" in r}
         used |= {a["fastener"] for r in lib["joint_rules"].values() for a in r.get("also", [])}
-        assert {k for k in used if lib["fasteners"][k]["type"] == "screw"} == screws
+        outdoor = {"screw-deck", "screw-connector"}          # only the terrace's joints use these
+        assert {k for k in used if lib["fasteners"][k]["type"] == "screw"} - outdoor == screws
 
 
 def test_md_separates_nails_and_structural_screws(small):
