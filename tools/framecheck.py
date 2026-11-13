@@ -31,7 +31,7 @@ from timber.spans import (FACTORS, WARN_FRACTION, MAX_FRACTION, SPACING_SHARE, _
                          us_size_factor, allowable_span, level_for, terrace_loads, joist_allowed, beam_allowed,
                          _slat_dead_kn_m2, pergola_rafter_span, pergola_rafter_allowed, pergola_beam_allowed,
                          kitchen_roof_dead_kn_m2, kitchen_beam_trib_mm, kitchen_beam_allowed,
-                         floor_joist_allowed, shed_rafter_allowed, header_allowed, header_trib_mm)
+                         length_text, floor_joist_allowed, shed_rafter_allowed, header_allowed, header_trib_mm)
 
 # ============================================================== GEOMETRY
 
@@ -114,9 +114,7 @@ class Findings:
 
     # number formatting, in the frame's units
     def length(self, mm):
-        if self.units == "imperial":
-            return tl.fmt_length(mm, "imperial")
-        return f"{mm / 1000.0:.2f} m" if abs(mm) >= 1000 else f"{mm:.0f} mm"
+        return length_text(mm, self.units)
 
     def load(self, kn_m2):
         if self.units == "imperial":
@@ -403,7 +401,7 @@ def check_stock_length(f):
         rec = lib[cat].get(m["item"])
         if not rec or not rec.get("stock_lengths_mm"):
             continue
-        longest = max(rec["stock_lengths_mm"])
+        longest = max(rec["stock_lengths_mm"] + rec.get("order_lengths_mm", []))   # special-order lengths count (the list says so)
         if m["size"][0] > longest + 0.5:
             over.append((m, longest))
     if over:

@@ -656,6 +656,11 @@
     "stud_spacing_mm": 406.4,
     "joist_spacing_mm": 406.4,
     "rafter_spacing_mm": 406.4,
+    "spacing_steps_mm": [
+      609.6,
+      406.4,
+      304.8
+    ],
     "overhang_mm": 152.4,
     "overhang_side_mm": 152.4,
     "items": {

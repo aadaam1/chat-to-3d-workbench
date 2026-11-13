@@ -331,12 +331,15 @@
         4000,
         5000
       ],
+      "order_lengths_mm": [
+        6000
+      ],
       "can_rotate": false,
       "sources": [
         "plan"
       ],
       "unverified": true,
-      "note": "Overall width 121 mm is the product name; the 96 mm cover width and the stock lengths are typical values not read from a supplier page."
+      "note": "Also sold in 6 m on order (a special-order length, used only when a board is longer than the stocked ones; typical, not read from a supplier). Overall width 121 mm is the product name; the 96 mm cover width and the stock lengths are typical values not read from a supplier page."
     }
   },
   "sheet_spans": {
@@ -729,6 +732,11 @@
     "stud_spacing_mm": 600,
     "joist_spacing_mm": 400,
     "rafter_spacing_mm": 600,
+    "spacing_steps_mm": [
+      600,
+      400,
+      300
+    ],
     "overhang_mm": 150,
     "overhang_side_mm": 150,
     "items": {
