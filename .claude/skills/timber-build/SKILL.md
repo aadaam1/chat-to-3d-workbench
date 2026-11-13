@@ -1,6 +1,6 @@
 ---
 name: timber-build
-description: Design a small timber structure in chat in a chat-to-3d-workbench repo - a garden shed (mono-pitch or gable roof on a timber floor) - from a few questions to a frame of real members, checks on spans and layout, a shopping list with a cut list and prices, and a 3D preview with layers and an exploded view. Use when someone wants to build a shed, a store or a similar small timber building, wants to change one, or asks what to buy or whether a span is enough. Works in European metric sizes and US lumber sizes.
+description: Design a small timber structure in chat in a chat-to-3d-workbench repo - a garden shed (mono-pitch or gable roof on a timber floor), a terrace, a pergola or a summer kitchen (a roof on posts and beams, with an optional floor and walls) - from a few questions to a frame of real members, checks on spans and layout, a shopping list with a cut list and prices, and a 3D preview with layers and an exploded view. Use when someone wants to build a shed, a store, a summer kitchen or a similar small timber building, wants to change one, or asks what to buy or whether a span is enough. Works in European metric sizes and US lumber sizes.
 ---
 
 # Build a small timber structure
