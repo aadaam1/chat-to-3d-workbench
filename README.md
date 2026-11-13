@@ -70,24 +70,30 @@ garden tap's swirling jet into an even stream.
 
 ### Garden structures
 
-Sheds today; decks, pergolas, summer kitchens and benches next. A short
-description (size, heights, where the door and windows go) becomes a frame
-of real timber: every joist, stud, plate, header, rafter, sheet and board.
+Sheds, terraces, pergolas and summer kitchens. A short description (size,
+heights, where the door and windows go, which sides are open) becomes a
+frame of real timber: every footing, post, beam, joist, stud, rafter,
+sheet and board.
+
+| ![A gable-roof shed](docs/img/structure-gable-shed.png) | ![A terrace on ground screws](docs/img/structure-terrace.png) | ![An open pergola with knee braces](docs/img/structure-pergola.png) | ![A summer kitchen: a roof on posts over a deck, with a back wall](docs/img/structure-summer-kitchen.png) |
+|:---:|:---:|:---:|:---:|
+| **Shed**, single-slope or gable roof | **Terrace** on ground screws, pier blocks or concrete | **Pergola**, open, braced both ways | **Summer kitchen**: a roof on posts, floor and walls optional |
 
 | ![The shed losing its cladding, then its sheathing, down to the frame](docs/img/shed-layers.gif) | ![The bare frame of the garden shed](docs/img/shed-frame.png) |
 |:---:|:---:|
 | Peel the layers off in the preview | The frame, framed the way a carpenter frames it |
 
-- **Checks:** joist, rafter and header spans for the snow and floor load,
-  sheet supports, treated timber near the ground, roof pitch, and framing
-  conventions (king and jack studs, corners, lapped top plates, closed
-  roof edges).
+- **Checks:** joist, rafter, beam and header spans for the snow and floor
+  load, sheet supports, treated timber near the ground, roof pitch, and
+  framing conventions (king and jack studs, corners, lapped top plates,
+  closed roof edges, every post on a footing, braces on open sides).
 - **A shopping list and cut list** by stock length and sheet, nails by the
   kilo, priced from a dated timber-yard list.
 - **Change one piece** ("move this stud", "leave this block out") and it
   stays changed through every rebuild.
-- **Built from blocks:** a platform, walls and a roof put together by a
-  recipe, so new shapes reuse the same rules and checks.
+- **Built from blocks:** foundations, posts, beams, a platform, walls and
+  a roof put together by a recipe, so new shapes reuse the same rules and
+  checks.
 - European or US sizes.
 
 Example: the [garden shed](examples/garden-shed/README.md), 3 × 2 m with a
@@ -155,6 +161,9 @@ folder and describe what you want:
 
 > *A 3 × 2.5 m garden shed with a sloping roof, a door at the front and a
 > window on the left.*
+
+> *A 4 × 3 m summer kitchen with a gable roof, open at the front, a wall
+> at the back, on ground screws.*
 
 </details>
 

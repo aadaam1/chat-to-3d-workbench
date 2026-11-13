@@ -10,7 +10,7 @@ print, order or build, and scripts, not the AI, make every file.
 
 ## 1. Garden structures from building blocks
 
-Sheds, decks, pergolas, summer kitchens, benches: designed in chat,
+Sheds, terraces, pergolas, summer kitchens, benches: designed in chat,
 reviewed in the preview, and turned into a list of what to buy. Each
 structure is put together from blocks (a platform, posts, beams, walls, a
 roof) by a recipe, so a new shape reuses the rules, checks and shopping
@@ -46,8 +46,7 @@ mounts, enclosures, hose and thread fittings.
 
 ## 3. Ready for more people
 
-- **The first public release** (checklist in
-  `docs/research/ready-for-more-people.md`), after the gable-roof shed.
+- **The first public release** (done, 0.6.0).
 - **A first-run test** with someone who has never used a terminal.
 - **A project library:** projects people want to share, kept apart from
   the engine and the curated examples.
