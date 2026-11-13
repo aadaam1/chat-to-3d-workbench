@@ -33,95 +33,95 @@ gives the same frame, checks and list. Background and decisions are in
 
 ## 1. Ask
 
-Only what changes the design, a few questions at a time:
+A few questions at a time, only what changes the design. Start with **what are
+you building**, then the questions for that recipe, then the common ones.
 
-- **What is it for** (tools, bikes, a workshop) and what must fit inside.
-- **Where it stands:** country (this picks European or US sizes and
-  units), the space available, and what it sits on. The floor frame needs
-  level, firm support: slabs, blocks or bearers. That is theirs to prepare.
-- **Size:** width, depth, and the height at the front and the back. The
-  roof falls from front to back; 300 mm over 2 m is a sensible fall.
-- **Door and window:** which wall, how wide and tall, how far along.
-- **Snow:** if they get real snow, ask how much or look up the local
-  design snow load, and use it.
-- **A local timber yard**, if they have one: a price list can be imported
-  (`tools/timber_import.py`, see `data/timber/README.md`).
+| Recipe (`type`) | What it is | Use it when |
+|---|---|---|
+| `pent-shed` | A shed with a mono-pitch roof (one slope, front high) on a timber floor | Storage or a workshop against a fence or wall; the simplest shed |
+| `gable-shed` | A shed with a ridge and two slopes on a timber floor | More headroom, a door in the gable end, a classic look |
+| `terrace` | A raised deck on posts and beams with joists and boards | A deck or patio platform, no roof |
+| `pergola` | An open roof of beams, rafters and optional slats on posts | Shade or a frame for climbing plants; free standing, no walls |
+| `summer-kitchen` | A roof on posts and beams, optionally with a floor and up to three walls | A covered cooking or sitting place; not for a stove or flue |
 
-**Changing the rules themselves** (how a wall, the floor or the roof is
-framed): the generator is in `tools/timber/` (`platform.py`, `wall.py`,
-`roof.py`, put together by `recipes.py`). Run `tests/test_blocks_identical.py`
-after: it fails if any frame, check or shopping list changed; regenerate its
-hashes (`tools/golden.py --update`) only when the change is meant.
+`tools/frame.py --types` prints this list.
+
+- **Shed:** what it is for and what must fit inside; width and depth; the height
+  at the front and back (or the eaves); which wall has the door and window, how
+  wide and tall, how far along; what it stands on (level, firm supports are
+  theirs to prepare); snow. Leave the heights out if they have no preference: the
+  planner raises them for the doors and so the roof drains.
+- **Terrace:** width, depth, the height of the deck above the ground, and what the
+  ground is like (firm soil or slope, clay, rock, an old slab): that picks the
+  foundation: ground screws (the default; most soils), pier blocks (level, firm
+  ground; low decks) or concrete footings (where they want it permanent).
+- **Pergola:** the roofed width and depth, the clear height under the beams, slats
+  across the top or open rafters, free standing (it always is: it has no walls).
+- **Summer kitchen:** width and depth, the roof shape (mono: one slope; gable: a
+  ridge), which sides are closed (back, left, right; the front stays open), a
+  deck floor or existing paving, and anything **heavy or hot** (a stove, a flue, a
+  wood oven): that is not covered; say so, and that it needs a qualified person.
+- **Everyone:** the country (this picks European or US sizes and units), the
+  space available and the distance to the boundary, snow (ask how much or look up
+  the local design snow load), and a local timber yard if they have one (a price
+  list can be imported: `tools/timber_import.py`, see `data/timber/README.md`).
+
+**Changing the rules themselves** (how a wall, the floor or the roof is framed):
+the generator is in `tools/timber/` (`platform.py`, `wall.py`, `roof.py`, put
+together by `recipes.py`; `planning.py` and `spans.py` choose sizes). Run
+`tests/test_blocks_identical.py` after: it fails if any frame, check or shopping
+list changed; regenerate its hashes (`tools/golden.py --update`) only when the
+change is meant.
 
 ## 2. Describe it
 
-One project folder, one description file:
+One project folder, one description file: `projects/<name>/structure.json`
+(`projects/` is ignored by git: do not create a branch, commit, pull request or
+changelog entry for a design). Lengths are millimetres, or text in feet and inches
+(`"10'"`) for a `us` project. Set only what the person asked for; every other
+field has a default from the region's library, and the planner sizes what is left
+out. The smallest description for each recipe:
 
-```
-projects/<name>/structure.json
+```json
+{ "type": "pent-shed", "name": "<name>", "width": 3000, "depth": 2000,
+  "openings": [ { "wall": "front", "kind": "door", "x": 1000, "width": 900, "height": 1950 } ] }
 ```
 
 ```json
-{ "type": "pent-shed", "name": "<name>", "region": "eu", "units": "metric",
-  "width": 3000, "depth": 2000, "height_front": 2300, "height_back": 2000,
-  "openings": [ { "wall": "front", "kind": "door", "x": 1000, "width": 900, "height": 1950 } ],
-  "loads": { "snow_kn_m2": 1.0, "floor_kn_m2": 1.5 } }
+{ "type": "gable-shed", "name": "<name>", "width": 3000, "depth": 2400,
+  "openings": [ { "wall": "left", "kind": "door", "x": 700, "width": 900, "height": 1950 } ] }
 ```
 
-Lengths are millimetres, or text in feet and inches (`"10'"`) for a `us`
-project. Every other field (spacings, timber sizes, sheets, cladding) has a
-default from the region's library; set one only when the person asks or a
-check calls for it. Framing details have defaults too: `corner`
-(`three-stud`, `california` or `two-stud`), `top_plate` (`double` or
-`single`), `header_item` (a section; two plies of it go over every
-opening), `overhang_side` (0, or the rafter thickness + 50 mm up to 300 mm;
-a flying rafter on outriggers carries it) and `fascia_item` (the section of
-the fascia and bargeboards; the rafter section by default). `examples/garden-shed/` is a worked example (read-only). A gable-roof shed
-is `"type": "gable-shed"` with `height_eaves` (to the top of the eave
-walls' plates, both the same) instead of `height_front` and `height_back`,
-and either `pitch_deg` (25 by default, at least the roofing's minimum) or
-`height_ridge` (the top of the rafters at the ridge line, same datum as
-`height_eaves`; not both); `ridge_item` and `tie_item` are optional (the
-smallest deep-enough section and the rafter section). The ridge runs along
-the width, the front and back walls carry the rafters, and the door
-usually goes in a gable end (`left` or `right`). A terrace is `"type": "terrace"` with
-`width`, `depth` and `height` (the top of the deck above the ground) and
-`foundation` (`ground_screw` by default, `pier_block` or `concrete_footing`);
-optional: `joist_spacing`, `deck_board`, `board_gap`, `post_item`, `beam_item`,
-`beam_plies` and `beam_mount` (`sandwich` or `on_top`), `row_spacing` and
-`post_spacing` (caps, otherwise worked out from the span formulas),
-`footing_item`, `loads.floor_kn_m2`. Beams run along the width, joists across
-them, boards along the width. A very low terrace puts the beams straight on
-the post bases (see `framing.md`); above about 600 mm the check says a
-railing is usually required (rails and steps are not built yet). Footings
-are bought items and their load capacity is not checked: say so. A shed
-sits on footings with `"foundation": "ground_screw"` (or `pier_block`,
-`concrete_footing`), optionally `footing_spacing` and `footing_item`; they go
-under the front and back rim joists. A pergola is `"type": "pergola"` with `width` and `depth` (the whole
-roofed area, rafter tails included) and optionally `height` (the underside of the beams above
-the ground, 2300 mm), `foundation`, `beam_axis` (`x` or `y`, default along the longer side),
-`post_item`, `beam_item`, `beam_plies`, `rafter_item`, `rafter_spacing` (600 mm / 24 in.),
-`overhang` (rafters past the beams, 300 mm), `beam_overhang` (beams past the end posts'
-centres, 300 mm), `slats` (`"none"`, or `{"item": "25x50", "spacing": 150}`), `braces`
-(true), `post_spacing` (a cap, otherwise worked out), `loads.snow_kn_m2`. It builds
-footings, posts, two beams, rafters, slats and 45 degree knee braces (see `framing.md`) and
-checks the spans and `open-bracing`; `braces: false` is allowed but the check then says to
-add them. Wind and uplift are not covered: say so. A summer kitchen is
-`"type": "summer-kitchen"` with `width` and `depth` (the posts' outer faces; the roof
-reaches past them) and `roof` (`gable`, the default, or `mono`); `height_eaves` (the
-underside of the lower beam, 2200 mm), and for the slope `pitch_deg` (25 gable, 10 mono) or
-`height_ridge` (gable) or `height_front` (mono); `floor` (`none` or `terrace`, with
-`floor_height`, at least about 600 mm); `walls`, a list of up to three sides (`back`,
-`left`, `right`, the front stays open), each a name or `{"side": "back", "openings": [{"kind":
-"window", "x": 400, "sill": 900, "width": 900, "height": 700}]}` (an opening lies wholly in one
-bay between two posts); and the usual `foundation`, `post_item`, `beam_item`, `beam_plies`,
-`rafter_item`, `rafter_spacing`, `overhang`, `overhang_side`, `braces`, `post_spacing`, items
-and `loads`. It builds footings, posts, two beams, the roof on them, the floor and the walls
-you list (framed panels between the posts, `framing.md`) and knee braces on every open side.
-Say that the walls are infill (the posts carry the roof) and that a stove or flue is
-not covered. A new shed goes in
-`projects/<name>/`, which git ignores: do not create a branch, commit, pull
-request or changelog entry for a design.
+```json
+{ "type": "terrace", "name": "<name>", "width": 4000, "depth": 3000, "height": 600 }
+```
+
+```json
+{ "type": "pergola", "name": "<name>", "width": 5000, "depth": 3000, "height": 2300 }
+```
+
+```json
+{ "type": "summer-kitchen", "name": "<name>", "width": 4000, "depth": 3000, "roof": "gable",
+  "walls": ["back", "right"] }
+```
+
+Add `"region": "us"` (and `"units": "imperial"`) for US sizes. **For every other
+field run `tools/frame.py --fields <type> [--region eu|us]`**: it lists each setting
+the recipe accepts, in plain words, with its default (in that region's units) and
+the allowed values. Add one only when the person asks or a check calls for it.
+
+Rules that matter:
+- The file is `structure.json` (an older `shed.json` still works).
+- A value the person sets is never overridden by the planner; the checks then report
+  on it as they would on any description.
+- Say what a recipe leaves out, and **don't bend a recipe into something it isn't**
+  (see "What it cannot do yet").
+- Footings are bought items and their load capacity is not checked: say so.
+  Wind and uplift are not covered for the open structures.
+- A terrace above about 600 mm needs a railing in most places (rails and steps
+  are not built yet): the check says so.
+- A summer kitchen's walls are infill (the posts carry the roof).
+- `examples/garden-shed/` is a worked example (read-only).
 
 ## 3. Build, check, look
 
@@ -137,6 +137,13 @@ the print-part skill describes (one page, no extra files):
 ```
 $PY tools/make_viewer.py --title "<Title>" --build projects/<name>/out/versions --out projects/<name>/out/viewer
 ```
+
+The build prints **How it was planned**: the decisions the planner made (a deeper
+joist, closer rafters, a taller wall, how many posts and rows). Before showing the
+preview, tell the person each one in a sentence: what was chosen and why ("the floor
+joists are 50 x 200 because 50 x 150 is only good for 3.66 m and the span is 3.95 m").
+They are also in `out/frame.json` under `decisions` and at the top of `out/bom.md`.
+If the person later sets one of those values themselves, the planner leaves it alone.
 
 Read the checks before showing anything:
 
@@ -213,6 +220,8 @@ roofing beyond the felt area, paint or stain. Say which lines have no price.
 
 Five building types: a mono-pitch shed, a gable-roof shed (both on a timber
 floor, optionally on footings), a terrace, an open pergola and a summer kitchen (a roof on
-posts and beams, with a floor and walls if wanted). No hip roofs,
-no lean-to against a house, no railings or steps, no doors or windows drawn as objects. If someone needs one of these, say so; don't bend the shed
-description into something it isn't.
+posts and beams, with a floor and walls if wanted). No hip roofs, no lean-to against a
+house, no railings or steps, no doors or windows drawn as objects, no stove or flue, and
+no wind or uplift checks on the open structures. The planner sizes joists, rafters and
+headers and the layout of posts and rows, not beams (it adds posts instead) or footings. If someone
+needs one of these, say so; don't bend a recipe into something it isn't.

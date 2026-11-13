@@ -241,6 +241,26 @@ Recipes:
   optional terrace floor; 0–3 walls (for example a back wall), each a
   framed wall from the wall block.
 
+## Planning mechanics, 2026-11-13
+
+An audit of the five recipes found that the defaults built structures with "fix" findings as
+soon as the size grew (a 5 x 4 m pent shed: joists 50 x 150 over 3.95 m, rafters, and a roof
+that slopes 4.4 degrees under felt that needs 5), and that the default eaves height (2000 mm)
+refused any normal door. Decisions: (1) the span formulas move to `tools/timber/spans.py`,
+read by the checks and by the planner (`tools/timber/planning.py`); (2) a section or spacing
+the description does not name is chosen so its span is "ok" (within 85% of the allowable),
+smallest section first, then closer spacing from the library's ladder, then the best with the
+check reporting; a named value is never changed; (3) default heights are raised only as far as
+the roofing's minimum pitch plus 2 degrees and the tallest opening need, in 50 mm steps; (4)
+every choice is a `decisions` entry of the frame (left out when empty, and left out of the
+oracle's frame hash like `assemblies`), listed in the shopping list and printed by the build;
+(5) `tools/frame.py --types` and `--fields <type>` list what can be built, from one table per
+recipe (`tools/timber/fields.py`) that the description's validation also uses. Cladding may now
+carry `order_lengths_mm` (special-order lengths, used only when a board is longer than the
+stocked ones: a 5 m wide shed's boards are 5.02 m). Open: beams are not resized (the posts get
+closer instead; 2 plies of the deepest section is the limit of the library), and a wall taller
+than one sheet is still refused.
+
 ## Open questions
 
 - Load capacity of ground screws and footings (needs a manufacturer's

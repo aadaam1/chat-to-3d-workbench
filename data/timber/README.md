@@ -52,11 +52,11 @@ changes how lengths are shown.
 
 | Block | Holds |
 |---|---|
-| `sections` | actual thickness and width, stock lengths, usual uses |
-| `sheets`, `cladding` | thickness, sheet size, board and cover width |
+| `sections` | actual thickness and width, stock lengths, usual uses (the planner picks a section for a role by these) |
+| `sheets`, `cladding` | thickness, sheet size, board and cover width; a cladding may list `order_lengths_mm` (special-order lengths, used only for a board longer than the stocked ones) |
 | `fasteners`, `joint_rules` | nails (size, count per kg or lb, box sizes) and structural screws (pack sizes); fasteners per joint type |
 | `grades` | bending strength, stiffness and density (C24 from EN 338; SPF No. 2 from the NDS Supplement) |
-| `defaults` | spacings, default item per role, loads, minimum roof pitch per covering |
+| `defaults` | spacings (and `spacing_steps_mm`, the ladder the planner steps down), default item per role, loads, minimum roof pitch per covering |
 | `bought` | roofing felt, drip edge, hinges, latch, door, window |
 | `sources` | every source, with the date it was read; each block names its sources |
 

@@ -30,6 +30,7 @@ list of the others. Plan in `docs/research/timber-blocks.md`.
 - **Ventilated cladding:** battens and an air gap behind the boards.
 - **More prices:** a US snapshot, and nails, screws and sheet goods in the
   European one, so the total covers every line.
+- **Planning** (done: sections, spacings and wall heights the description leaves out are chosen by the span formulas and recorded as decisions; `tools/frame.py --types` and `--fields`), then beams and walls sized the same way.
 - **Building it:** the order of assembly, and which piece goes where.
 
 ## 2. Parts to print

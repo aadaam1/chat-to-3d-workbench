@@ -268,3 +268,14 @@ def test_the_sheds_known_fields_are_exactly_the_two_tables():
     assert set(fm.KNOWN) == set(fld.names("pent-shed")) | set(fld.names("gable-shed"))
     assert fm.TERRACE_KNOWN == fld.names("terrace") and fm.PERGOLA_KNOWN == fld.names("pergola")
     assert fm.KITCHEN_KNOWN == fld.names("summer-kitchen")
+
+
+# ------------------------------------------------------------------ the skill's examples
+
+def test_the_skills_minimal_examples_build_clean():
+    import re
+    text = open(os.path.join(ROOT, ".claude", "skills", "timber-build", "SKILL.md"), encoding="utf-8").read()
+    blocks = [json.loads(b) for b in re.findall(r"```json\n(\{ \"type\".*?)```", text, re.S)]
+    assert [b["type"] for b in blocks] == ["pent-shed", "gable-shed", "terrace", "pergola", "summer-kitchen"]
+    for b in blocks:
+        assert bad(fm.generate(b)) == [], b["type"]

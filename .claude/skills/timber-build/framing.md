@@ -433,6 +433,41 @@ shed. The front is always open.
   for the open sides only. Wind, uplift, racking, footing capacity, fire and flues are
   **not** checked; say so, and say a stove or chimney needs a qualified person.
 
+## How sizes are chosen
+
+**In plain words.** The description only has to say what the person wants (size, doors,
+roof); every member it leaves out gets a size from the library's defaults, and the planner
+(`tools/timber/planning.py`) looks at each default against the same span formulas the checks
+use (`tools/timber/spans.py`). If a default would not carry its span comfortably, the planner
+picks something that does and records it as a **decision** (frame `decisions`, the
+"How it was planned" part of the shopping list, printed by the build).
+
+**The rule.** Joists, rafters and headers whose section or spacing the description does not name:
+1. If the library default carries the span with the checks' "ok" margin (the span within 85% of
+   what the formulas allow), nothing changes.
+2. Otherwise the smallest section of the library for that role (same thickness, a `uses` entry
+   that names the role, no smaller than the default) that fits at the default spacing.
+3. If none fits, the spacing steps down the library's ladder (`defaults.spacing_steps_mm`: 600,
+   400, 300 mm; 24, 16, 12 in. in the US library) and the sections are tried again at each step.
+4. If still none fits, the deepest section at the closest spacing is built and the check
+   reports it. A value the person set is never changed (a named section keeps its section, a
+   named spacing its spacing); the check then reports as it always did.
+
+Outdoor structures work out their layout from the same formulas: post and beam-row spacings are
+kept under 80% of what the section allows, no further apart than the library's maximum, and the
+grid is evenly divided (a decision records the rows and posts). Pergola and summer-kitchen
+rafters are sized like a shed's.
+
+**Heights.** Left out, a pent shed's front is 2300 mm and its back 300 mm lower; a gable
+shed's eaves are 2000 mm. They are raised, in 50 mm steps, only as far as needed: for the
+roof to fall at least the roofing's minimum pitch plus 2 degrees (only when the usual fall
+would be too flat; the front goes up, or the back down once the wall would be taller than one
+sheet), and for the tallest door or window to fit under its header and the plates. A height the person gave is
+never raised; the error then says which height would work.
+
+**Source / status.** The 85% margin is the checks' own "ok" threshold; the 80% share and the
+spacing ladder are workbench choices, not from a standard.
+
 ## European (UK/EU) names and equivalents
 
 | In this workbench / US | UK and Europe | Note |
