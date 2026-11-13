@@ -134,7 +134,7 @@ def test_decisions_have_what_chose_why():
 def test_outdoor_layout_choices_are_decisions():
     te = fm.generate({"type": "terrace", "width": 4000, "depth": 3000, "height": 600})
     assert [d["what"] for d in te["decisions"]] == ["Beam rows", "Posts"]
-    assert te["decisions"][0]["chose"].startswith("3 beam rows,")
+    assert te["decisions"][0]["chose"].startswith("3 rows of beams,")
     pe = fm.generate({"type": "pergola", "width": 5000, "depth": 3000})
     assert [d["what"] for d in pe["decisions"]] == ["Posts"]
     ki = fm.generate({"type": "summer-kitchen", "width": 4000, "depth": 3000})

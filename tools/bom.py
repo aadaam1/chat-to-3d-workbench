@@ -79,6 +79,7 @@ JOINT_NAMES = {
     "joist-beam": "deck joist to beam", "deck-board": "deck board to joist",
     "brace-post": "knee brace to post", "brace-beam": "knee brace to beam", "brace-rafter": "cross knee brace to the rafter over a post",
     "rafter-beam": "pergola rafter on a beam", "slat-rafter": "slat to rafter",
+    "joist-hanger": "deck joist hung between two beams", "butt": "two pieces butted end to end over a support",
 }
 
 
