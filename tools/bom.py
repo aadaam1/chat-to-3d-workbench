@@ -60,6 +60,7 @@ KIND_NAMES = {
     "ridge": ("Ridge board", "ridge boards"), "tie": ("Rafter tie", "rafter ties"),
     "brace": ("Brace", "braces"), "board": ("Cladding board", "cladding boards"),
     "sheet": ("Sheet", "sheets"),
+    "post": ("Post", "posts"), "beam": ("Beam ply", "beam plies"), "deckboard": ("Deck board", "deck boards"),
 }
 
 # What a recorded joint joins, for the fastener table. Every type in timberlib.JOINT_TYPES has one.
@@ -73,6 +74,9 @@ JOINT_NAMES = {
     "fascia-rafter": "fascia to rafter", "barge-rafter": "bargeboard to rafter",
     "rafter-ridge": "rafter to ridge board", "tie-rafter": "tie (ceiling joist) to rafter at the heel",
     "tie-plate": "tie (ceiling joist) to wall plate",
+    "post-base": "post, beam or rim joist to its post base", "beam-post": "beam ply bolted to a post",
+    "beam-cap": "beam ply on a post cap", "beam-ply": "beam plies screwed together",
+    "joist-beam": "deck joist to beam", "deck-board": "deck board to joist",
 }
 
 
@@ -409,6 +413,8 @@ def make_bom(frame, snapshot=None, waste_pct=None, kerf=None, sheet_spare_pct=0,
 
     groups, sheet_groups = {}, {}
     for m in frame["members"]:
+        if m.get("layer") == "foundations":
+            continue                    # footings and post bases are bought items, counted in frame["bought"]
         try:
             it = tl.item(lib, m["item"])
         except KeyError as e:
