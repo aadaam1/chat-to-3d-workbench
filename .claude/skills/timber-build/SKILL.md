@@ -97,7 +97,16 @@ railing is usually required (rails and steps are not built yet). Footings
 are bought items and their load capacity is not checked: say so. A shed
 sits on footings with `"foundation": "ground_screw"` (or `pier_block`,
 `concrete_footing`), optionally `footing_spacing` and `footing_item`; they go
-under the front and back rim joists. A new shed goes in
+under the front and back rim joists. A pergola is `"type": "pergola"` with `width` and `depth` (the whole
+roofed area, rafter tails included) and optionally `height` (the underside of the beams above
+the ground, 2300 mm), `foundation`, `beam_axis` (`x` or `y`, default along the longer side),
+`post_item`, `beam_item`, `beam_plies`, `rafter_item`, `rafter_spacing` (600 mm / 24 in.),
+`overhang` (rafters past the beams, 300 mm), `beam_overhang` (beams past the end posts'
+centres, 300 mm), `slats` (`"none"`, or `{"item": "25x50", "spacing": 150}`), `braces`
+(true), `post_spacing` (a cap, otherwise worked out), `loads.snow_kn_m2`. It builds
+footings, posts, two beams, rafters, slats and 45 degree knee braces (see `framing.md`) and
+checks the spans and `open-bracing`; `braces: false` is allowed but the check then says to
+add them. Bracing across the beams, wind and uplift are not covered: say so. A new shed goes in
 `projects/<name>/`, which git ignores: do not create a branch, commit, pull
 request or changelog entry for a design.
 
@@ -189,7 +198,7 @@ roofing beyond the felt area, paint or stain. Say which lines have no price.
 
 ## What it cannot do yet
 
-Three building types: a mono-pitch shed, a gable-roof shed (both on a timber
-floor, optionally on footings) and a terrace. No hip roofs, no lean-to against a house, no
-pergolas yet, no railings or steps, no doors or windows drawn as objects. If someone needs one of these, say so; don't bend the shed
+Four building types: a mono-pitch shed, a gable-roof shed (both on a timber
+floor, optionally on footings), a terrace and an open pergola. No hip roofs,
+no lean-to against a house, no railings or steps, no doors or windows drawn as objects. If someone needs one of these, say so; don't bend the shed
 description into something it isn't.

@@ -1,6 +1,6 @@
 # Timber building blocks
 
-Status: in progress (B1-B3 done; B4-B5 decided 2026-11-13)
+Status: in progress (B1-B4 done; B5 decided 2026-11-13)
 Last updated: 2026-11-12
 
 ## The question
@@ -139,6 +139,25 @@ no walls or roof). The 26 oracle hashes did not move; the two terrace
 fixtures are new cases. Library sizes for ground screws, blocks and piers are
 typical figures marked unverified (the maker's page was not readable). Knee
 braces (`open-bracing`) are left for B4.
+B4 done (2026-11-13): `"type": "pergola"` (`recipes.pergola`, `timber/pergola.py` with
+`Axes`, `Rafters`, `Slats`, `KneeBraces`). Footings, posts and `Beam` are reused as they
+are; the beams sit on the posts (`on_top`, post caps) so a brace has an underside to meet;
+`beam_axis` turns the structure. `width` x `depth` is the whole roofed area, rafter tails
+and beam ends included. New kind `slat` (`brace` already existed), new joints `brace-post`,
+`brace-beam`, `rafter-beam`, `slat-rafter`, new checks `span-rafters` and `span-beams` for
+a pergola (snow only), `open-bracing` (a `fix` naming the post), and the existing
+`post-footing` and `beam-bearing` (beam ends up to 500 mm past the last post). The oracle's
+30 hashes: the 26 old ones did not move, the two pergola fixtures are new cases. Decisions:
+knee braces at 45 degrees with centreline legs of 600 mm (24 in. in `us`) in a 75 x 75 mm
+(4x4) section, cut plumb against the post and level against the beam, one bolt through the
+post and two screws per beam ply; one on each side of a post where at least 700 mm of beam
+runs on (end posts: inward only; a 300 mm beam tail has no room). Rafters sit on the beams
+without a notch (a notch weakens a beam that already carries the span) and are skew-screwed
+into each ply; a hurricane tie is the upgrade for windy sites. Not done: bracing across the
+beams (the short sides; no member to meet, a rafter or a cross beam would be needed),
+sandwich beams, decorative rafter tails, wind and uplift. The 45 degree rule and the leg
+length are builders' rules of thumb; no page was read to confirm them (marked unverified in
+the libraries, source `pergola-practice`).
 
 ## Outdoor structures (B3–B5), decided 2026-11-13
 
