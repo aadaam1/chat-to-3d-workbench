@@ -29,9 +29,11 @@ import timberlib as tl
 import framing as fr  # noqa: E402
 import frame_edits as fe  # noqa: E402
 
-from timber.store import (EPS, KINDS, MIN_CRIPPLE, MIN_INFILL, MIN_SHEET, SCHEMA, WALLS,  # noqa: E402,F401
+from timber.store import (EPS, KINDS, layout, MIN_CRIPPLE, MIN_INFILL, MIN_SHEET, SCHEMA, WALLS,  # noqa: E402,F401
                           SpecError)
 from timber import recipes  # noqa: E402
+from timber import planning as pl  # noqa: E402
+from timber import spans as sp  # noqa: E402
 
 
 # ------------------------------------------------------------------ spec
@@ -118,8 +120,8 @@ def resolve_spec(raw):
     except ValueError as e:
         raise SpecError(f"region: {e}")
     d = lib["defaults"]
-    s = {"type": raw["type"], "region": region,
-         "units": raw.get("units", lib.get("units", "metric"))}
+    s = pl.Spec({"type": raw["type"], "region": region,
+                 "units": raw.get("units", lib.get("units", "metric"))})
     if s["units"] not in ("metric", "imperial"):
         raise SpecError(f"units: must be 'metric' or 'imperial', not {s['units']!r}")
     if "name" in raw:
@@ -136,16 +138,11 @@ def resolve_spec(raw):
                   ("rafter_spacing", "rafter_spacing_mm"), ("overhang", "overhang_mm"),
                   ("overhang_side", "overhang_side_mm")):
         s.setdefault(k, float(d.get(dk, d["overhang_mm"])))
-    if gable:
-        s.setdefault("height_eaves", DEFAULT_HEIGHT_EAVES)
-        checked = ("width", "depth", "height_eaves", "stud_spacing", "joist_spacing", "rafter_spacing",
-                   "overhang", "overhang_side")
-    else:
-        s.setdefault("height_front", DEFAULT_HEIGHT_FRONT)
-        s.setdefault("height_back", s["height_front"] - DEFAULT_HEIGHT_DROP)
-        checked = LENGTHS
+    # the heights not given are worked out below (_plan_shed), once the items and openings are known
+    checked = ("width", "depth", "height_eaves", "stud_spacing", "joist_spacing", "rafter_spacing",
+               "overhang", "overhang_side") if gable else LENGTHS
     for k in checked:
-        if not s[k] > 0 and not (k in ("overhang", "overhang_side") and s[k] == 0):
+        if k in s and not s[k] > 0 and not (k in ("overhang", "overhang_side") and s[k] == 0):
             raise SpecError(f"{k}: must be greater than 0")
 
     items = d["items"]
@@ -209,6 +206,7 @@ def resolve_spec(raw):
     if not hit or hit["category"] != "sections":
         raise SpecError(f"header_item: {hk!r} is not a timber section in the {region} library")
     s["header_item"] = hk
+    _plan_shed(raw, s, lib, d, gable)
     fk = raw.get("fascia_item", det.get("fascia_item", s["rafter_item"]))
     try:
         fit = tl.item(lib, fk) if isinstance(fk, str) else None
@@ -236,6 +234,185 @@ def resolve_spec(raw):
                         f"{tr + fr.MIN_OUTRIGGER:g} to {fr.OVERHANG_SIDE_MAX:g} mm (a flying rafter on "
                         f"outriggers; more needs lookouts back to the second rafter, not built yet)")
     return s, lib
+
+
+# ------------------------------------------------------------------ planning (what the description leaves open)
+
+def _min_pitch(lib, s):
+    return lib["defaults"].get("min_roof_pitch_deg", {}).get(s["roofing"])
+
+
+def _opening_tops(lib, s):
+    """For each wall with openings: the height of the top plate's top that its tallest opening needs
+    (floor top + sill + opening + header + the plates)."""
+    zd = tl.item(lib, s["floor_item"])["width_mm"] + tl.item(lib, s["floor_deck"])["thickness_mm"]
+    t = tl.item(lib, s["frame_item"])["thickness_mm"]
+    courses = 2 if s["top_plate"] == "double" else 1
+    hh = tl.item(lib, s["header_item"])["width_mm"]
+    out = {}
+    for o in s["openings"]:
+        need = zd + o["sill"] + o["height"] + hh + courses * t
+        if need > out.get(o["wall"], (0.0,))[0]:
+            out[o["wall"]] = (need, o)
+    return out
+
+
+def _plan_heights(raw, s, lib, gable):
+    """Fill the wall heights the description leaves out. The plain defaults are a 2000 mm eave (gable) or a
+    2300 mm front and a back 300 mm lower (pent); they are raised only as far as needed so that the roof
+    drains (a pent roof must slope at least the roofing's minimum, plus 2 degrees) and the doors and windows
+    asked for fit under their headers. Returns the decision (what, chose, why) or None."""
+    u, tops = s["units"], _opening_tops(lib, s)
+    why = []
+    if gable:
+        if "height_eaves" in raw:
+            return None
+        need = max((v[0] for v in tops.values()), default=0.0)
+        h = max(DEFAULT_HEIGHT_EAVES, pl.ceil_step(need))
+        s["height_eaves"] = float(h)
+        if h > DEFAULT_HEIGHT_EAVES:
+            o = max(tops.values(), key=lambda v: v[0])[1]
+            return ("Eaves height", pl.length_text(h, u) + " to the top of the eave walls",
+                    f"the {o['kind']} on the {o['wall']} wall is {pl.length_text(o['height'], u)} tall and needs "
+                    f"{pl.length_text(max(v[0] for v in tops.values()), u)} (floor, opening, header and wall plates); "
+                    f"the usual height is {pl.length_text(DEFAULT_HEIGHT_EAVES, u)}")
+        return None
+    run = s["depth"] - tl.item(lib, s["frame_item"])["width_mm"]
+    lim = _min_pitch(lib, s)
+    deg = lambda drop: math.degrees(math.atan(drop / run))
+    drop = DEFAULT_HEIGHT_DROP
+    if lim is not None and deg(drop) < lim - 0.05:
+        drop = max(drop, pl.ceil_step(math.tan(math.radians(lim + 2.0)) * run))
+        why.append(f"a {pl.length_text(DEFAULT_HEIGHT_DROP, u)} fall would slope the roof {deg(DEFAULT_HEIGHT_DROP):.1f} degrees "
+                   f"and {s['roofing']} needs at least {lim:g}; a {pl.length_text(drop, u)} fall slopes it {deg(drop):.1f}")
+    back_need = max((v[0] for w, v in tops.items() if w != "front"), default=0.0)
+    front_need = tops["front"][0] if "front" in tops else 0.0
+    given_f, given_b = "height_front" in raw, "height_back" in raw
+    if given_f and given_b:
+        return None
+    if given_f:
+        hf = s["height_front"]
+        hb = max(hf - drop, pl.ceil_step(back_need))
+    elif given_b:
+        hb = s["height_back"]
+        hf = DEFAULT_HEIGHT_FRONT
+        if lim is not None and deg(hf - hb) < lim - 0.05:
+            hf = hb + max(0.0, pl.ceil_step(math.tan(math.radians(lim + 2.0)) * run))
+        hf = max(hf, pl.ceil_step(front_need))
+    else:
+        hb = max(DEFAULT_HEIGHT_FRONT - DEFAULT_HEIGHT_DROP, pl.ceil_step(back_need))
+        hf = max(hb + drop, pl.ceil_step(front_need))
+    plain_f = s["height_front"] if given_f else DEFAULT_HEIGHT_FRONT
+    plain_b = s["height_back"] if given_b else plain_f - DEFAULT_HEIGHT_DROP
+    s["height_front"], s["height_back"] = float(hf), float(hb)
+    if abs(hf - plain_f) < 0.5 and abs(hb - plain_b) < 0.5:
+        return None
+    for w, (need, o) in sorted(tops.items()):
+        h = hf if w == "front" else hb
+        if need > (plain_f if w == "front" else plain_b) + 0.5:
+            why.append(f"the {o['kind']} on the {w} wall is {pl.length_text(o['height'], u)} tall and needs "
+                       f"{pl.length_text(need, u)} up to the top plate (floor, opening, header and plates)")
+    return ("Wall heights", f"front {pl.length_text(hf, u)}, back {pl.length_text(hb, u)} to the top plates",
+            "; ".join(why) or "the heights follow from the ones you gave")
+
+
+def _rafter_trial(raw, s, lib, d, key):
+    """A gable roof's slope, ridge and rafter run for a rafter section: (cos of the pitch, run in mm), or None."""
+    s2 = dict(s)
+    s2["rafter_item"] = key
+    try:
+        _gable_roof(raw, s2, lib, d)
+    except SpecError:
+        return None
+    tg = tl.item(lib, s2["ridge_item"])["thickness_mm"]
+    return math.cos(math.radians(s2["pitch_deg"])), s["depth"] / 2.0 - tg / 2.0
+
+
+def _plan_shed(raw, s, lib, d, gable):
+    """The sections and spacings a shed's description leaves open: floor joists, rafters and headers that
+    fit their spans (timber/planning.py), and the wall heights (_plan_heights). Every change from the
+    library's plain defaults is recorded as a decision."""
+    u, W, D = s["units"], s["width"], s["depth"]
+    out = []
+    # floor joists: centre to centre of the two rim joists
+    def ev_j(key, spacing):
+        tj = lib["sections"][key]["thickness_mm"]
+        res = sp.floor_joist_allowed(lib, s, key, spacing, repetitive=len(layout(W, tj, spacing)) >= 4)
+        return D - tj, res["span_mm"]
+    j = pl.size_member(lib, s["floor_item"], s["joist_spacing"], ("joist",), ev_j, item_named=raw.get("floor_item"),
+                       spacing_named="joist_spacing" in raw)
+    if j.changed:
+        out.append(("Floor joists",) + pl.explain(lib, "joists", j, s["floor_item"], s["joist_spacing"], u))
+        s["floor_item"], s["joist_spacing"] = j.key, float(j.spacing)
+    # wall heights, rafters and headers, which depend on each other a little
+    cos_a = 1.0
+    hh0 = None
+    for _ in range(3):
+        hd = _plan_heights(raw, s, lib, gable)
+        if gable:
+            def ev_r(key, spacing):
+                tr_ = _rafter_trial(raw, s, lib, d, key)
+                if tr_ is None:
+                    return 1e9, 1.0
+                c, run = tr_
+                n = len(layout(W, lib["sections"][key]["thickness_mm"], spacing))
+                return run, sp.shed_rafter_allowed(lib, s, key, spacing, c, repetitive=n >= 4)["span_mm"]
+        else:
+            run = D - tl.item(lib, s["frame_item"])["width_mm"]
+            c = 1.0 / math.sqrt(1.0 + ((s["height_front"] - s["height_back"]) / run) ** 2)
+            def ev_r(key, spacing, c=c, run=run):
+                n = len(layout(W, lib["sections"][key]["thickness_mm"], spacing))
+                return run, sp.shed_rafter_allowed(lib, s, key, spacing, c, repetitive=n >= 4)["span_mm"]
+        base_r = (s["rafter_item"], s["rafter_spacing"])
+        r = pl.size_member(lib, s["rafter_item"], s["rafter_spacing"], ("rafter",), ev_r, item_named=raw.get("rafter_item"),
+                           spacing_named="rafter_spacing" in raw)
+        rd = ("Rafters",) + pl.explain(lib, "rafters", r, base_r[0], base_r[1], u) if r.changed else None
+        s["rafter_item"], s["rafter_spacing"] = r.key, float(r.spacing)
+        cos_a = _shed_cos(raw, s, lib, d, gable)
+        # headers: all at once, the deepest need decides
+        hdd = None
+        if s["openings"]:
+            hk0 = raw.get("header_item") or s["frame_item"]
+            tf = tl.item(lib, s["frame_item"])["thickness_mm"]
+            wf_ = tl.item(lib, s["frame_item"])["width_mm"]
+
+            def ev_h(key, _sp):
+                th = lib["sections"][key]["thickness_mm"]
+                plies = 2 if 2 * th <= wf_ + EPS else 1
+                worst = None
+                for o in s["openings"]:
+                    span = o["width"] + 2 * tf
+                    al = sp.header_allowed(lib, s, key, plies, o["wall"], cos_a, s["rafter_item"], s["rafter_spacing"])["span_mm"]
+                    if worst is None or span / al > worst[0] / worst[1]:
+                        worst = (span, al)
+                return worst
+            h = pl.size_member(lib, s["header_item"], 0.0, ("header", "joist", "rafter"), ev_h,
+                               item_named=raw.get("header_item"), spacing_named=True)
+            if h.changed:
+                nm = lambda k: pl.section_name(lib, k)
+                hdd = ("Headers over the openings", f"{nm(h.key)}, two together" if 2 * lib["sections"][h.key]["thickness_mm"] <= wf_ + EPS
+                       else nm(h.key),
+                       f"{nm(s['header_item'])} is good for {pl.length_text(h.base[1], u)} and the widest opening needs "
+                       f"{pl.length_text(h.base[0], u)}")
+                s["header_item"] = h.key
+        hh = tl.item(lib, s["header_item"])["width_mm"]
+        out_h = [x for x in (hd, rd, hdd) if x]
+        if hh == hh0:
+            break
+        hh0 = hh
+    out.extend(out_h)
+    for what, chose, why in out:
+        pl.decide(s, what, chose, why)
+
+
+def _shed_cos(raw, s, lib, d, gable):
+    """The cosine of the roof's slope as the checks will see it."""
+    if gable:
+        tr_ = _rafter_trial(raw, s, lib, d, s["rafter_item"])
+        return tr_[0] if tr_ else 1.0
+    run = s["depth"] - tl.item(lib, s["frame_item"])["width_mm"]
+    return 1.0 / math.sqrt(1.0 + ((s["height_front"] - s["height_back"]) / run) ** 2)
+
 
 
 def _shed_foundation(raw, s, lib):
@@ -288,7 +465,7 @@ def _kitchen_spec(raw):
         raise SpecError(f"region: {e}")
     d = lib["defaults"]
     kd, pg, tt = d["summer_kitchen"], d["pergola"], d["terrace"]
-    s = {"type": "summer-kitchen", "region": region, "units": raw.get("units", lib.get("units", "metric"))}
+    s = pl.Spec({"type": "summer-kitchen", "region": region, "units": raw.get("units", lib.get("units", "metric"))})
     if s["units"] not in ("metric", "imperial"):
         raise SpecError(f"units: must be 'metric' or 'imperial', not {s['units']!r}")
     if "name" in raw and (not isinstance(raw["name"], str) or not raw["name"].strip()):
@@ -535,7 +712,7 @@ def _pergola_spec(raw):
     except ValueError as e:
         raise SpecError(f"region: {e}")
     d = lib["defaults"]["pergola"]
-    s = {"type": "pergola", "region": region, "units": raw.get("units", lib.get("units", "metric"))}
+    s = pl.Spec({"type": "pergola", "region": region, "units": raw.get("units", lib.get("units", "metric"))})
     if s["units"] not in ("metric", "imperial"):
         raise SpecError(f"units: must be 'metric' or 'imperial', not {s['units']!r}")
     if "name" in raw and (not isinstance(raw["name"], str) or not raw["name"].strip()):
@@ -666,7 +843,7 @@ def _terrace_spec(raw):
     except ValueError as e:
         raise SpecError(f"region: {e}")
     t = lib["defaults"]["terrace"]
-    s = {"type": "terrace", "region": region, "units": raw.get("units", lib.get("units", "metric"))}
+    s = pl.Spec({"type": "terrace", "region": region, "units": raw.get("units", lib.get("units", "metric"))})
     if s["units"] not in ("metric", "imperial"):
         raise SpecError(f"units: must be 'metric' or 'imperial', not {s['units']!r}")
     if "name" in raw and (not isinstance(raw["name"], str) or not raw["name"].strip()):
@@ -881,19 +1058,22 @@ def dumps(frame):
 
 
 def generate(raw):
-    """Frame dict from a spec dict. Raises SpecError."""
+    """Frame dict from a spec dict. Raises SpecError. What the planner chose is in the frame's
+    "decisions" (left out when it chose nothing)."""
     spec, lib = resolve_spec(raw)
     if spec["type"] == "terrace":
         _check_terrace(spec, lib)
-        return recipes.terrace(spec, lib)
-    if spec["type"] == "pergola":
-        return recipes.pergola(spec, lib)
-    if spec["type"] == "summer-kitchen":
-        return recipes.summer_kitchen(spec, lib)
-    _check_geometry(spec, lib)
-    if spec["type"] == "gable-shed":
-        return recipes.gable_shed(spec, lib)
-    return recipes.pent_shed(spec, lib)
+        fr = recipes.terrace(spec, lib)
+    elif spec["type"] == "pergola":
+        fr = recipes.pergola(spec, lib)
+    elif spec["type"] == "summer-kitchen":
+        fr = recipes.summer_kitchen(spec, lib)
+    else:
+        _check_geometry(spec, lib)
+        fr = recipes.gable_shed(spec, lib) if spec["type"] == "gable-shed" else recipes.pent_shed(spec, lib)
+    if getattr(spec, "decisions", None):
+        fr["decisions"] = list(spec.decisions)
+    return fr
 
 
 def _check_terrace(s, lib):

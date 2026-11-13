@@ -292,3 +292,11 @@ def header_allowed(lib, spec, item, plies, wall, cos_a, rafter_item, rafter_spac
     h = lib["sections"][item]
     return allowable_span(lib, h["thickness_mm"] * plies, h["width_mm"], dead * t, spec["loads"]["snow_kn_m2"] * t,
                           "snow", repetitive=False, cos_a=1.0)
+
+
+def length_text(mm, units):
+    """A length in the frame's units: metres or millimetres, or feet and inches."""
+    if units == "imperial":
+        import timberlib as tl
+        return tl.fmt_length(mm, "imperial")
+    return f"{mm / 1000.0:.2f} m" if abs(mm) >= 1000 else f"{mm:.0f} mm"

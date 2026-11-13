@@ -4,7 +4,7 @@
     tools/golden.py --update [--dump DIR]
 
 For every case in tests/test_blocks_identical.py: sha256 of the frame file
-(frame.dumps, without any top-level "assemblies" key), of the check findings
+(frame.dumps, without any top-level "assemblies" or "decisions" key), of the check findings
 and of the shopping list, written to tests/golden/frames.json. Regenerate only
 on purpose, when the output is meant to change, and say why in the commit.
 --dump also writes the full JSON of each case to DIR so a differing hash can be
@@ -26,7 +26,7 @@ def outputs(raw):
     """The three texts whose hashes are compared, for one description."""
     import frame, framecheck, bom
     full = frame.generate(raw)
-    fr = {k: v for k, v in full.items() if k != "assemblies"}
+    fr = {k: v for k, v in full.items() if k not in ("assemblies", "decisions")}
     # a shed's checks fall back to its spec without assemblies; a terrace's read them
     src = full if full["spec"]["type"] in ("terrace", "pergola", "summer-kitchen") else fr
     return {"frame": frame.dumps(fr),

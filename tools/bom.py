@@ -429,11 +429,16 @@ def make_bom(frame, snapshot=None, waste_pct=None, kerf=None, sheet_spare_pct=0,
         else:
             problems.append(f"{m['id']}: item {m['item']!r} is a {it['category']} item, not timber or a sheet")
 
-    timber = []
+    timber, special = [], []
     for key in sorted(groups):
         it = tl.item(lib, key[0])
         lengths, prices = stock_for(it, key[1], snapshot)
         longest = max(m["size"][0] for m in groups[key])
+        order = [x for x in it.get("order_lengths_mm", []) if x not in lengths]
+        if longest > max(lengths) + EPS and longest <= max(order, default=0) + EPS:
+            lengths = sorted(set(lengths) | set(order))         # longer than any stocked length: a special-order length
+            special.append(f"{it['name']}: {', '.join(tl.fmt_length(x, frame['units']) for x in order)} lengths are not "
+                           "normally stocked; ask the yard whether it can supply them, or join the boards over a stud")
         if longest > max(lengths) + EPS:
             for m in groups[key]:
                 if m["size"][0] > max(lengths) + EPS:
@@ -485,7 +490,8 @@ def make_bom(frame, snapshot=None, waste_pct=None, kerf=None, sheet_spare_pct=0,
             "Spare pieces are of the longest stock length bought (timber), or whole sheets or packs.",
             "Sheet parts are laid out by their bounding rectangle; parts with a cut-out outline use "
             "more sheet than they need.",
-        ],
+        ] + special,
+        **({"decisions": frame["decisions"]} if frame.get("decisions") else {}),
     }
 
 
