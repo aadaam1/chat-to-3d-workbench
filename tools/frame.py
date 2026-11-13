@@ -33,7 +33,7 @@ from timber.store import (EPS, KINDS, layout, MIN_CRIPPLE, MIN_INFILL, MIN_SHEET
                           SpecError)
 from timber import recipes  # noqa: E402
 from timber import planning as pl  # noqa: E402
-from timber import spans as sp  # noqa: E402
+from timber import spans as spn  # noqa: E402
 
 
 # ------------------------------------------------------------------ spec
@@ -337,7 +337,7 @@ def _plan_shed(raw, s, lib, d, gable):
     # floor joists: centre to centre of the two rim joists
     def ev_j(key, spacing):
         tj = lib["sections"][key]["thickness_mm"]
-        res = sp.floor_joist_allowed(lib, s, key, spacing, repetitive=len(layout(W, tj, spacing)) >= 4)
+        res = spn.floor_joist_allowed(lib, s, key, spacing, repetitive=len(layout(W, tj, spacing)) >= 4)
         return D - tj, res["span_mm"]
     j = pl.size_member(lib, s["floor_item"], s["joist_spacing"], ("joist",), ev_j, item_named=raw.get("floor_item"),
                        spacing_named="joist_spacing" in raw)
@@ -356,13 +356,13 @@ def _plan_shed(raw, s, lib, d, gable):
                     return 1e9, 1.0
                 c, run = tr_
                 n = len(layout(W, lib["sections"][key]["thickness_mm"], spacing))
-                return run, sp.shed_rafter_allowed(lib, s, key, spacing, c, repetitive=n >= 4)["span_mm"]
+                return run, spn.shed_rafter_allowed(lib, s, key, spacing, c, repetitive=n >= 4)["span_mm"]
         else:
             run = D - tl.item(lib, s["frame_item"])["width_mm"]
             c = 1.0 / math.sqrt(1.0 + ((s["height_front"] - s["height_back"]) / run) ** 2)
             def ev_r(key, spacing, c=c, run=run):
                 n = len(layout(W, lib["sections"][key]["thickness_mm"], spacing))
-                return run, sp.shed_rafter_allowed(lib, s, key, spacing, c, repetitive=n >= 4)["span_mm"]
+                return run, spn.shed_rafter_allowed(lib, s, key, spacing, c, repetitive=n >= 4)["span_mm"]
         base_r = (s["rafter_item"], s["rafter_spacing"])
         r = pl.size_member(lib, s["rafter_item"], s["rafter_spacing"], ("rafter",), ev_r, item_named=raw.get("rafter_item"),
                            spacing_named="rafter_spacing" in raw)
@@ -382,7 +382,7 @@ def _plan_shed(raw, s, lib, d, gable):
                 worst = None
                 for o in s["openings"]:
                     span = o["width"] + 2 * tf
-                    al = sp.header_allowed(lib, s, key, plies, o["wall"], cos_a, s["rafter_item"], s["rafter_spacing"])["span_mm"]
+                    al = spn.header_allowed(lib, s, key, plies, o["wall"], cos_a, s["rafter_item"], s["rafter_spacing"])["span_mm"]
                     if worst is None or span / al > worst[0] / worst[1]:
                         worst = (span, al)
                 return worst
@@ -560,12 +560,16 @@ def _kitchen_spec(raw):
     if gable:
         s["height_eaves"] = low
         top = low + hbeam                                      # the beams' top: where the rafters bear
-        save = {k: s.get(k) for k in ("height_eaves", "depth")}
-        s["height_eaves"], s["depth"] = top, s["depth"] - 2 * e   # the formulas see the eave line as the top of the beam
-        try:
-            _gable_roof(raw, s, lib, d)
-        finally:
-            s["height_eaves"], s["depth"] = save["height_eaves"], save["depth"]
+
+        def gable_geometry(tgt):
+            save = {k: tgt.get(k) for k in ("height_eaves", "depth")}
+            tgt["height_eaves"], tgt["depth"] = top, tgt["depth"] - 2 * e   # the formulas see the eave line as the top of the beam
+            try:
+                _gable_roof(raw, tgt, lib, d)
+            finally:
+                tgt["height_eaves"], tgt["depth"] = save["height_eaves"], save["depth"]
+        s_pre = dict(s)                                        # before the roof's slope is worked out (the planner tries other rafters)
+        gable_geometry(s)
     else:
         if "height_back" in raw and "height_eaves" in raw and abs(s["height_back"] - low) > EPS:
             raise SpecError("height_back: for a mono roof this is the same as height_eaves (the lower beam); give one")
@@ -596,6 +600,37 @@ def _kitchen_spec(raw):
                 raise SpecError(f"loads.{k}: must be a number of kN/m2, more than 0")
             loads[k] = float(v)
     s["loads"] = loads
+    # the rafters: a section and spacing that carry the roof's span comfortably
+    if gable:
+        def ev(key, spacing):
+            t2 = dict(s_pre, rafter_item=key)
+            try:
+                gable_geometry(t2)
+            except SpecError:
+                return 1e9, 1.0
+            run = s["depth"] / 2.0 - tl.item(lib, t2["ridge_item"])["thickness_mm"] / 2.0
+            c = math.cos(math.radians(t2["pitch_deg"]))
+            n = len(layout(s["width"], lib["sections"][key]["thickness_mm"], spacing))
+            return run, spn.shed_rafter_allowed(lib, s, key, spacing, c, repetitive=n >= 4)["span_mm"]
+    else:
+        run_ = s["depth"] - pty
+        c_ = math.cos(math.radians(s["pitch_deg"]))
+
+        def ev(key, spacing):
+            n = len(layout(s["width"], lib["sections"][key]["thickness_mm"], spacing))
+            return run_, spn.shed_rafter_allowed(lib, s, key, spacing, c_, repetitive=n >= 4)["span_mm"]
+    r = pl.size_member(lib, s["rafter_item"], s["rafter_spacing"], ("rafter",), ev, item_named=raw.get("rafter_item"),
+                       spacing_named="rafter_spacing" in raw)
+    if r.changed:
+        pl.decide(s, "Rafters", *pl.explain(lib, "rafters", r, s["rafter_item"], s["rafter_spacing"], s["units"]))
+        s["rafter_item"], s["rafter_spacing"] = r.key, float(r.spacing)
+        if gable:
+            t3 = dict(s_pre, rafter_item=r.key)
+            gable_geometry(t3)
+            for k in ("pitch_deg", "ridge_item", "tie_item"):
+                s[k] = t3[k]
+        if "fascia_item" not in raw:
+            s["fascia_item"] = _pick_item(raw, lib, "fascia_item", d.get("details", {}).get("fascia_item", s["rafter_item"]))
     # the floor
     if s["floor"] == "terrace":
         s["floor_height"] = _length(raw, "floor_height") if "floor_height" in raw else float(kd["floor_height_mm"])
@@ -621,16 +656,26 @@ def _kitchen_spec(raw):
         tspec = {"deck_board": s["deck_board"], "joist_item": s["joist_item"], "joist_spacing": s["joist_spacing"],
                  "beam_item": s["floor_beam_item"], "beam_plies": s["floor_beam_plies"], "loads": s["loads"]}
         ld = fc.terrace_loads(lib, tspec)
-        row = min(tt["max_row_spacing_mm"], fc.SPACING_SHARE * fc.joist_allowed(lib, tspec, ld))
-        if row < 600:
+        allowed = fc.joist_allowed(lib, tspec, ld)
+        row, why, lim = pl.spacing_under(allowed, tt["max_row_spacing_mm"])
+        if row is None:
             raise SpecError(f"joist_item: {s['joist_item']!r} at {s['joist_spacing']:g} mm carries only about "
-                            f"{row / 1000:.2f} m between beams; use a deeper joist or closer spacing")
-        s["floor_row_spacing"] = float(math.floor(row / 50) * 50)
-        fpost = min(tt["max_post_spacing_mm"], fc.SPACING_SHARE * fc.beam_allowed(lib, tspec, ld, s["floor_row_spacing"]))
-        if fpost < 600:
-            raise SpecError(f"floor_beam_item: {s['floor_beam_item']!r} carries only about {fpost / 1000:.2f} m between posts; "
+                            f"{lim / 1000:.2f} m between beams; use a deeper joist or closer spacing")
+        s["floor_row_spacing"] = row
+        pl.decide(s, "Floor beam rows", f"no further apart than {pl.length_text(row, s['units'])}",
+                  pl.spacing_why(pl.spacing_note(allowed, tt["max_row_spacing_mm"], why,
+                                                 f"{pl.section_name(lib, s['joist_item'])} deck joists at {pl.length_text(s['joist_spacing'], s['units'])}"),
+                                 s["units"]))
+        allowed = fc.beam_allowed(lib, tspec, ld, s["floor_row_spacing"])
+        fpost, why, lim = pl.spacing_under(allowed, tt["max_post_spacing_mm"])
+        if fpost is None:
+            raise SpecError(f"floor_beam_item: {s['floor_beam_item']!r} carries only about {lim / 1000:.2f} m between posts; "
                             "use a deeper beam or more plies")
-        s["floor_post_spacing"] = float(math.floor(fpost / 50) * 50)
+        s["floor_post_spacing"] = fpost
+        pl.decide(s, "Floor posts", f"no further apart than {pl.length_text(fpost, s['units'])}",
+                  pl.spacing_why(pl.spacing_note(allowed, tt["max_post_spacing_mm"], why,
+                                                 f"A floor beam of {s['floor_beam_plies']} x {pl.section_name(lib, s['floor_beam_item'])}"),
+                                 s["units"]))
     else:
         for k in ("floor_height", "joist_item", "joist_spacing", "deck_board", "board_gap", "floor_beam_item",
                   "floor_beam_plies", "floor_post_item"):
@@ -648,11 +693,13 @@ def _kitchen_spec(raw):
             raise SpecError("post_spacing: must be at least 600 mm")
     else:
         allowed = fc.kitchen_beam_allowed(lib, s)
-        post_sp = min(pg["max_post_spacing_mm"], fc.SPACING_SHARE * allowed)
-        if post_sp < 600:
-            raise SpecError(f"beam_item: {s['beam_item']!r} carries only about {post_sp / 1000:.2f} m between posts "
+        post_sp, why, lim = pl.spacing_under(allowed, pg["max_post_spacing_mm"])
+        if post_sp is None:
+            raise SpecError(f"beam_item: {s['beam_item']!r} carries only about {lim / 1000:.2f} m between posts "
                             "under this roof; use a deeper beam or shorter rafters")
-        s["post_spacing"] = float(math.floor(post_sp / 50) * 50)
+        s["post_spacing"] = post_sp
+        s.notes["post_spacing"] = pl.spacing_note(allowed, pg["max_post_spacing_mm"], why,
+                                                  f"A roof beam of {s['beam_plies']} x {pl.section_name(lib, s['beam_item'])}")
     def item_ok(key):
         try:
             return tl.item(lib, key)["category"] in ("sections", "sheets", "cladding")
@@ -794,6 +841,15 @@ def _pergola_spec(raw):
                 raise SpecError("loads.snow_kn_m2: must be a number of kN/m2, more than 0")
             loads[k] = float(v)
     s["loads"] = loads
+    # the rafters: a section and spacing that carry the span between the beams comfortably
+    span = fc.pergola_rafter_span(s, lib)
+    ev = lambda key, spacing: (span, spn.pergola_rafter_allowed(lib, dict(s, rafter_item=key, rafter_spacing=spacing))["span_mm"])
+    r = pl.size_member(lib, s["rafter_item"], s["rafter_spacing"], ("rafter",), ev, item_named=raw.get("rafter_item"),
+                       spacing_named="rafter_spacing" in raw)
+    if r.changed:
+        pl.decide(s, "Rafters", *pl.explain(lib, "rafters", r, s["rafter_item"], s["rafter_spacing"], s["units"],
+                                            "the span between the beams is"))
+        s["rafter_item"], s["rafter_spacing"] = r.key, float(r.spacing)
     along = s["width"] if axis == "x" else s["depth"]
     across = s["depth"] if axis == "x" else s["width"]
     bw = plies * tl.item(lib, s["beam_item"])["thickness_mm"]
@@ -809,11 +865,13 @@ def _pergola_spec(raw):
             raise SpecError("post_spacing: must be at least 600 mm")
     else:
         allowed = fc.pergola_beam_allowed(lib, s)
-        post = min(d["max_post_spacing_mm"], fc.SPACING_SHARE * allowed)
-        if post < 600:
-            raise SpecError(f"beam_item: {s['beam_item']!r} carries only about {post / 1000:.2f} m between posts "
+        post, why, lim = pl.spacing_under(allowed, d["max_post_spacing_mm"])
+        if post is None:
+            raise SpecError(f"beam_item: {s['beam_item']!r} carries only about {lim / 1000:.2f} m between posts "
                             f"at this width; use a deeper beam or shorter rafters")
-        s["post_spacing"] = float(math.floor(post / 50) * 50)
+        s["post_spacing"] = post
+        s.notes["post_spacing"] = pl.spacing_note(allowed, d["max_post_spacing_mm"], why,
+                                                  f"A beam of {plies} x {pl.section_name(lib, s['beam_item'])} carrying the rafters")
     def item_ok(key):
         try:
             return tl.item(lib, key)["category"] in ("sections", "sheets", "cladding")
@@ -908,20 +966,26 @@ def _terrace_spec(raw):
             if caps[k] < 300:
                 raise SpecError(f"{k}: must be at least 300 mm")
     row = caps.get("row_spacing")
+    u = s["units"]
     if row is None:
-        row = min(t["max_row_spacing_mm"], fc.SPACING_SHARE * fc.joist_allowed(lib, s, ld))
-        if row < 600:
+        allowed = fc.joist_allowed(lib, s, ld)
+        row, why, lim = pl.spacing_under(allowed, t["max_row_spacing_mm"])
+        if row is None:
             raise SpecError(f"joist_item: {s['joist_item']!r} at {s['joist_spacing']:g} mm carries only about "
-                            f"{row / 1000:.2f} m between beams; use a deeper joist or closer spacing")
-        row = math.floor(row / 50) * 50
+                            f"{lim / 1000:.2f} m between beams; use a deeper joist or closer spacing")
+        s.notes["row_spacing"] = pl.spacing_note(allowed, t["max_row_spacing_mm"], why,
+                                                 f"{pl.section_name(lib, s['joist_item'])} deck joists at {pl.length_text(s['joist_spacing'], u)}")
     s["row_spacing"] = float(row)
     post = caps.get("post_spacing")
     if post is None:
-        post = min(t["max_post_spacing_mm"], fc.SPACING_SHARE * fc.beam_allowed(lib, s, ld, s["row_spacing"]))
-        if post < 600:
-            raise SpecError(f"beam_item: {s['beam_item']!r} carries only about {post / 1000:.2f} m between posts "
+        allowed = fc.beam_allowed(lib, s, ld, s["row_spacing"])
+        post, why, lim = pl.spacing_under(allowed, t["max_post_spacing_mm"])
+        if post is None:
+            raise SpecError(f"beam_item: {s['beam_item']!r} carries only about {lim / 1000:.2f} m between posts "
                             f"over beams {s['row_spacing']:g} mm apart; use a deeper beam or closer rows")
-        post = math.floor(post / 50) * 50
+        s.notes["post_spacing"] = pl.spacing_note(allowed, t["max_post_spacing_mm"], why,
+                                                  f"A beam of {s['beam_plies']} x {pl.section_name(lib, s['beam_item'])} under rows "
+                                                  f"{pl.length_text(s['row_spacing'], u)} apart")
     s["post_spacing"] = float(post)
     def item_ok(key):
         try:

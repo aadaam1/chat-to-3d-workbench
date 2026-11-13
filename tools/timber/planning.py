@@ -59,13 +59,39 @@ def section_name(lib, key):
 
 def spacing_under(allowed, cap=None, share=sp.SPACING_SHARE, step=STEP):
     """The spacing the generator keeps a span under: `share` of what the formulas allow, no more than
-    `cap` (None: no cap), in whole `step`s. Returns (mm, what_limited_it): "cap" or "span"; None when
-    that is less than MIN_SPACING (nothing sensible fits)."""
+    `cap` (None: no cap), in whole `step`s. Returns (spacing in mm or None, limiter, the unrounded limit):
+    the limiter is "cap" or "span"; the spacing is None when the limit is under MIN_SPACING (nothing
+    sensible fits)."""
     want = share * allowed
     lim = want if cap is None else min(cap, want)
+    limiter = "cap" if cap is not None and cap <= want else "span"
     if lim < MIN_SPACING:
-        return None
-    return float(floor_step(lim, step)), ("cap" if cap is not None and cap <= want else "span")
+        return None, limiter, lim
+    return float(math.floor(lim / step) * step), limiter, lim
+
+
+def spacing_note(allowed, cap, limiter, what):
+    """What the spacing was worked out from, for spec.notes (and the decision the recipe records)."""
+    return {"allowed": allowed, "cap": cap, "limiter": limiter, "what": what}
+
+
+def spacing_why(note, units):
+    n = note
+    t = (f"{n['what']} is good for {length_text(n['allowed'], units)}; the generator keeps spans under "
+         f"{sp.SPACING_SHARE:.0%} of that")
+    if n["limiter"] == "cap":
+        t += f", and no further apart than the library's {length_text(n['cap'], units)}"
+    return t
+
+
+def decide_grid(spec, what, noun, positions, note):
+    """Record a layout: `positions` along one direction, spaced by the planner (a description that
+    named the spacing has no note, and no decision)."""
+    if note is None or len(positions) < 2:
+        return
+    u = spec["units"]
+    gap = positions[1] - positions[0]
+    decide(spec, what, f"{len(positions)} {noun}, {length_text(gap, u)} apart", spacing_why(note, u))
 
 
 # --------------------------------------------------------------- sections and spacings
