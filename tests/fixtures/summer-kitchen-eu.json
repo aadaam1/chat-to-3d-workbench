@@ -1,0 +1,25 @@
+{
+  "type": "summer-kitchen",
+  "name": "summer-kitchen",
+  "width": 4000,
+  "depth": 3000,
+  "roof": "gable",
+  "floor": "terrace",
+  "floor_height": 600,
+  "foundation": "ground_screw",
+  "walls": [
+    {
+      "side": "back",
+      "openings": [
+        {
+          "kind": "window",
+          "x": 400,
+          "sill": 900,
+          "width": 900,
+          "height": 700
+        }
+      ]
+    }
+  ],
+  "height_eaves": 2400
+}

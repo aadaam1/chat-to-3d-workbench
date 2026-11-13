@@ -1,0 +1,36 @@
+{
+  "type": "summer-kitchen",
+  "region": "us",
+  "name": "summer-kitchen",
+  "width": "14'",
+  "depth": "10'",
+  "roof": "mono",
+  "floor": "none",
+  "foundation": "ground_screw",
+  "walls": [
+    {
+      "side": "back",
+      "openings": [
+        {
+          "kind": "window",
+          "x": 400,
+          "sill": 900,
+          "width": 900,
+          "height": 700
+        }
+      ]
+    },
+    {
+      "side": "right",
+      "openings": [
+        {
+          "kind": "door",
+          "x": 1000,
+          "width": 800,
+          "height": 1800
+        }
+      ]
+    }
+  ],
+  "rafter_item": "2x8"
+}

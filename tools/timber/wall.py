@@ -34,6 +34,9 @@ class Wall:
         self.box, self.add, self.joint = frame.box, frame.add, frame.joint
         self.wf = None
         self.skin_sheets = {}
+        self.group = self.gid = f"wall-{name}"     # the members' group, and the prefix of their ids
+        self.through = name in ("front", "back")   # runs through to the corners (corner assemblies at its ends)
+        self.tall_rows = False                     # a sloped top taller than a sheet is sheathed in two rows, as a gable end is
 
     def __getitem__(self, key):
         return self.wf[key]
@@ -49,9 +52,9 @@ class Wall:
     def build(self):
         self.wf = self.build_frame()
         s = self.s
-        self.fr.assembly(f"wall-{self.name}", "wall", [
+        self.fr.assembly(self.gid, "wall", [
             {"role": "wall studs", "kind": "stud", "spacing_mm": _norm(s["stud_spacing"]),
-             "deck": s["sheathing"], "deck_role": "wall", "deck_group": f"wall-{self.name}"}])
+             "deck": s["sheathing"], "deck_role": "wall", "deck_group": self.group}])
         return self.wf
 
     def skin(self, aabbs):
@@ -92,12 +95,12 @@ class Wall:
         s, t, w = self.s, self.t, self.w
         wf = self.wall_frame(name)
         wf["name"] = name
-        g = f"wall-{name}"
+        g, ig = self.group, self.gid
         fi = s["frame_item"]
         S0, S1 = wf["s0"], wf["s1"]
         zb, ztop = self.zd, wf["top"]
         nc = self.courses
-        through = name in ("front", "back")
+        through = self.through
         if ztop - (nc + 1) * t - self.zd <= 0:
             raise SpecError(f"{self.lay.height_field(name)}: too low for the "
                             f"floor and the wall plates (floor top is {self.zd:g} mm)")
@@ -115,16 +118,16 @@ class Wall:
             pieces.append((cur, S1))
         bots = []
         for i, (a, b) in enumerate(pieces, 1):
-            mid = f"{g}/plate-bottom" if len(pieces) == 1 else f"{g}/plate-bottom-{i:02d}"
+            mid = f"{ig}/plate-bottom" if len(pieces) == 1 else f"{ig}/plate-bottom-{i:02d}"
             bots.append((self.wbox(wf, mid, "plate", g, "walls", fi, (a, b), (0, w), (zb, zb + t), "s", "d"), a, b))
         # top plates: the lower one follows the panel; a second one on top is lapped
         # over the back corners (the side walls' upper plates run over the back wall)
-        top = self.wbox(wf, f"{g}/plate-top", "plate", g, "walls", fi, (S0, S1), (0, w),
+        top = self.wbox(wf, f"{ig}/plate-top", "plate", g, "walls", fi, (S0, S1), (0, w),
                         (ztop - nc * t, ztop - (nc - 1) * t), "s", "d")
         bear = top
         if nc == 2:
-            u0, u1 = fr.upper_plate_span(name, S0, S1, w, self.D)
-            bear = self.wbox(wf, f"{g}/plate-top-2", "plate", g, "walls", fi, (u0, u1), (0, w),
+            u0, u1 = self.upper_span(name, S0, S1)
+            bear = self.wbox(wf, f"{ig}/plate-top-2", "plate", g, "walls", fi, (u0, u1), (0, w),
                              (ztop - t, ztop), "s", "d")
             self.joint("plate-lap", bear, top, edge_mm=min(u1, S1) - max(u0, S0))
         zs0, zs1 = zb + t, ztop - nc * t        # studs run between the plates
@@ -144,10 +147,10 @@ class Wall:
         busy = []                               # ranges along the wall no layout stud may take
         for i, o in enumerate(ops, 1):
             a, b, zt = o["a"], o["b"], o["zt"]
-            kl = stud(f"{g}/king-{2 * i - 1:02d}", "king", a - 2 * t, a - t, zs0, zs1)
-            kr = stud(f"{g}/king-{2 * i:02d}", "king", b + t, b + 2 * t, zs0, zs1)
-            jl = stud(f"{g}/jack-{2 * i - 1:02d}", "jack", a - t, a, zs0, zt)
-            jr = stud(f"{g}/jack-{2 * i:02d}", "jack", b, b + t, zs0, zt)
+            kl = stud(f"{ig}/king-{2 * i - 1:02d}", "king", a - 2 * t, a - t, zs0, zs1)
+            kr = stud(f"{ig}/king-{2 * i:02d}", "king", b + t, b + 2 * t, zs0, zs1)
+            jl = stud(f"{ig}/jack-{2 * i - 1:02d}", "jack", a - t, a, zs0, zt)
+            jr = stud(f"{ig}/jack-{2 * i:02d}", "jack", b, b + t, zs0, zt)
             for k_, (x0, x1) in ((kl, (a - 2 * t, a - t)), (kr, (b + t, b + 2 * t))):
                 self.joint("stud-plate", k_, plate_for(x0, x1))
                 self.joint("stud-plate", k_, top)
@@ -158,7 +161,7 @@ class Wall:
             # the header: one or two plies on edge, across the opening and the jacks
             hds = []
             for ply, (d0, d1) in enumerate(fr.header_plies(self.plies, self.th, w), 1):
-                hid = f"{g}/header-{i:02d}" + ("" if ply == 1 else f"-ply{ply}")
+                hid = f"{ig}/header-{i:02d}" + ("" if ply == 1 else f"-ply{ply}")
                 self.wbox(wf, hid, "header", g, "walls", s["header_item"],
                           (a - t, b + t), (d0, d1), (zt, zt + self.hh), "s", "z")
                 hds.append(hid)
@@ -176,7 +179,7 @@ class Wall:
             if above[1] - above[0] >= MIN_CRIPPLE:
                 o["cripples_above"] = above
             if o["kind"] == "window":
-                sl = self.wbox(wf, f"{g}/sill-{i:02d}", "sill", g, "walls", fi,
+                sl = self.wbox(wf, f"{ig}/sill-{i:02d}", "sill", g, "walls", fi,
                                (a, b), (0, w), (o["zb"] - t, o["zb"]), "s", "d")
                 wf["sills"].append((sl, a, b, o["zb"] - t, o["zb"]))
                 self.joint("header-trimmer", sl, jl)
@@ -188,7 +191,7 @@ class Wall:
             for end, (c0, c1) in (("01", (S0, S0 + ext)), ("02", (S1 - ext, S1))):
                 busy.append((c0 + t, c1) if end == "01" else (c0, c1 - t))
                 for piece in fr.corner_pieces(s["corner"], t, w, c0, c1, end == "01", zs0, zs1):
-                    mid = f"{g}/corner-{end}-{piece['name']}"
+                    mid = f"{ig}/corner-{end}-{piece['name']}"
                     self.wbox(wf, mid, piece["kind"], g, "walls", fi, piece["s"], piece["d"], piece["z"],
                               piece["laxis"], piece["waxis"])
                     self.joint("stud-plate", mid, plate_for(*piece["s"])) if piece["kind"] == "stud" else None
@@ -203,7 +206,7 @@ class Wall:
             if any(_ov(p, p + t, x0, x1) > EPS for x0, x1 in busy):
                 continue
             n_st += 1
-            sid = stud(f"{g}/stud-{n_st:02d}", "stud", p, p + t, zs0, zs1)
+            sid = stud(f"{ig}/stud-{n_st:02d}", "stud", p, p + t, zs0, zs1)
             wf["studs"].append((sid, p, p + t, zs0, zs1))
             self.joint("stud-plate", sid, plate_for(p, p + t))
             self.joint("stud-plate", sid, top)
@@ -227,7 +230,7 @@ class Wall:
                         crip.append((p, below, plate_for(p, p + t), o["sill_id"]))
         crip.sort(key=lambda c: (c[0], c[1][0]))
         for n_cr, (p, (z0, z1), lower, upper) in enumerate(crip, 1):
-            cid = stud(f"{g}/cripple-{n_cr:02d}", "cripple", p, p + t, z0, z1)
+            cid = stud(f"{ig}/cripple-{n_cr:02d}", "cripple", p, p + t, z0, z1)
             wf["cripples"].append((cid, p, p + t, z0, z1))
             self.joint("stud-plate", cid, lower)
             self.joint("stud-plate", cid, upper)
@@ -245,14 +248,31 @@ class Wall:
                 if zt - ztop < (1.0 if forced else MIN_INFILL):
                     continue
                 if self.gable:
-                    iid = self.gable_stud(wf, f"{g}/{nm}", p, p + t, ztop, zt)
+                    iid = self.gable_stud(wf, f"{ig}/{nm}", p, p + t, ztop, zt)
                 else:
-                    iid = stud(f"{g}/{nm}", "stud", p, p + t, ztop, zt,
+                    iid = stud(f"{ig}/{nm}", "stud", p, p + t, ztop, zt,
                                cut=(0, self.line.cut_deg(p, p + t)))
                 wf["infill"].append((iid, p, p + t, ztop, zt))
                 self.joint("stud-plate", iid, bear)
                 # the top end is fixed to the end rafter, joined in roof()
         return wf
+    def upper_span(self, name, S0, S1):
+        """Where the second top plate runs (a hook: a wall between posts has no corner to lap)."""
+        return fr.upper_plate_span(name, S0, S1, self.w, self.D)
+
+    def label(self, i):
+        """How an opening is named in an error message."""
+        return f"openings[{i}]"
+
+    def opening_list(self, name):
+        """The openings of this wall as (index, opening): those of the description naming it."""
+        return [(i, o) for i, o in enumerate(self.s["openings"]) if o["wall"] == name]
+
+    def strip_limits(self, name, wf):
+        """Where the sheathing at the wall's ends stops, along the wall (for the opening's edge strips)."""
+        S0, S1 = wf["s0"], wf["s1"]
+        return (0.0 if name in ("left", "right") else S0), (self.D if name in ("left", "right") else S1)
+
     def gable_stud(self, wf, mid, a, b, z0, zt):
         """An infill stud of a gable wall with its top cut to the roof line: laid out
         with its length up, its width along the wall and its outline the cut."""
@@ -270,10 +290,8 @@ class Wall:
         S0, S1 = wf["s0"], wf["s1"]
         ztop = wf["top"]
         ops = []
-        for i, o in enumerate(self.s["openings"]):
-            if o["wall"] != name:
-                continue
-            p = f"openings[{i}]"
+        for i, o in self.opening_list(name):
+            p = self.label(i)
             if o["width"] > S1 - S0 + EPS:
                 raise SpecError(f"{p}.width: {o['width']:g} mm is wider than the {name} wall "
                                 f"({S1 - S0:g} mm between its corners)")
@@ -296,8 +314,7 @@ class Wall:
                                 "sill member, the bottom plate and a sheathing strip)")
             if o["width"] + t < MIN_SHEET - EPS:
                 raise SpecError(f"{p}.width: at least {MIN_SHEET - t:g} mm")
-            edge_lo = 0.0 if name in ("left", "right") else S0
-            edge_hi = self.D if name in ("left", "right") else S1
+            edge_lo, edge_hi = self.strip_limits(name, wf)
             if a - 1.5 * t - edge_lo < MIN_SHEET - EPS or edge_hi - (b + 1.5 * t) < MIN_SHEET - EPS:
                 raise SpecError(f"{p}.x: the opening ({a:g} to {b:g} mm) leaves a strip of sheathing "
                                 f"narrower than {MIN_SHEET:g} mm at the {name} wall's corner")
@@ -305,10 +322,10 @@ class Wall:
         ops.sort(key=lambda o: o["a"])
         for p_, q_ in zip(ops, ops[1:]):
             if q_["a"] - 2 * t < p_["b"] + 2 * t - EPS:
-                raise SpecError(f"openings[{q_['index']}].x: overlaps openings[{p_['index']}] "
+                raise SpecError(f"{self.label(q_['index'])}.x: overlaps {self.label(p_['index'])} "
                                 f"(each needs a king and a jack stud, {t:g} mm each, on both sides)")
             if (q_["a"] - 1.5 * t) - (p_["b"] + 1.5 * t) < MIN_SHEET - EPS:
-                raise SpecError(f"openings[{q_['index']}].x: too close to openings[{p_['index']}]; "
+                raise SpecError(f"{self.label(q_['index'])}.x: too close to {self.label(p_['index'])}; "
                                 f"the sheathing between them would be under {MIN_SHEET:g} mm wide")
         return ops
     def wall_outline(self, name):
@@ -348,14 +365,14 @@ class Wall:
         return out
     def _skin(self, name):
         s, t, zd = self.s, self.t, self.zd
-        wf, g = self.wf, f"wall-{name}"
+        wf, g, ig = self.wf, self.group, self.gid
         ts = self.ts
         poly = self.wall_outline(name)
         s_lo, s_hi = min(p[0] for p in poly), max(p[0] for p in poly)
         zmax = max(p[1] for p in poly)
         short, long_ = self.sheath["size_mm"]
-        if zmax - zd > long_ + EPS and not self.gable:
-            f = "height_back" if name == "back" else "height_front"
+        if zmax - zd > long_ + EPS and not self.gable and not self.tall_rows:
+            f = self.lay.height_field(name)
             raise SpecError(f"{f}: the {name} wall is {zmax - zd:g} mm above the floor deck, taller "
                             f"than a {long_:g} mm sheet; this version fits one sheet over the height")
         faces = self.faces(name)
@@ -400,7 +417,7 @@ class Wall:
         self.skin_sheets[name] = []
         # a gable end taller than a sheet is sheathed in two rows, the seam across the
         # top plates (in the middle of the plate course, so both rows have timber behind)
-        two_rows = self.gable and zmax - zd > long_ + EPS
+        two_rows = (self.gable or self.tall_rows) and zmax - zd > long_ + EPS
         zsplit = wf["top"] - self.courses * t / 2
         jobs = []
         for pc in pieces:
@@ -421,7 +438,7 @@ class Wall:
             zlo, zup = min(p[1] for p in poly_i), max(p[1] for p in poly_i)
             if zup - zlo > long_ + EPS:         # a gable end: only the columns near the peak can be this tall
                 raise SpecError(f"{self.lay.height_field(name)}: the {name} wall is {zup - zlo:g} mm tall at the "
-                                f"{'peak of its gable' if two_rows else 'top'}, taller than a {long_:g} mm sheet "
+                                f"{('peak of its gable' if self.gable else 'high end') if two_rows else 'top'}, taller than a {long_:g} mm sheet "
                                 f"{'even in two rows ' if two_rows else ''}(this version fits one sheet over a row); lower the eaves or the pitch")
             size = [su1 - su0, zup - zlo, ts]
             local = [(p[0] - su0, p[1] - zlo) for p in poly_i]
@@ -429,7 +446,7 @@ class Wall:
             cen = [0.0, 0.0, (zlo + zup) / 2]
             cen[ax] = (su0 + su1) / 2
             cen[wf["dax"]] = wf["d0"] + wf["sign"] * ts / 2
-            sid = self.add(f"{g}/sheathing-{n:02d}", "sheet", g, "sheathing", s["sheathing"],
+            sid = self.add(f"{ig}/sheathing-{n:02d}", "sheet", g, "sheathing", s["sheathing"],
                            size, cen, e_s, (0, 0, 1), outline=outline)
             self.skin_sheets[name].append((sid, su0, su1, zlo, zup, poly_i))
             for mid, k, p, q, z0, z1 in faces:
@@ -445,7 +462,7 @@ class Wall:
         cw = self.clad["cover_width_mm"]
         ax, dax, sign = wf["ax"], wf["dax"], wf["sign"]
         e_s = [1 if j == ax else 0 for j in range(3)]
-        g = f"wall-{name}"
+        g, ig = self.group, self.gid
         zmax = self.wf["top"] if name in ("front", "back") else self.line.gable_top if self.gable else self.hf
         cuts = [zd + i * cw for i in range(math.ceil((zmax - zd) / cw - 1e-9))] + [zmax]
         if len(cuts) > 2 and zmax - cuts[-2] < 0.4 * cw:     # no sliver at the top: share the last two courses
@@ -454,13 +471,7 @@ class Wall:
             cuts = sorted(set(cuts + [self.hb]))        # the course at the back wall height is split
         vert = [(i, (p + q) / 2, z0, z1) for i, k, p, q, z0, z1 in faces
                 if k in ("stud", "king", "jack", "cripple") and z1 - z0 > q - p]
-        clip = None
-        if name in ("left", "right") and self.gable:
-            clip = self.gable_outline(ts + tc)
-        elif name in ("left", "right"):
-            wrap, D, w = ts + tc, self.D, self.w
-            clip = _clean([(-wrap, zd), (D + wrap, zd), (D + wrap, self.hb), (D - w, self.hb),
-                           (D - w, self.line.underside(D - w)), (w, self.hf), (-wrap, self.hf)])
+        clip = self.cladding_clip(name)
         n = 0
         for zb, zt in zip(cuts, cuts[1:]):
             if zt - zb < 1.0:
@@ -493,7 +504,7 @@ class Wall:
                 cen = [0.0, 0.0, (z0 + z1) / 2]
                 cen[ax] = (a + b) / 2
                 cen[dax] = wf["d0"] + sign * (ts + tc / 2)
-                bid = self.add(f"{g}/board-{n:02d}", "board", g, "cladding", s["cladding"],
+                bid = self.add(f"{ig}/board-{n:02d}", "board", g, "cladding", s["cladding"],
                                [b - a, z1 - z0, tc], cen, e_s, (0, 0, 1),
                                cut=(ch if self.gable else 0, ch), outline=outline)
                 cr = sum(1 for _, c, z0, z1 in vert if a - EPS <= c <= b + EPS
@@ -501,6 +512,18 @@ class Wall:
                 if not cr:                              # a course over the top plate: nailed at the studs
                     cr = max(1, sum(1 for _, c, z0, z1 in vert if a - EPS <= c <= b + EPS))
                 self.joint("board-frame", bid, wf["top_id"], crossings=cr)
+    def cladding_clip(self, name):
+        """The polygon (s, z) the side walls' cladding is cut to: the rafter line, wrapped past the corners."""
+        zd = self.zd
+        clip = None
+        if name in ("left", "right") and self.gable:
+            clip = self.gable_outline(self.ts + self.tc)
+        elif name in ("left", "right"):
+            wrap, D, w = self.ts + self.tc, self.D, self.w
+            clip = _clean([(-wrap, zd), (D + wrap, zd), (D + wrap, self.hb), (D - w, self.hb),
+                           (D - w, self.line.underside(D - w)), (w, self.hf), (-wrap, self.hf)])
+        return clip
+
     def _board_span(self, name, zb):
         """Range along the wall of a board whose lower edge is at zb, and the
         cut angle at its high end. Side boards wrap past the front and back

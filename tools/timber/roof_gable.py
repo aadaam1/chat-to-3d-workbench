@@ -38,6 +38,7 @@ class GableLine:
 
     def __init__(self, lay, tg, dr):
         self.he, self.D, self.w, self.wr = lay.hf, lay.D, lay.w, lay.wr
+        self.inset = getattr(lay, "eave_inset", 0.0)   # the bearing's outer edge is this far in from the footprint
         self.ang = math.radians(lay.s["pitch_deg"])
         self.sin, self.cos, self.k = math.sin(self.ang), math.cos(self.ang), math.tan(self.ang)
         self.tg, self.dr = tg, dr                      # the ridge board: thickness, depth
@@ -48,7 +49,7 @@ class GableLine:
 
     def slope(self, y):
         """The underside's sloped line, extended over the ridge board."""
-        return self.he + min(y, self.D - y) * self.k
+        return self.he + (min(y, self.D - y) - self.inset) * self.k
 
     def underside(self, y):
         """Height of the underside of whatever bears the roof's weight over Y."""
@@ -142,7 +143,7 @@ class GableRoof(SlopeRoof):
         self.d, self.nrm = (0, cs, -sn), (0, sn, cs)
         self.p0 = (0.0, y_ref, L.slope(y_ref))
         ri = s["rafter_item"]
-        xs = layout(W, tr, s["rafter_spacing"])
+        xs = self.rafter_xs or layout(W, tr, s["rafter_spacing"])
         self.rafter_x = xs
         fi = s["fascia_item"]
         fit = tl.item(lib, fi)
@@ -162,15 +163,23 @@ class GableRoof(SlopeRoof):
         self.deck_len = deck_len = lu_h + ext + tg / (2 * cs) - RIDGE_GAP
         rows = deck_rows(deck_len, short)      # rows from the eave up to the ridge
         seams = [U_E - e for e in rows[1:-1]]
-        eaves = [(D - y_ref - wr * sn) / cs - tr / 2]               # block's outer face over the eave wall
+        eaves = [(D - self.eave_in - y_ref - wr * sn) / cs - tr / 2]               # block's outer face over the eave wall
         eaves = [u for u in eaves if all(abs(u - v) >= tr for v in seams)]
         td = self.rdeck["thickness_mm"]
         barge_len = (D + oh - D / 2) / cs
         # the ties lie beside their rafters on the +X side; the blocking in that bay is shortened to fit
         tit = tl.item(lib, s["tie_item"])
         tt, wt = tit["thickness_mm"], tit["width_mm"]
+        lo_t, hi_t = getattr(self.lay, "tie_range", (w, W - w))   # where ties may lie along X (a shed: between its gable walls)
         tied = [i for i, x0 in enumerate(xs[:-1])
-                if x0 >= w - EPS and x0 + tr + tt <= W - w + EPS and xs[i + 1] - (x0 + tr) - tt >= 20.0]
+                if x0 >= lo_t - EPS and x0 + tr + tt <= hi_t + EPS and xs[i + 1] - (x0 + tr) - tt >= 20.0]
+        # a roof with no gable wall at its far end ties the last pair too, on the tie's -X side
+        last = len(xs) - 1
+        tie_last = bool(getattr(self.lay, "tie_last", False)) and last > 0 and xs[last] - tt >= lo_t - EPS \
+            and xs[last] + tr <= hi_t + EPS and xs[last] - tt - (xs[last - 1] + tr) >= 20.0
+        tie_x = {i: xs[i] + tr for i in tied}
+        if tie_last:
+            tie_x[last] = xs[last] - tt
         self.rafters = {sl: [] for sl in SLOPES}
         self.flying = {sl: [] for sl in SLOPES}
         self.roof_blocks = {sl: [] for sl in SLOPES}
@@ -186,7 +195,7 @@ class GableRoof(SlopeRoof):
             for i, x0 in enumerate(xs, 1):
                 rid = self.slope_member(f"roof/rafter-{sl}-{i:02d}", "rafter", ri, x0, tr, wr, y0=y_ref, y1=D + oh)
                 rafters.append(rid)
-                self.joint("rafter-plate", rid, bear)
+                self.on_bear(rid, bear)
                 self.joint("rafter-ridge", rid, self.ridge)
             # the side overhang: a flying rafter each side, carried on outriggers
             flying = self.flying[sl]
@@ -195,7 +204,7 @@ class GableRoof(SlopeRoof):
                     fid = self.slope_member(f"roof/flying-rafter-{sl}-{nm}", "rafter", ri, x0, tr, wr,
                                             y0=y_ref, y1=D + oh)
                     flying.append(fid)
-                    self.joint("rafter-plate", fid, bear)
+                    self.on_bear(fid, bear)
                     self.joint("rafter-ridge", fid, self.ridge)
             # blocking over the eave wall and under the deck seams
             blocks = self.roof_blocks[sl]
@@ -204,8 +213,11 @@ class GableRoof(SlopeRoof):
                 seam = u in seams
                 for xa, xb in zip(xs, xs[1:]):
                     x0, x1 = xa + tr, xb
-                    if xs.index(xa) in tied and self.p0[2] - (u + tr / 2) * sn < he + wt - EPS:
-                        x0 += tt                  # the block's lowest point is below the tie's top
+                    low = self.p0[2] - (u + tr / 2) * sn < he + wt - EPS    # the block's lowest point is below the tie's top
+                    if xs.index(xa) in tied and low:
+                        x0 += tt
+                    if tie_last and xb == xs[last] and low:
+                        x1 -= tt
                     if x1 - x0 < EPS:
                         continue
                     if seam:
@@ -280,15 +292,15 @@ class GableRoof(SlopeRoof):
         # outer face, each beside the rafter pair on its +X side, face-nailed to both rafters at the heel.
         # A pair over a gable wall has none: that wall's top plates, lapped over the eave walls', tie that end.
         poly = self.tie_outline(wt)
-        for i in tied:
-            x0 = xs[i]
+        for i in sorted(tie_x):
             tid = self.add(f"roof/tie-{i + 1:02d}", "tie", "roof", "roof", s["tie_item"],
-                           [D, wt, tt], [x0 + tr + tt / 2, D / 2, he + wt / 2], (0, 1, 0), (0, 0, 1),
+                           [D, wt, tt], [tie_x[i] + tt / 2, D / 2, he + wt / 2], (0, 1, 0), (0, 0, 1),
                            outline=poly)
             self.ties.append(tid)
             for sl in SLOPES:
                 self.joint("tie-rafter", tid, self.rafters[sl][i])
-                self.joint("tie-plate", tid, self.bear[sl])
+                for b in ([self.bear[sl]] if isinstance(self.bear[sl], str) else self.bear[sl]):
+                    self.joint("tie-plate", tid, b)
         # the gable walls' studs are fixed to the rafter (or the ridge board) over them
         for nm, k in (("left", 0), ("right", -1)):
             for iid, p, q, *_ in self.infill[nm]:

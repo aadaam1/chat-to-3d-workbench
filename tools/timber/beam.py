@@ -78,8 +78,8 @@ class Beam:
             self.fr.bought.append({"item": "post-cap", "qty": self.caps, "unit": "pcs",
                                    "note": "one per post under a beam; sized to the post and the beam"})
 
-    def assembly(self):
-        self.fr.assembly("beams", "beams", [
+    def assembly(self, aid="beams"):
+        self.fr.assembly(aid, aid, [
             {"role": f"beam {r['id']}", "kind": "beam", "id": r["id"], "item": self.key, "plies": r["ply_count"],
              "line": r["line"], "axis": r["axis"],
              "span_mm": r["span_mm"], "trib_mm": r["trib_mm"], "supports": r["supports"]} for r in self.records])
