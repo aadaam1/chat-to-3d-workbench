@@ -241,3 +241,54 @@ def kitchen_beam_allowed(lib, spec, detail=False):
     res = allowable_span(lib, b["thickness_mm"] * spec["beam_plies"], b["width_mm"],
                          kitchen_roof_dead_kn_m2(lib, spec) * t, spec["loads"]["snow_kn_m2"] * t, "snow", repetitive=False)
     return res if detail else res["span_mm"]
+
+
+# ----- sheds (and any roof on walls or beams): joists, rafters, headers
+
+def roof_dead_plan(lib, spec, cos_a, rafter_b, rafter_d, spacing_mm):
+    """Permanent roof load in kN per m2 of plan: deck, covering and the rafters."""
+    deck = lib["sheets"][spec["roof_deck"]]["thickness_mm"]
+    dens = _f("common", "sheet_density_kg_m3")
+    deck_kn = deck / 1000.0 * dens * _f("common", "g") / 1000.0
+    cov = _f("common", "covering_kn_m2").get(spec.get("roofing"), 0.10)
+    rafter = own_weight_kn_m(lib, rafter_b, rafter_d) / (spacing_mm / 1000.0)
+    return (deck_kn + cov + rafter) / cos_a
+
+
+def floor_joist_allowed(lib, spec, item, spacing_mm, repetitive=True):
+    """Longest span in mm of a shed's floor joist of section `item` at `spacing_mm` under the floor deck
+    and the floor load (the result of allowable_span)."""
+    j = lib["sections"][item]
+    s = spacing_mm / 1000.0
+    deck = lib["sheets"][spec["floor_deck"]]["thickness_mm"]
+    deck_kn = deck / 1000.0 * _f("common", "sheet_density_kg_m3") * _f("common", "g") / 1000.0
+    qf = spec["loads"]["floor_kn_m2"]
+    return allowable_span(lib, j["thickness_mm"], j["width_mm"], deck_kn * s, qf * s, "floor", repetitive=repetitive)
+
+
+def shed_rafter_allowed(lib, spec, item, spacing_mm, cos_a, repetitive=True):
+    """Longest horizontal span in mm of a roof rafter of section `item` at `spacing_mm` under the roof deck,
+    covering and snow, on a slope with cosine `cos_a` (the result of allowable_span)."""
+    r = lib["sections"][item]
+    b, d = r["thickness_mm"], r["width_mm"]
+    s = spacing_mm / 1000.0
+    dead = roof_dead_plan(lib, spec, cos_a, b, d, spacing_mm)
+    # the rafter's own weight is already in `dead` (per plan area), so do not add it again
+    return allowable_span(lib, b, d, (dead - own_weight_kn_m(lib, b, d) / s / cos_a) * s, spec["loads"]["snow_kn_m2"] * s,
+                          "snow", repetitive=repetitive, cos_a=cos_a)
+
+
+def header_trib_mm(spec, wall, rafter_spacing_mm):
+    """The width of roof (plan) a wall's header carries."""
+    rspan = spec["depth"] - 100.0
+    return (rspan / 2.0 + spec["overhang"]) if wall in ("front", "back") else rafter_spacing_mm / 2.0
+
+
+def header_allowed(lib, spec, item, plies, wall, cos_a, rafter_item, rafter_spacing_mm):
+    """Longest span in mm of a header (`plies` of section `item` together) over an opening in `wall`."""
+    r = lib["sections"][rafter_item]
+    dead = roof_dead_plan(lib, spec, cos_a, r["thickness_mm"], r["width_mm"], rafter_spacing_mm)
+    t = header_trib_mm(spec, wall, rafter_spacing_mm) / 1000.0
+    h = lib["sections"][item]
+    return allowable_span(lib, h["thickness_mm"] * plies, h["width_mm"], dead * t, spec["loads"]["snow_kn_m2"] * t,
+                          "snow", repetitive=False, cos_a=1.0)

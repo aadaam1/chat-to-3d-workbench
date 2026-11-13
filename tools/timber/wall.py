@@ -264,6 +264,13 @@ class Wall:
         """How an opening is named in an error message."""
         return f"openings[{i}]"
 
+    def raise_hint(self, name, need):
+        """What to do about a wall too low for an opening, for an error message: `need` is the
+        height of the top plate's top that would fit it (a shed's wall height field is named)."""
+        if self.lay.s["type"] in ("pent-shed", "gable-shed"):
+            return f"set {self.lay.height_field(name)} to at least {math.ceil(need - 1e-9):g}, "
+        return "raise the wall, "
+
     def opening_list(self, name):
         """The openings of this wall as (index, opening): those of the description naming it."""
         return [(i, o) for i, o in enumerate(self.s["openings"]) if o["wall"] == name]
@@ -308,7 +315,8 @@ class Wall:
                 room = under - self.hh - zb
                 raise SpecError(f"{p}.height: the header ({self.hh:g} mm deep) would reach the top "
                                 f"plate; the most this {o['kind']} can be is {room:g} mm at this "
-                                f"position (or raise the wall, or use a shallower header_item)")
+                                f"position (or {self.raise_hint(name, zt + self.hh + self.courses * t)}"
+                                "or use a shallower header_item)")
             if o["kind"] == "window" and o["sill"] < max(2 * t, MIN_SHEET) - EPS:
                 raise SpecError(f"{p}.sill: at least {max(2 * t, MIN_SHEET):g} mm (room for the "
                                 "sill member, the bottom plate and a sheathing strip)")
