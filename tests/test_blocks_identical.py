@@ -112,8 +112,10 @@ def test_checks_read_assemblies_with_the_same_findings(name):
     through a JSON round trip, as the build script reads the file."""
     import frame, framecheck
     full = frame.generate(copy.deepcopy(CASES[name]))
-    if CASES[name]["type"] == "terrace":        # a terrace's checks read its assemblies only
-        assert sorted(a["id"] for a in full["assemblies"]) == ["beams", "deck", "foundations", "posts"]
+    if CASES[name]["type"] in ("terrace", "pergola"):     # their checks read the assemblies only
+        want = ["beams", "deck", "foundations", "posts"] if CASES[name]["type"] == "terrace" else \
+            ["beams", "braces", "foundations", "posts", "rafters", "slats"]
+        assert sorted(a["id"] for a in full["assemblies"]) == want
         for fr in (full, json.loads(frame.dumps(full))):
             got = __import__("hashlib").sha256(json.dumps(framecheck.run(fr), sort_keys=True).encode()).hexdigest()
             assert got == GOLD[name]["checks"]
