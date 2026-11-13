@@ -8,8 +8,8 @@ knowledge, engineering or a builder's judgement.
   fixing counts and prices are made by scripts written with an AI, from
   rules of thumb and sources that may be incomplete or misread. The AI in
   the conversation can misunderstand you or make mistakes too.
-- **Checks are guidance, not approval.** "Ready to build" or "Ready to
-  order" means the workbench's own checks passed. It does not mean a
+- **Checks are guidance, not approval.** "Looks good" means the
+  workbench's own checks passed. It does not mean a
   structure is safe or a part will hold. The timber checks are simple
   formulas, not structural engineering, and they don't know your site,
   your loads, your timber or your local rules.

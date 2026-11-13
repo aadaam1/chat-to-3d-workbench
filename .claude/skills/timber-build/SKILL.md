@@ -21,7 +21,7 @@ gives the same frame, checks and list. Background and decisions are in
   formulas checked against published span tables. Anything people stand
   under in snow, or that needs a permit, gets a qualified person's eyes.
   Remind them to check local rules on size, height and distance from the
-  boundary before buying anything. When the checks say "Ready to build",
+  boundary before buying anything. When the checks say "Looks good",
   don't present it as an approval.
 - **A question gets an answer, not a design change.**
 - **Numbers come from the scripts.** Never work out a quantity, a span or a
