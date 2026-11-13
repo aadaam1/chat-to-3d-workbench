@@ -33,34 +33,18 @@ from timber.store import (EPS, KINDS, layout, MIN_CRIPPLE, MIN_INFILL, MIN_SHEET
                           SpecError)
 from timber import recipes  # noqa: E402
 from timber import planning as pl  # noqa: E402
+from timber import fields as fld  # noqa: E402
 from timber import spans as spn  # noqa: E402
 
 
 # ------------------------------------------------------------------ spec
 
 REQUIRED = ("type", "width", "depth")
-KNOWN = ("type", "name", "region", "units", "width", "depth", "height_front", "height_back",
-         "stud_spacing", "joist_spacing", "rafter_spacing", "overhang", "frame_item",
-         "floor_item", "rafter_item", "sheathing", "floor_deck", "roof_deck", "cladding",
-         "treated_floor", "openings", "loads", "roofing", "corner", "top_plate", "header_item",
-         "overhang_side", "fascia_item", "edits",
-         "height_eaves", "pitch_deg", "height_ridge", "ridge_item", "tie_item",
-         "foundation", "footing_item", "footing_spacing")
-TERRACE_KNOWN = ("type", "name", "region", "units", "width", "depth", "height", "foundation", "footing_item",
-                 "post_item", "beam_item", "beam_plies", "beam_mount", "joist_item", "joist_spacing",
-                 "deck_board", "board_gap", "post_spacing", "row_spacing", "loads", "edits")
-PERGOLA_KNOWN = ("type", "name", "region", "units", "width", "depth", "height", "foundation", "footing_item",
-                 "post_item", "beam_item", "beam_plies", "beam_mount", "beam_axis", "rafter_item", "rafter_spacing",
-                 "overhang", "beam_overhang", "slats", "braces", "brace_item", "brace_leg", "post_spacing",
-                 "loads", "edits")
-KITCHEN_KNOWN = ("type", "name", "region", "units", "width", "depth", "roof", "floor", "floor_height", "walls",
-                 "height_eaves", "height_front", "height_back", "height_ridge", "pitch_deg",
-                 "foundation", "footing_item", "post_item", "beam_item", "beam_plies", "post_spacing",
-                 "rafter_item", "rafter_spacing", "overhang", "overhang_side", "fascia_item", "ridge_item", "tie_item",
-                 "roof_deck", "roofing", "braces", "brace_item", "brace_leg",
-                 "frame_item", "stud_spacing", "sheathing", "cladding", "top_plate", "header_item",
-                 "joist_item", "joist_spacing", "deck_board", "board_gap", "floor_beam_item", "floor_beam_plies",
-                 "floor_post_item", "loads", "edits")
+# the fields each recipe accepts come from the tables in timber/fields.py (also `--fields`)
+KNOWN = tuple(dict.fromkeys(fld.names("pent-shed") + fld.names("gable-shed")))
+TERRACE_KNOWN = fld.names("terrace")
+PERGOLA_KNOWN = fld.names("pergola")
+KITCHEN_KNOWN = fld.names("summer-kitchen")
 KITCHEN_WALLS = ("back", "left", "right")
 TYPES = ("pent-shed", "gable-shed", "terrace", "pergola", "summer-kitchen")
 GABLE_ONLY = ("height_eaves", "pitch_deg", "height_ridge", "ridge_item", "tie_item")
@@ -302,6 +286,11 @@ def _plan_heights(raw, s, lib, gable):
     else:
         hb = max(DEFAULT_HEIGHT_FRONT - DEFAULT_HEIGHT_DROP, pl.ceil_step(back_need))
         hf = max(hb + drop, pl.ceil_step(front_need))
+        zd = tl.item(lib, s["floor_item"])["width_mm"] + tl.item(lib, s["floor_deck"])["thickness_mm"]
+        cap = pl.floor_step(zd + max(tl.item(lib, s["sheathing"])["size_mm"]))      # the wall sheathing is one sheet high
+        if hf > cap and front_need <= cap:
+            hf = cap
+            hb = max(hf - drop, pl.ceil_step(back_need))                        # a deep shed gets its fall from a lower back
     plain_f = s["height_front"] if given_f else DEFAULT_HEIGHT_FRONT
     plain_b = s["height_back"] if given_b else plain_f - DEFAULT_HEIGHT_DROP
     s["height_front"], s["height_back"] = float(hf), float(hb)
@@ -347,6 +336,7 @@ def _plan_shed(raw, s, lib, d, gable):
     # wall heights, rafters and headers, which depend on each other a little
     cos_a = 1.0
     hh0 = None
+    base_r, base_h = (s["rafter_item"], s["rafter_spacing"]), s["header_item"]     # the plain defaults, whatever an earlier round chose
     for _ in range(3):
         hd = _plan_heights(raw, s, lib, gable)
         if gable:
@@ -363,8 +353,7 @@ def _plan_shed(raw, s, lib, d, gable):
             def ev_r(key, spacing, c=c, run=run):
                 n = len(layout(W, lib["sections"][key]["thickness_mm"], spacing))
                 return run, spn.shed_rafter_allowed(lib, s, key, spacing, c, repetitive=n >= 4)["span_mm"]
-        base_r = (s["rafter_item"], s["rafter_spacing"])
-        r = pl.size_member(lib, s["rafter_item"], s["rafter_spacing"], ("rafter",), ev_r, item_named=raw.get("rafter_item"),
+        r = pl.size_member(lib, base_r[0], base_r[1], ("rafter",), ev_r, item_named=raw.get("rafter_item"),
                            spacing_named="rafter_spacing" in raw)
         rd = ("Rafters",) + pl.explain(lib, "rafters", r, base_r[0], base_r[1], u) if r.changed else None
         s["rafter_item"], s["rafter_spacing"] = r.key, float(r.spacing)
@@ -372,7 +361,6 @@ def _plan_shed(raw, s, lib, d, gable):
         # headers: all at once, the deepest need decides
         hdd = None
         if s["openings"]:
-            hk0 = raw.get("header_item") or s["frame_item"]
             tf = tl.item(lib, s["frame_item"])["thickness_mm"]
             wf_ = tl.item(lib, s["frame_item"])["width_mm"]
 
@@ -386,13 +374,13 @@ def _plan_shed(raw, s, lib, d, gable):
                     if worst is None or span / al > worst[0] / worst[1]:
                         worst = (span, al)
                 return worst
-            h = pl.size_member(lib, s["header_item"], 0.0, ("header", "joist", "rafter"), ev_h,
+            h = pl.size_member(lib, base_h, 0.0, ("header", "joist", "rafter"), ev_h,
                                item_named=raw.get("header_item"), spacing_named=True)
             if h.changed:
                 nm = lambda k: pl.section_name(lib, k)
                 hdd = ("Headers over the openings", f"{nm(h.key)}, two together" if 2 * lib["sections"][h.key]["thickness_mm"] <= wf_ + EPS
                        else nm(h.key),
-                       f"{nm(s['header_item'])} is good for {pl.length_text(h.base[1], u)} and the widest opening needs "
+                       f"{nm(base_h)} is good for {pl.length_text(h.base[1], u)} and the widest opening needs "
                        f"{pl.length_text(h.base[0], u)}")
                 s["header_item"] = h.key
         hh = tl.item(lib, s["header_item"])["width_mm"]
@@ -1175,10 +1163,32 @@ def _check_geometry(s, lib):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="Generate the frame file for a pent shed from its spec.")
-    ap.add_argument("spec", help="shed spec JSON")
-    ap.add_argument("--out", required=True, help="frame.json to write")
+    ap = argparse.ArgumentParser(description="Generate the frame file for a timber structure from its description, "
+                                             "or list what can be described (--types, --fields).")
+    ap.add_argument("spec", nargs="?", help="description JSON")
+    ap.add_argument("--out", help="frame.json to write")
+    ap.add_argument("--types", action="store_true", help="list the recipes, one line each")
+    ap.add_argument("--fields", metavar="TYPE", help="list every field the recipe accepts, with meaning, default and allowed values")
+    ap.add_argument("--region", default="eu", help="library for --fields: eu (default) or us")
     a = ap.parse_args(argv)
+    if a.types:
+        w = max(len(k) for k in fld.TYPES)
+        for k, (text, _) in fld.TYPES.items():
+            print(f"{k:<{w}}  {text}")
+        return 0
+    if a.fields:
+        if a.fields not in fld.TYPES:
+            print(f"frame: {a.fields!r} is not a recipe; use one of {', '.join(fld.TYPES)}", file=sys.stderr)
+            return 2
+        try:
+            lib = tl.load(a.region)
+        except ValueError as e:
+            print(f"frame: region: {e}", file=sys.stderr)
+            return 2
+        print("\n".join(fld.describe(a.fields, lib)))
+        return 0
+    if not (a.spec and a.out):
+        ap.error("give a description and --out, or --types, or --fields <type>")
     try:
         with open(a.spec, encoding="utf-8") as f:
             raw = json.load(f)
@@ -1197,6 +1207,10 @@ def main(argv=None):
     c = Counter(m["kind"] for m in frame["members"])
     print(f"frame: {len(frame['members'])} members, {len(frame['joints'])} joints -> {a.out}")
     print("  " + ", ".join(f"{k} {v}" for k, v in sorted(c.items())))
+    if frame.get("decisions"):
+        print("How it was planned:")
+        for d in frame["decisions"]:
+            print(f"  {d['what']}: {d['chose']} ({d['why']})")
     return 0
 
 

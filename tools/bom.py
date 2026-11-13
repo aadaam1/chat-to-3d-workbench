@@ -523,6 +523,10 @@ def render_md(bom):
         out.append(f"**Total {money(t['amount'], cur)}** for {t['priced_lines']} of {t['lines']} lines"
                    + (" (partial: no price for " + ", ".join(t["unpriced"]) + ")" if t["partial"] else "") + ".")
         out.append("")
+    if bom.get("decisions"):
+        out += ["## How it was planned", "",
+                "What the description left open, and what the planner chose (a value you set yourself is never changed):", ""]
+        out += [f"- **{d['what']}**: {d['chose']}. {d['why'][0].upper() + d['why'][1:]}." for d in bom["decisions"]] + [""]
     if bom["problems"]:
         out += ["## Problems", ""] + [f"- {p}" for p in bom["problems"]] + [""]
 
