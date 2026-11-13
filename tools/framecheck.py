@@ -30,7 +30,8 @@ from frame_edits import contact  # noqa: E402   (separating-axis touch test shar
 from timber.spans import (FACTORS, WARN_FRACTION, MAX_FRACTION, SPACING_SHARE, _f, own_weight_kn_m,  # noqa: E402,F401
                          us_size_factor, allowable_span, level_for, terrace_loads, joist_allowed, beam_allowed,
                          _slat_dead_kn_m2, pergola_rafter_span, pergola_rafter_allowed, pergola_beam_allowed,
-                         kitchen_roof_dead_kn_m2, kitchen_beam_trib_mm, kitchen_beam_allowed)
+                         kitchen_roof_dead_kn_m2, kitchen_beam_trib_mm, kitchen_beam_allowed,
+                         floor_joist_allowed, shed_rafter_allowed, header_allowed, header_trib_mm)
 
 # ============================================================== GEOMETRY
 
@@ -187,16 +188,6 @@ def rafter_run(frame):
     return round(float(box_corners(ridge)[:, 1].min() - box_corners(plate)[:, 1].min()), 1)
 
 
-def roof_dead_plan(f, lib, spec, cos_a, rafter_b, rafter_d):
-    """Permanent roof load in kN per m2 of plan: deck, covering and the rafters."""
-    deck = lib["sheets"][spec["roof_deck"]]["thickness_mm"]
-    dens = _f("common", "sheet_density_kg_m3")
-    deck_kn = deck / 1000.0 * dens * _f("common", "g") / 1000.0
-    cov = _f("common", "covering_kn_m2").get(spec.get("roofing"), 0.10)
-    rafter = own_weight_kn_m(lib, rafter_b, rafter_d) / (spacing_of(f.frame, "rafter", "rafter_spacing") / 1000.0)
-    return (deck_kn + cov + rafter) / cos_a
-
-
 # ================================================================== SPANS
 
 def check_joists(f):
@@ -211,11 +202,9 @@ def check_joists(f):
     span = m["size"][0] + rim_t                     # centre to centre of the two rim joists
     b, d = vertical_dims(m)
     spacing = spacing_of(fr, "joist", "joist_spacing")
-    s = spacing / 1000.0
-    deck = lib["sheets"][deck_of(fr, "joist", "floor_deck")]["thickness_mm"]
-    deck_kn = deck / 1000.0 * _f("common", "sheet_density_kg_m3") * _f("common", "g") / 1000.0
     qf = spec["loads"]["floor_kn_m2"]
-    res = allowable_span(lib, b, d, deck_kn * s, qf * s, "floor", repetitive=len(joists) >= 4)
+    res = floor_joist_allowed(lib, dict(spec, floor_deck=deck_of(fr, "joist", "floor_deck")), m["item"], spacing,
+                              repetitive=len(joists) >= 4)
     allowed = res["span_mm"]
     level = level_for(span, allowed)
     name = section_name(lib, m["item"])
@@ -252,12 +241,8 @@ def check_rafters(f):
         span = spec["depth"] - 100.0
     b, d = vertical_dims(m)
     spacing = spacing_of(fr, "rafter", "rafter_spacing")
-    s = spacing / 1000.0
     snow = spec["loads"]["snow_kn_m2"]
-    dead = roof_dead_plan(f, lib, spec, cos_a, b, d)
-    # the rafter's own weight is already in `dead` (per plan area), so do not add it again
-    res = allowable_span(lib, b, d, (dead - own_weight_kn_m(lib, b, d) / s / cos_a) * s, snow * s, "snow",
-                         repetitive=len(rafters) >= 4, cos_a=cos_a)
+    res = shed_rafter_allowed(lib, spec, m["item"], spacing, cos_a, repetitive=len(rafters) >= 4)
     allowed = res["span_mm"]
     level = level_for(span, allowed)
     name = section_name(lib, m["item"])
@@ -287,17 +272,13 @@ def check_headers(f):
     if not headers:
         f.add("span-headers", "ok", "Headers", "There are no door or window openings, so no header was checked.")
         return
-    rb, rd = vertical_dims(rafters[0]) if rafters else (38, 140)
-    dead = roof_dead_plan(f, lib, spec, cos_a, rb, rd)
-    rspan = spec["depth"] - 100.0
+    ritem = rafters[0]["item"] if rafters else spec["rafter_item"]
     for m in sorted(headers, key=lambda h: h["id"]):
         wall = m["group"].split("-")[-1]
-        trib = (rspan / 2.0 + spec["overhang"]) if wall in ("front", "back") else spacing_of(fr, "rafter", "rafter_spacing") / 2.0
-        t = trib / 1000.0
-        b, d = vertical_dims(m)
-        b *= plies[m["id"]]
+        rsp = spacing_of(fr, "rafter", "rafter_spacing")
+        trib = header_trib_mm(spec, wall, rsp)
         span = m["size"][0]
-        res = allowable_span(lib, b, d, dead * t, snow * t, "snow", repetitive=False, cos_a=1.0)
+        res = header_allowed(lib, spec, m["item"], plies[m["id"]], wall, cos_a, ritem, rsp)
         allowed = res["span_mm"]
         level = level_for(span, allowed)
         name = section_name(lib, m["item"]) + (f", {plies[m['id']]} together" if plies[m["id"]] > 1 else "")
