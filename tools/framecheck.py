@@ -725,7 +725,10 @@ def check_bay_blocking(f):
         if plates:
             walls[wall] = _extent(plates, 1)
     for wall, (y0, y1) in walls.items():
-        over = [m for m in blocks if y0 - 1.0 <= centre(m)[1] <= y1 + 1.0]
+        if is_kitchen(fr):          # a beam can be narrower than the block is deep: any block on the beam counts
+            over = [m for m in blocks if _extent([m], 1)[0] < y1 - 1.0 and _extent([m], 1)[1] > y0 + 1.0]
+        else:
+            over = [m for m in blocks if y0 - 1.0 <= centre(m)[1] <= y1 + 1.0]
         for a, b in (_bays(f, wall) if gable else bays):
             lo, hi = _extent([a], 0)[1], _extent([b], 0)[0]
             # a bay is closed by one block, or (gable roof) by a block and the tie beside its rafter

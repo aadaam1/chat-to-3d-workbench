@@ -163,6 +163,9 @@ def build_floor(fr, lib, spec, rect):
     post_top = z_joist - hb
     no_posts = post_top - foot.seat < tdef["min_post_mm"] and z_joist - hb >= foot.seat - 0.05
     inset = math.ceil((beam.width() / 2 + 25) / 5) * 5
+    # the first footings stay clear of the posts' corner footings (a block or pier is wider than a screw)
+    body = max(foot.f["body_mm"])
+    inset = max(inset, math.ceil((body + 10 - min(fx0, fy0) / 2) / 5) * 5)
     if min(fW, fD) < 2 * inset + 300:
         raise SpecError("floor: the clear area between the posts is too small for a floor "
                         f"({fW:g} x {fD:g} mm); make the structure bigger or use floor: none")
