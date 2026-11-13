@@ -340,6 +340,7 @@ def _plan_shed(raw, s, lib, d, gable):
     for _ in range(3):
         hd = _plan_heights(raw, s, lib, gable)
         if gable:
+            _gable_roof(raw, dict(s), lib, d)                  # the description's own roof must work: its errors are the person's to read
             def ev_r(key, spacing):
                 tr_ = _rafter_trial(raw, s, lib, d, key)
                 if tr_ is None:

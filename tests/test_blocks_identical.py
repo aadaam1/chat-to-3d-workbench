@@ -132,6 +132,8 @@ def test_checks_read_assemblies_with_the_same_findings(name):
             assert all(i.startswith("wall-") for i in ids if i not in ("beams", "braces", "foundations", "posts", "roof",
                                                                    "deck", "floor-beams", "floor-foundations", "floor-posts"))
             want = sorted(ids)
+        if CASES[name]["type"] == "pergola" and full["spec"]["slats"] == "none":
+            want = [w for w in want if w != "slats"]             # no slats, no slats assembly
         assert sorted(a["id"] for a in full["assemblies"]) == want
         for fr in (full, json.loads(frame.dumps(full))):
             got = __import__("hashlib").sha256(json.dumps(framecheck.run(fr), sort_keys=True).encode()).hexdigest()
