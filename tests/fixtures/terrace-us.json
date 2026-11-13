@@ -1,0 +1,9 @@
+{
+  "type": "terrace",
+  "region": "us",
+  "name": "terrace",
+  "width": "13'",
+  "depth": "10'",
+  "height": 600,
+  "foundation": "ground_screw"
+}

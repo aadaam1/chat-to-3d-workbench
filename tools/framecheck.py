@@ -963,16 +963,220 @@ def check_wall_bracing(f):
         f.add("wall-bracing", "ok", "Wall bracing", "Every wall has sheathing or a brace to stop it racking.")
 
 
+# ============================================================== TERRACE
+# A terrace has no walls or roof: its checks are the spans of the deck joists
+# and the beams, the boards' span, and two layout rules (every post on a
+# footing, every beam end over a support). Footings are bought items whose load
+# capacity is not checked.
+
+SPACING_SHARE = 0.8     # the generator keeps terrace spans under this share of the allowable
+
+
+def terrace_loads(lib, spec):
+    """kN/m2 of deck plan: the boards (dead) and the live load."""
+    board = lib["sections"][spec["deck_board"]]
+    grade = lib["grades"][lib["defaults"]["grade"]]
+    rho = grade.get("density_mean_kg_m3", grade["density_kg_m3"])
+    dead = board["thickness_mm"] / 1000.0 * rho * _f("common", "g") / 1000.0
+    return {"deck_kn_m2": dead, "live_kn_m2": spec["loads"]["floor_kn_m2"]}
+
+
+def joist_allowed(lib, spec, ld, repetitive=True):
+    """Longest span in mm of a terrace deck joist at the described spacing."""
+    j = lib["sections"][spec["joist_item"]]
+    s = spec["joist_spacing"] / 1000.0
+    return allowable_span(lib, j["thickness_mm"], j["width_mm"], ld["deck_kn_m2"] * s, ld["live_kn_m2"] * s,
+                          "floor", repetitive=repetitive)["span_mm"]
+
+
+def beam_allowed(lib, spec, ld, trib_mm, plies=None, item=None, detail=False):
+    """Longest span in mm of a terrace beam (its plies together, not a repetitive
+    system) carrying a strip of deck `trib_mm` wide, with the joists' own weight."""
+    b = lib["sections"][item or spec["beam_item"]]
+    j = lib["sections"][spec["joist_item"]]
+    t = trib_mm / 1000.0
+    joist_dead = own_weight_kn_m(lib, j["thickness_mm"], j["width_mm"]) / (spec["joist_spacing"] / 1000.0)
+    res = allowable_span(lib, b["thickness_mm"] * (plies or spec["beam_plies"]), b["width_mm"],
+                         (ld["deck_kn_m2"] + joist_dead) * t, ld["live_kn_m2"] * t, "floor", repetitive=False)
+    return res if detail else res["span_mm"]
+
+
+def is_terrace(frame):
+    return frame["spec"].get("type") == "terrace"
+
+
+def check_terrace_joists(f):
+    fr, lib, spec = f.frame, f.lib, f.frame["spec"]
+    sp = span_of(fr, "joist")
+    joists = [m for m in fr["members"] if m["kind"] == "joist"]
+    if not (sp and joists):
+        f.add("span-joists", "check", "Deck joists", "There are no deck joists in this frame, so no span was checked.")
+        return
+    ld = terrace_loads(lib, spec)
+    m = joists[0]
+    b, d = vertical_dims(m)
+    s = sp["spacing_mm"] / 1000.0
+    res = allowable_span(lib, b, d, ld["deck_kn_m2"] * s, ld["live_kn_m2"] * s, "floor", repetitive=len(joists) >= 4)
+    span, allowed = sp["span_mm"], res["span_mm"]
+    level = level_for(span, allowed)
+    verdict = {"ok": "That is comfortable.",
+               "check": "That is close to the limit: use a deeper joist, closer joists or another beam row.",
+               "fix": "That is too long: use a deeper joist, closer joists or another beam row."}[level]
+    f.add("span-joists", level, f"Deck joists: {section_name(lib, m['item'])} at {f.length(sp['spacing_mm'])}",
+          f"Deck joists span {f.length(span)} between beams (centre to centre of the farthest two). "
+          f"This section is good for about {f.length(allowed)} at this spacing under the boards and a load of "
+          f"{f.load(ld['live_kn_m2'])} (limited by {res['governs']}). {verdict} "
+          f"Counted as simply supported between beams; the overhang past the end beams only helps.", [m["id"]])
+
+
+def check_terrace_beams(f):
+    fr, lib, spec = f.frame, f.lib, f.frame["spec"]
+    ld = terrace_loads(lib, spec)
+    rows = [sp for a in fr.get("assemblies", []) if a["type"] == "beams" for sp in a["spans"] if sp["kind"] == "beam"]
+    if not rows:
+        f.add("span-beams", "check", "Beams", "There are no beams in this frame, so no beam span was checked.")
+        return
+    for r in sorted(rows, key=lambda r: r["id"]):
+        res = beam_allowed(lib, spec, ld, r["trib_mm"], r["plies"], r["item"], detail=True)
+        span, allowed = r["span_mm"], res["span_mm"]
+        level = level_for(span, allowed)
+        verdict = {"ok": "That is comfortable.",
+                   "check": "That is close to the limit: use a deeper beam or put a post in sooner.",
+                   "fix": "That is too long: use a deeper beam, two plies, or more posts."}[level]
+        name = section_name(lib, r["item"]) + (f", {r['plies']} together" if r["plies"] > 1 else "")
+        f.add(f"span-{r['id'].replace('/', '-')}", level, f"Beam {r['id'].split('/')[-1]}: {name}",
+              f"The beam spans {f.length(span)} between posts and carries a strip of deck {f.length(r['trib_mm'])} wide "
+              f"at {f.load(ld['live_kn_m2'])}. This section is good for about {f.length(allowed)} (limited by "
+              f"{res['governs']}). {verdict}", [r["id"]] if r["id"] in f.by_id else [])
+
+
+def check_deck_boards(f):
+    fr, lib = f.frame, f.lib
+    sp = next((x for a in fr.get("assemblies", []) for x in a["spans"] if x["kind"] == "deckboard"), None)
+    jsp = span_of(fr, "joist")
+    if not (sp and jsp):
+        f.add("deck-board-span", "ok", "Deck boards", "There are no deck boards in this frame.")
+        return
+    lim, spacing = sp.get("max_joist_spacing_mm"), jsp["spacing_mm"]
+    name = section_name(lib, sp["item"])
+    if lim is None:
+        f.add("deck-board-span", "check", "Deck boards", f"No span limit is recorded for {name}; its joist spacing was not checked.")
+    elif spacing > lim + 0.5:
+        ids = [m["id"] for m in fr["members"] if m["kind"] == "deckboard"][:50]
+        f.add("deck-board-span", "check", "Deck boards on joists too far apart",
+              f"The {name} boards span {f.length(spacing)} between joists; the limit for this board is {f.length(lim)} "
+              "(a rule of thumb marked unverified in the library; check the board maker's table). Put the joists closer together or "
+              "use a thicker board.", ids)
+    else:
+        f.add("deck-board-span", "ok", "Deck board span",
+              f"The {name} boards span {f.length(spacing)} between joists, within the limit of {f.length(lim)} "
+              "(a rule of thumb marked unverified in the library).")
+
+
+def _members(f, kind):
+    return [m for m in f.frame["members"] if m["kind"] == kind]
+
+
+def check_post_footing(f):
+    posts, bases, bodies = _members(f, "post"), _members(f, "post-base"), \
+        [m for m in f.frame["members"] if m["kind"] in ("ground-screw", "pier", "footing")]
+    joined = {(j["a"], j["b"]) for j in f.frame["joints"] if j["type"] == "post-base"}
+    bad = []
+    carried = posts or _members(f, "beam")
+    for p in carried:
+        bs = [b for b in bases if (b["id"], p["id"]) in joined]
+        ok = any(contact(b, w, 1.0) is not None for b in bs for w in bodies)
+        if not (bs and ok):
+            bad.append(p)
+    if not carried:
+        f.add("post-footing", "ok", "Posts on footings", "There are no posts in this frame.")
+    elif bad:
+        f.add("post-footing", "fix", "Post not on a footing",
+              f"{len(bad)} piece(s) are not fixed to a post base on a footing (first: {bad[0]['id']}). Every post "
+              "stands on a footing through a post base, so it stays off the ground and cannot walk.", [m["id"] for m in bad][:50])
+    else:
+        what = "post" if posts else "beam support"
+        f.add("post-footing", "ok", "Posts on footings",
+              f"Every {what} stands on a post base fixed to a footing (ground screw, block or poured pier; "
+              "the footings' load capacity is not checked).")
+
+
+def check_beam_bearing(f, max_end=300.0):
+    fr = f.frame
+    recs = [sp for a in fr.get("assemblies", []) if a["type"] == "beams" for sp in a["spans"] if sp["kind"] == "beam"]
+    if not recs:
+        f.add("beam-bearing", "ok", "Beam bearing", "There are no beams in this frame.")
+        return
+    sup = _members(f, "post") or _members(f, "post-base")
+    by = f.by_id
+    bad = []
+    for r in recs:
+        b = by.get(r["id"])
+        if b is None:
+            continue
+        ax = 0 if abs(b["x"][0]) > 0.5 else 1
+        ends = box_corners(b)[:, ax]
+        lo, hi = float(ends.min()), float(ends.max())
+        line = 1 - ax
+        cl = [float(centre(s)[ax]) for s in sup if abs(float(centre(s)[line]) - r["line"]) <= 1.0]
+        if not cl or min(cl) - lo > max_end + 0.5 or hi - max(cl) > max_end + 0.5:
+            bad.append(b)
+    if bad:
+        f.add("beam-bearing", "fix", "Beam end with no support",
+              f"{len(bad)} beam(s) reach more than {f.length(max_end)} past their last post or have none under them "
+              f"(first: {bad[0]['id']}). Every beam end must be over a post or footing, or within a short overhang of one.",
+              [m["id"] for m in bad][:50])
+    else:
+        f.add("beam-bearing", "ok", "Beam bearing",
+              f"Every beam is over a post or footing at both ends, overhanging by no more than {f.length(max_end)}.")
+
+
+def check_railing(f):
+    h = f.frame["spec"]["height"]
+    lim = f.lib["defaults"]["terrace"]["railing_height_mm"]
+    if h > lim + 0.5:
+        f.add("railing", "check", "A railing is usually required",
+              f"The deck is {f.length(h)} above the ground. Above about {f.length(lim)} most places require a guard "
+              "rail around the open sides (and steps with a handrail). The workbench does not draw rails or steps yet: "
+              "check your local rules.", [])
+    else:
+        f.add("railing", "ok", "Railing",
+              f"The deck is {f.length(h)} above the ground, under about {f.length(lim)}, where a railing is usually not required "
+              "(check your local rules).")
+
+
+def run_terrace(f):
+    check_terrace_joists(f)
+    check_terrace_beams(f)
+    check_deck_boards(f)
+    check_stock_length(f)
+    check_post_footing(f)
+    check_beam_bearing(f)
+    check_railing(f)
+    check_floating(f)
+
+
 DISCLAIMER = ("This is guidance from simple formulas, not structural engineering. Joists, rafters and headers were "
               "treated as beams under an even load; wind, uplift, shear, fixings, the ground and the loads on "
               "neighbouring walls were not checked, and local building rules may apply (permits, snow and wind zones, "
               "distance from boundaries). For anything that people will shelter in or that could hurt someone if it "
               "fails, have it checked by a qualified person.")
 
+DISCLAIMER_TERRACE = ("This is guidance from simple formulas, not structural engineering. Deck joists and beams were "
+                      "treated as beams under an even load; the footings (ground screws, blocks, poured piers), the soil, "
+                      "frost, wind, fixings and the connections to a house were not checked, and local building rules may "
+                      "apply (permits, rails above a certain height, distance from boundaries). For anything that people "
+                      "stand on well above the ground, have it checked by a qualified person.")
+
 
 def run(frame):
     lib = tl.load(frame["region"])
     f = Findings(frame, lib)
+    if is_terrace(frame):
+        run_terrace(f)
+        f.add("guidance-only", "ok", "Guidance only", DISCLAIMER_TERRACE)
+        return {"schema": 1, "region": frame["region"], "units": frame["units"],
+                "factors": FACTORS["common"] | FACTORS[frame["region"]], "findings": f.items}
     check_joists(f)
     check_rafters(f)
     check_headers(f)

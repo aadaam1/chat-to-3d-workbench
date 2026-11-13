@@ -1,5 +1,6 @@
 """The timber generator's output must not change when its code is reorganised.
-(The two gable-shed cases were added with the gable roof; the rest are the pent shed.)
+(The two gable-shed cases were added with the gable roof and the two terrace cases with the
+terrace; the rest are the pent shed.)
 
 Each case is a description; the sha256 of its frame file (without any
 "assemblies" key), of its check findings and of its shopping list are in
@@ -60,6 +61,8 @@ def cases():
     c["eu-edits"] = dict(eu, edits=_edits(eu))
     c["gable-eu"] = _load(os.path.join(FIX, "gable-eu.json"))
     c["gable-us"] = _load(os.path.join(FIX, "gable-us.json"))
+    c["terrace-eu"] = _load(os.path.join(FIX, "terrace-eu.json"))       # added with the terrace
+    c["terrace-us"] = _load(os.path.join(FIX, "terrace-us.json"))
     return c
 
 
@@ -107,6 +110,12 @@ def test_checks_read_assemblies_with_the_same_findings(name):
     through a JSON round trip, as the build script reads the file."""
     import frame, framecheck
     full = frame.generate(copy.deepcopy(CASES[name]))
+    if CASES[name]["type"] == "terrace":        # a terrace's checks read its assemblies only
+        assert [a["id"] for a in full["assemblies"]] == ["foundations", "posts", "beams", "deck"]
+        for fr in (full, json.loads(frame.dumps(full))):
+            got = __import__("hashlib").sha256(json.dumps(framecheck.run(fr), sort_keys=True).encode()).hexdigest()
+            assert got == GOLD[name]["checks"]
+        return
     assert [a["id"] for a in full["assemblies"]] == ["floor", "wall-front", "wall-back",
                                                     "wall-left", "wall-right", "roof"]
     assert full["assemblies"][-1]["type"] == ("gable-roof" if CASES[name]["type"] == "gable-shed" else "mono-roof")

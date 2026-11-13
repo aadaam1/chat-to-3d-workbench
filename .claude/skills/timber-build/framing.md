@@ -273,6 +273,59 @@ steeper roof.
 The sheathing on a gable wall is one sheet high, so a very tall gable end
 is refused (`height_eaves`).
 
+## Terrace: footings, posts, beams, joists, deck boards
+
+**In plain words.** A raised terrace is a floor with no walls. It stands on
+footings (ground screws, precast concrete blocks, or poured piers), each with a
+post base; posts stand on the bases; beams run along the rows of posts; deck
+joists lie across the beams; deck boards go across the joists with a gap
+between them for water and air. `"type": "terrace"` builds all of it, with the
+ground at Z 0 and the top of the boards at `height`. Footings and post bases
+are bought items, drawn on the `foundations` layer.
+
+**Rules the generator follows.**
+- Beam rows are inset from the long edges (half the beam width plus 25 mm) and
+  no further apart than `row_spacing`; posts under every row at most
+  `post_spacing` apart. Both default to the library's cap (2 m in `eu`, 80 in.
+  in `us`) or 80% of what the span formulas allow for the joist or beam, the
+  smaller. Joists run across the beams and overhang the outer rows a little.
+- A **sandwich** beam (the default, two plies) has a ply on each side of every
+  post, bolted through, its top level with the post top and the joists lying
+  on it. An **on_top** beam lies on the posts' tops on a post cap. One ply
+  needs `on_top`.
+- **Low terraces.** A post shorter than the library's `min_post_mm` (150 mm) is
+  left out: the beams then sit on the post bases directly (`on_top`), and the
+  footings' above-ground part is built up to meet them. If even that does not
+  fit, the description is refused with the lowest height that works.
+- Deck boards run across the joists, the gap `board_gap` (5 mm) between rows,
+  spread to at most 8 mm to use up the remainder or finished with one ripped
+  board. A row longer than the longest stock length is cut on joists with the
+  joints staggered from row to row. Two screws at every joist crossing.
+- Joist spacing defaults to the board's limit (500 mm for a 28 mm board, 400
+  mm for 25 mm, 16 in. for 5/4 decking).
+- Checks: spans of the joists and each beam (the load is the deck, the joists
+  and `loads.floor_kn_m2`, 2.5 kN/m2 in `eu`, 40 psf in `us`), the board span,
+  `post-footing` (every post on a post base on a footing), `beam-bearing`
+  (every beam end over a post or footing, at most 300 mm past it), and a
+  `check` that a terrace higher than about 600 mm usually needs a railing.
+  Footing capacity (soil, frost, wind, uplift) is **not** checked.
+- A shed may carry `"foundation"`: footings under its front and back rim
+  joists (`footing_spacing`, 1.5 m by default); the floor frame is unchanged.
+
+**Sources** (all read 2026-11-13, none from a primary table: values are
+marked `unverified` in the libraries). Ground screw ranges, for example
+Krinner's (https://www.krinner.com/en/products/ground-screws/): the page
+answered HTTP 429, so the sizes (Ø76 mm, 800 to 1200 mm long, a post bracket)
+and the 2 m spacing are what such ranges typically offer, not read. Precast
+pier blocks and poured piers: typical builders' sizes (300 mm block; 300 mm
+diameter by 800 mm pier; 400 mm square pad), frost depth decides the real
+depth. Deck boards: 28 x 145 mm is the usual board, 25 x 150 is in the
+supplier price snapshot (data/timber/prices/hu-szekely-fatelep-2026-11-10.csv);
+the span limit per thickness and the 5 mm gap are rules of thumb. Terrace load
+2.5 kN/m2: EN 1991-1-1 Table 6.2, category A balconies, as widely reproduced;
+US 40 psf: IRC R301.5 for decks. Posts 100 x 100, 120 x 120 are listed by the
+supplier (140 x 140 is not); US 4x4 and 6x6 are PS 20 dressed sizes.
+
 ## European (UK/EU) names and equivalents
 
 | In this workbench / US | UK and Europe | Note |

@@ -321,7 +321,9 @@ def test_both_fixtures_generate_and_follow_the_format(shed):
 def test_joint_coverage(shed):
     """Every kind of contact the plan names is recorded."""
     types = {j["type"] for j in shed["joints"]}
-    assert types == set(tl.JOINT_TYPES) - {"rafter-ridge", "tie-rafter", "tie-plate"}      # those two are the gable roof's
+    assert types == set(tl.JOINT_TYPES) - {"rafter-ridge", "tie-rafter", "tie-plate",       # the gable roof's
+                                                           "post-base", "beam-post", "beam-cap", "beam-ply",
+                                                           "joist-beam", "deck-board"}         # the terrace's
     by = by_id(shed)
     # every stud-plate joint is a stud end on something it touches
     for j in shed["joints"]:

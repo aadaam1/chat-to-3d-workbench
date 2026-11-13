@@ -9,6 +9,9 @@ workbench is a working prototype, and anything may still change.
 
 ## [Unreleased]
 
+### Added
+- A terrace (`"type": "terrace"`) on ground screws, pier blocks or concrete footings.
+
 ### Changed
 - The preview's verdict says "Looks good" instead of "Ready to build" or "Ready to order", with the disclaimer right under it.
 
