@@ -1,6 +1,6 @@
 # Timber building blocks
 
-Status: in progress (B1 and B2 done)
+Status: in progress (B1 and B2 done; B3-B5 decided 2026-11-13)
 Last updated: 2026-11-12
 
 ## The question
@@ -101,9 +101,9 @@ from a recipe and change one assembly.
 |---|---|---|
 | B1 | Split `Builder` into `platform`, `wall`, `roof` (mono-pitch) and the `pent-shed` recipe; spans per assembly | the same shed comes out of blocks |
 | B2 | `gable-shed`: gable roof (ridge board, rafters in pairs, collar or ceiling ties) and walls with gable tops | a second roof shape reuses walls and platform |
-| B3 | `deck`: posts on ground screws, beams, platform with deck boards | a structure with no walls or roof |
-| B4 | `pergola`: posts, beams, slats | posts and beams reused |
-| B5 | `summer-kitchen`: posts, beams, a roof, optional walls | blocks combine freely |
+| B3 | Foundations, `posts`, `beam`; `terrace` (a deck on posts and beams, board decking); optional foundations under the sheds | a structure with no walls or roof |
+| B4 | `pergola`: posts, beams, rafters and slats, knee braces, open on every side | posts and beams reused, an open structure kept standing |
+| B5 | `summer-kitchen`: posts, beams and a mono or gable roof on them, an optional terrace floor and 0–3 walls | blocks combine freely |
 
 Each step is its own pull request with renders and the checks passing.
 
@@ -126,9 +126,57 @@ hashes did not move). The rules and sources are in `framing.md`.
 The first public release (0.6.0) comes after B2 at the earliest; B3–B5 can
 follow in public.
 
+## Outdoor structures (B3–B5), decided 2026-11-13
+
+The owner wants open structures next: a terrace, an open pergola, a
+summer kitchen. They share three new blocks and one changed one.
+
+**Foundations** (`footing` per post or per bearing point), one kind per
+structure, chosen in the description:
+- `ground_screw` (default): a steel screw, a size from the library
+  (diameter, length, head plate or post bracket), its position marked.
+- `pier_block`: a precast concrete block on compacted gravel, with an
+  adjustable post base.
+- `concrete_footing`: a poured pad or pier (size from the library), with a
+  post base cast in or bolted on.
+- `none`: today's sheds, unchanged by default; a shed may ask for any of
+  the above under its floor frame.
+Each is bought (shopping list) and drawn (preview layer `foundations`).
+Load capacities are not checked yet: the library gives sizes and spacings
+from manufacturers' guidance, marked unverified.
+
+**Posts** (`posts` block): a grid or a list of points; section from the
+library (EU 100x100, 120x120, 140x140; US 4x4, 6x6); height from the
+footing to the underside of what they carry; a post base on every one.
+
+**Beams** (`beam` block): along a line over posts, one or two plies, on top
+of the posts (on a post cap) or as two plies either side of the post
+(sandwich, bolted); span check between posts with the tributary width.
+
+**Bracing:** an open structure has nothing like a sheathed wall to keep
+it square, so every post-to-beam corner of an open side gets a **knee
+brace** (45°, from post to beam), and a convention check
+`open-bracing` says where one is missing. Sheds keep their sheathing.
+
+**Platform with board decking:** the platform block gets a board deck
+(deck boards with a gap, fixed with two stainless screws per joist) as
+well as today's sheet deck; joists sit on beams instead of on the ground.
+
+**Roofs on beams:** the mono and gable roof blocks bear on whatever
+member they are given (a wall's top plate today, a beam in B5).
+
+Recipes:
+- `terrace`: footings, posts, beams in rows, joists on the beams, deck
+  boards; `height` above the ground. Rails and steps later.
+- `pergola`: footings, posts, two beams along the long sides, rafters
+  across them with an overhang, optional slats on top, knee braces.
+- `summer-kitchen`: footings, posts, beams, a mono or gable roof; an
+  optional terrace floor; 0–3 walls (for example a back wall), each a
+  framed wall from the wall block.
+
 ## Open questions
 
-- After the gable shed, which comes first: a deck or a pergola?
-- Foundations: ground screws only at first, or also concrete footings and
-  skids?
-- Release after B2 (sheds in two shapes) or after B3 (plus a deck)?
+- Load capacity of ground screws and footings (needs a manufacturer's
+  table that can be read).
+- Railings and steps for a raised terrace (a terrace higher than about
+  60 cm needs a rail in most places).
