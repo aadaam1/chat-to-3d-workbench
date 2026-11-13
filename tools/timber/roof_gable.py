@@ -129,7 +129,7 @@ class GableRoof(SlopeRoof):
         top = lambda y: L.slope(y) + self.wr / self.cos - self.he        # the rafter tops over Y
         if top(0.0) >= wt - EPS:
             return None
-        y1 = (wt - self.wr / self.cos) / L.k
+        y1 = (wt - self.wr / self.cos) / L.k + L.inset      # (the line starts `inset` in from the footprint)
         pts = [(0.0, 0.0), (D, 0.0), (D, top(D)), (D - y1, wt), (y1, wt), (0.0, top(0.0))]
         return _clean([(r1(y), r1(v)) for y, v in pts])
 

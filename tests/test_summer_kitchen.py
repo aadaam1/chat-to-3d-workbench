@@ -417,3 +417,20 @@ def test_edits_and_the_checks_after_an_edit():
     assert post not in by_id(f1)
     assert levels(f1)["post-footing"] == "fix" or levels(f1)["beam-bearing"] == "fix" or levels(f1)["floating-piece"] != "ok" \
         or levels(f1)["open-bracing"] == "fix"
+
+
+@pytest.mark.parametrize("kw", [{"foundation": "pier_block", "floor": "terrace"},
+                                {"foundation": "concrete_footing", "floor": "terrace", "walls": ["back"]},
+                                {"beam_plies": 1}, {"roof": "mono", "overhang_side": 0}])
+def test_other_footings_plies_and_overhangs_build_clean(kw):
+    raw = dict(BASE, width=5000, depth=3500, **kw)
+    if raw.get("floor") == "terrace":
+        raw["floor_height"] = 600
+    raw["walls"] = [{"side": w} for w in raw.get("walls", [])]
+    f = fr.generate(raw)
+    assert not overlaps(f) and not floats(f)
+    assert [x["id"] for x in fc.run(f)["findings"] if x["level"] == "fix"] == []
+    if "floor" in kw:                          # the floor's footings clear the posts' footings
+        feet = [m for m in f["members"] if m["kind"] in ("pier", "footing") and m["id"].startswith("floor-")]
+        roof = [m for m in f["members"] if m["kind"] in ("pier", "footing") and not m["id"].startswith("floor-")]
+        assert feet and roof and not [(a["id"], b["id"]) for a in feet for b in roof if penetration(a, b) > TOL]
