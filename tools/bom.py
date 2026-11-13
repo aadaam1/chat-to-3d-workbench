@@ -77,7 +77,7 @@ JOINT_NAMES = {
     "post-base": "post, beam or rim joist to its post base", "beam-post": "beam ply bolted to a post",
     "beam-cap": "beam ply on a post cap", "beam-ply": "beam plies screwed together",
     "joist-beam": "deck joist to beam", "deck-board": "deck board to joist",
-    "brace-post": "knee brace to post", "brace-beam": "knee brace to beam",
+    "brace-post": "knee brace to post", "brace-beam": "knee brace to beam", "brace-rafter": "cross knee brace to the rafter over a post",
     "rafter-beam": "pergola rafter on a beam", "slat-rafter": "slat to rafter",
 }
 

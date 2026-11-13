@@ -202,6 +202,8 @@ def joint_for(a, b, box):
             return {"type": "brace-post", "a": s["id"], "b": t["id"]}
         if ks == "brace" and kt == "beam":
             return {"type": "brace-beam", "a": s["id"], "b": t["id"]}
+        if ks == "brace" and kt == "rafter":
+            return {"type": "brace-rafter", "a": s["id"], "b": t["id"]}
         if ks == "rafter" and kt == "beam":
             return {"type": "rafter-beam", "a": s["id"], "b": t["id"]}
         if ks == "slat" and kt == "rafter":

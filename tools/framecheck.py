@@ -1252,15 +1252,18 @@ def check_pergola_beams(f):
 
 
 def check_open_bracing(f):
-    """Every post-to-beam corner with room for a knee brace has one, touching both the post and the beam."""
+    """Every post under a beam is braced in both directions: along the beam (on each side where a
+    brace has room) and across the beams (inward, to the rafter over the post). Each brace
+    touches the post and what it braces against."""
     from timber.pergola import MIN_BRACE_CLEAR
     fr = f.frame
     recs = [sp for a in fr.get("assemblies", []) if a["type"] == "beams" for sp in a["spans"] if sp["kind"] == "beam"]
-    posts, braces = _members(f, "post"), _members(f, "brace")
+    posts, braces, rafters = _members(f, "post"), _members(f, "brace"), _members(f, "rafter")
     if not (recs and posts):
         f.add("open-bracing", "ok", "Open bracing", "There are no posts under beams in this frame.")
         return
     missing, total = [], 0
+    lines = sorted({r["line"] for r in recs})
     for r in recs:
         beam = f.by_id.get(r["id"])
         if beam is None:
@@ -1282,17 +1285,29 @@ def check_open_bracing(f):
                          and (centre(b)[ax] - c[ax]) * side > 0 and abs(centre(b)[1 - ax] - r["line"]) <= 1.0
                          for b in braces)
                 if not ok:
-                    missing.append((p["id"], side))
+                    missing.append((p["id"], "along the beam"))
+            other = [x for x in lines if abs(x - r["line"]) > 1.0]
+            if other:
+                inward = 1 if other[0] > r["line"] else -1
+                pc = box_corners(p)[:, 1 - ax]
+                if abs(other[0] - r["line"]) - float(pc.max() - pc.min()) >= MIN_BRACE_CLEAR:
+                    total += 1
+                    ok = any(contact(b, p, 1.0) is not None and any(contact(b, q, 1.0) is not None for q in rafters)
+                             and (centre(b)[1 - ax] - c[1 - ax]) * inward > 0 and abs(centre(b)[ax] - c[ax]) <= 1.0
+                             for b in braces)
+                    if not ok:
+                        missing.append((p["id"], "across the beams"))
     if missing:
-        names = ", ".join(sorted({m[0] for m in missing}))
+        names = ", ".join(sorted({f"{m[0]} ({m[1]})" for m in missing}))
         f.add("open-bracing", "fix", "Post corner with no knee brace",
-              f"{len(missing)} post-to-beam corner(s) have no knee brace touching both the post and the beam "
-              f"(posts: {names}). A pergola has no wall to stop it racking, so every corner where a beam runs on past a "
-              "post needs a 45 degree brace from the post up to the beam. Add the brace, or turn `braces` back on.",
-              [missing[0][0]])
+              f"{len(missing)} post corner(s) have no knee brace touching both the post and what it braces against "
+              f"(posts: {names}). A pergola has no wall to stop it racking, so every post needs a 45 degree brace up "
+              "to the beam on each side where the beam runs on, and one across the beams up to the rafter over the "
+              "post. Add the brace, or turn `braces` back on.", [missing[0][0]])
     else:
         f.add("open-bracing", "ok", "Open bracing",
-              f"All {total} post-to-beam corners that have room carry a knee brace touching both the post and the beam.")
+              f"All {total} post corners that have room carry a knee brace, along the beams and across them, "
+              "touching both the post and the beam or rafter.")
 
 
 def run_pergola(f):
