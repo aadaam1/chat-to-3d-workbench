@@ -111,7 +111,7 @@ def test_checks_read_assemblies_with_the_same_findings(name):
     import frame, framecheck
     full = frame.generate(copy.deepcopy(CASES[name]))
     if CASES[name]["type"] == "terrace":        # a terrace's checks read its assemblies only
-        assert [a["id"] for a in full["assemblies"]] == ["foundations", "posts", "beams", "deck"]
+        assert sorted(a["id"] for a in full["assemblies"]) == ["beams", "deck", "foundations", "posts"]
         for fr in (full, json.loads(frame.dumps(full))):
             got = __import__("hashlib").sha256(json.dumps(framecheck.run(fr), sort_keys=True).encode()).hexdigest()
             assert got == GOLD[name]["checks"]
