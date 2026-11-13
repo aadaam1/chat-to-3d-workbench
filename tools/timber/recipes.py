@@ -136,15 +136,18 @@ def join_pieces(fr, s):
     notes = joining.join_long(fr, lib)
     for label, n in notes.items():
         u = s["units"]
-        chose = f"{n['count']} {label.lower()} joined over a {n['support']}"
+        one = n["count"] == 1
+        what = label.lower()[:-1] if one else label.lower()            # "1 top plate", "2 top plates"
+        chose = f"{n['count']} {what} joined over a {n['support']}"
         if label == "Cladding boards":
-            chose = f"{n['count']} cladding boards joined on a stud, staggered from course to course"
+            chose = f"{n['count']} cladding board{'' if one else 's'} joined on a stud, staggered from course to course"
         if label == "Upper top plates":
-            chose = f"{n['count']} upper top plates joined over a stud, at least 600 mm from the joint in the plate below"
+            chose = (f"{n['count']} upper top plate{'' if one else 's'} joined over a stud, at least 600 mm from "
+                     f"the joint in the plate below")
         item = n["item"]
-        name = lib["sections"][item]["name"] if item in lib["sections"] else item
-        why = (f"the longest piece is {pl.length_text(n['max_len'], u)}, and the longest {name} on sale is "
-               f"{pl.length_text(n['limit'], u)}")
+        name = next((lib[k][item]["name"] for k in ("sections", "cladding") if item in lib.get(k, {})), item)
+        why = (f"it needs {pl.length_text(n['max_len'], u)} in one piece; the longest {name} on sale is "
+               f"{pl.length_text(n['limit'], u)}, less {joining.TRIM:g} mm for squaring its ends")
         pl.decide(s, label + " joined", chose, why)
 
 
