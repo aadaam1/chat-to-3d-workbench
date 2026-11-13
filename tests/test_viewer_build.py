@@ -63,3 +63,29 @@ def test_not_a_frame_is_refused(tmp_path):
     bad.write_text("{}")
     r = run("tools/make_viewer.py", "--title", "x", "--build", str(bad), "--out", str(tmp_path / "view"))
     assert r.returncode != 0 and "not a frame file" in r.stdout
+
+
+def test_build_page_carries_decisions(tmp_path):
+    f = frame(tmp_path, "shed-eu")
+    src = json.loads(f.read_text())
+    src["decisions"] = [{"what": "Floor joists", "chose": "50×200", "why": "50×150 spans only 3.66 m of the 3.95 m needed"},
+                        {"what": "Posts", "chose": "120×120"}, {"chose": "no name: dropped"}]
+    f.write_text(json.dumps(src))
+    r = run("tools/make_viewer.py", "--title", "Test shed", "--build", str(f), "--out", str(tmp_path / "view"))
+    assert r.returncode == 0, r.stdout
+    b = page_data(tmp_path / "view" / "index.html")["versions"][0]["build"]
+    assert b["decisions"] == [{"what": "Floor joists", "chose": "50×200", "why": "50×150 spans only 3.66 m of the 3.95 m needed"},
+                              {"what": "Posts", "chose": "120×120"}]
+
+
+def test_build_page_without_decisions_has_none(tmp_path):
+    f = frame(tmp_path, "shed-eu")
+    r = run("tools/make_viewer.py", "--title", "Test shed", "--build", str(f), "--out", str(tmp_path / "view"))
+    assert r.returncode == 0, r.stdout
+    assert "decisions" not in page_data(tmp_path / "view" / "index.html")["versions"][0]["build"]
+
+
+def test_page_has_loading_and_failure_messages():
+    html = open(os.path.join(ROOT, "tools", "viewer", "viewer.html")).read()
+    assert "Loading the model" in html and "The 3D view could not start" in html
+    assert 'id="sec-plan"' in html and "Nails, screws and bought items" in html

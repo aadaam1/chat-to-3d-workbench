@@ -137,6 +137,10 @@ def build_version(frame_path, bom_path, checks_path, n, meta):
                       "bought": frame.get("bought", []), "checks": checks, "bom": read_json(bom_path)}}
     if ground is not None:
         out["build"]["ground"] = ground
+    decisions = [{k: str(d[k]) for k in ("what", "chose", "why") if d.get(k) not in (None, "")}
+                 for d in (frame.get("decisions") or []) if isinstance(d, dict) and d.get("what")]
+    if decisions:                       # "How it was planned": the sizes the planner chose, and why
+        out["build"]["decisions"] = decisions
     return out
 
 
