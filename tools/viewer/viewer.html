@@ -150,7 +150,7 @@
 
   .bar { position: absolute; top: 0; left: 0; right: 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 14px; pointer-events: none; }
   .bar > * { pointer-events: auto; } .grp { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .statusbox { position: absolute; top: 0; left: 0; right: 0; display: grid; justify-items: end; pointer-events: none; z-index: 2; }
+  .statusbox { position: absolute; top: calc(var(--bar-bottom, 0px) + 8px); left: 0; right: 0; display: grid; justify-items: end; pointer-events: none; z-index: 2; }
   .status { pointer-events: auto; display: grid; gap: 5px; padding: 9px 12px; font-size: 13px; max-width: 46ch; border-radius: var(--r2); }
   .status .head { display: flex; align-items: center; gap: 8px; font-weight: 600; }
   .status p { color: var(--muted); } .status .row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
@@ -200,6 +200,20 @@
   .chk .dot { align-self: center; justify-self: center; }
   .chk .tag { width: 22px; height: 22px; border-radius: 50%; border: 1.8px solid var(--amber); font: 700 12px/19px var(--display); text-align: center; align-self: start; }
   .chk.fix .tag { border-color: var(--red); }
+  /* a passing check is one line that opens on click; findings stay open */
+  .chksum { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .chk.fold { display: block; padding: 0; }
+  .chk-h { width: 100%; border: 0; background: none; text-align: left; padding: 5px 10px; border-radius: var(--r2); display: grid; grid-template-columns: 22px minmax(0, 1fr) 12px; gap: 0 8px; align-items: center; }
+  .chk-h:hover { background: var(--hair); }
+  .chk-h .dot { justify-self: center; }
+  .chk-h .caret { width: 7px; height: 7px; border: solid var(--muted); border-width: 0 1.6px 1.6px 0; transform: rotate(45deg) translate(-2px, -2px); transition: transform .2s; }
+  .chk-h[aria-expanded="true"] .caret { transform: rotate(-135deg) translate(-2px, -2px); }
+  .chk-body { display: grid; justify-items: start; gap: 4px; padding: 0 10px 8px 40px; }
+  .chk-body small { grid-column: auto; color: var(--muted); font-size: 13px; line-height: 1.35; }
+  .chk-act { border: 0; background: none; padding: 0; font: 600 12.5px/1.3 var(--body); color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+  .chk-act[aria-pressed="true"] { font-size: 0; } .chk-act[aria-pressed="true"]::after { content: "Back to plain"; font-size: 12.5px; }
+  .plan { display: grid; gap: 8px; font-size: 13.5px; line-height: 1.4; }
+  .plan span { color: var(--muted); }
   .chk b { font-weight: 600; } .chk small { grid-column: 2; color: var(--muted); font-size: 13px; line-height: 1.35; }
   .chk em { grid-column: 2; font-style: normal; font-size: 12.5px; font-weight: 600; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
   button.chk:hover { border-color: var(--line); } .chk[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
@@ -248,6 +262,7 @@
   [data-view="advanced"] .top { gap: 0; align-items: stretch; border-bottom: 1.5px solid var(--ink); }
   [data-view="advanced"] .ttl, [data-view="advanced"] .cell { padding: 10px 14px; display: grid; gap: 6px; align-content: start; }
   [data-view="advanced"] .ttl::before { content: "Part"; font: 700 12px/1.2 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  [data-view="advanced"] .build .ttl::before { content: "Structure"; }
   [data-view="advanced"] h1 { font: 700 26px/1 var(--display); letter-spacing: .01em; text-transform: uppercase; }
   [data-view="advanced"] .sub { margin: 0; font-size: 13px; }
   [data-view="advanced"] .cells { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); flex: 2 1 420px; }
@@ -269,7 +284,7 @@
   [data-view="advanced"] .rail button[aria-pressed="true"] { background: var(--grid); color: var(--ink); box-shadow: inset 3px 0 0 var(--accent); }
   [data-view="advanced"] .rail .gap { flex: 1; width: auto; margin: 0; background: none; border-bottom: 1px solid var(--hair); }
   [data-view="advanced"] .bar { top: 12px; left: 12px; right: 12px; justify-content: flex-start; }
-  [data-view="advanced"] .statusbox { top: 12px; left: 12px; right: 12px; justify-items: end; }
+  [data-view="advanced"] .statusbox { top: calc(var(--bar-bottom, 0px) + 8px); left: 12px; right: 12px; justify-items: end; }
   [data-view="advanced"] .status { background: var(--solid); border: 1px solid var(--line); }
   [data-view="advanced"] .cutrow { left: 12px; right: 12px; bottom: 10px; transform: none; width: auto; max-width: 380px; }
   [data-view="advanced"] .cutrow.exprow { bottom: 40px; }
@@ -298,7 +313,7 @@
     .app:not(.open) .sheetbody, .mini { display: none; }
     .sheethead .stamp { opacity: 1; white-space: normal; }
     .chev svg { transform: rotate(90deg); } .open .chev svg { transform: rotate(-90deg); }
-    .statusbox, [data-view="advanced"] .statusbox { top: 52px; justify-items: center; }
+    .statusbox, [data-view="advanced"] .statusbox { justify-items: center; }
     [data-view="advanced"] .cells { flex-basis: 100%; border-top: 1px solid var(--line); } [data-view="advanced"] .cell:first-child { border-left: 0; }
     [data-view="advanced"] .stage { grid-template: auto minmax(0, 1fr) / minmax(0, 1fr); }
     [data-view="advanced"] .rail { flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); }
@@ -306,6 +321,24 @@
     [data-view="advanced"] .sheet { border-left: 0; border-top: 1px solid var(--line); }
     [data-view="advanced"] .hist { grid-template-columns: minmax(0, 1fr); } [data-view="advanced"] .hist h2 { border-right: 0; text-align: left; padding-inline: 14px; }
     .rail { overflow-x: auto; justify-content: flex-start; }
+  }
+  /* a rail that scrolls fades where there is more */
+  .rail, .scroll { scrollbar-width: none; } .rail::-webkit-scrollbar, .scroll::-webkit-scrollbar { display: none; }
+  [data-more="end"] { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 34px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 34px), transparent); }
+  [data-more="start"] { -webkit-mask-image: linear-gradient(270deg, #000 calc(100% - 34px), transparent); mask-image: linear-gradient(270deg, #000 calc(100% - 34px), transparent); }
+  [data-more="both"] { -webkit-mask-image: linear-gradient(90deg, transparent, #000 34px, #000 calc(100% - 34px), transparent); mask-image: linear-gradient(90deg, transparent, #000 34px, #000 calc(100% - 34px), transparent); }
+  /* a phone: every button and chip is a comfortable thumb target */
+  @media (max-width: 720px) {
+    .stage { height: 74vh; min-height: 540px; }
+    button:not(.pinlab), summary { min-height: 40px; }
+    .linkish, .chk-act { display: inline-flex; align-items: center; min-height: 40px; padding-inline: 2px; }
+    .chev { width: 40px; height: 40px; }
+    .seg button, .rail button { padding-block: 0; display: inline-flex; align-items: center; justify-content: center; }
+    [data-view="advanced"] .rail button { display: grid; align-content: center; }
+    .pin .x { min-width: 40px; } summary { display: flex; align-items: center; }
+    .switch { min-height: 40px; } .cutrow input { min-height: 40px; }
+    #layergrp { flex-wrap: nowrap; max-width: 100%; } #layers { flex-wrap: nowrap; overflow-x: auto; min-width: 0; }
+    .cutrow { bottom: 0; } .exprow { bottom: 40px; } .build .rail { bottom: 90px; } .rail { bottom: 48px; }
   }
   /* capture mode (?capture=1): nothing but the model, for scripted stills and GIFs (tools/viewer_gif.py) */
   html.capture, html.capture body { background: #f4f2ee !important; overflow: hidden; }
@@ -347,7 +380,7 @@
       <div id="view" tabindex="0" aria-label="3D view of the part. Drag to turn. C switches comment mode, Escape stops, R resets the view, F flips it.">
         <div id="pinlayer"></div>
         <svg id="ov" aria-hidden="true"><g id="dims"></g><g id="bals"></g></svg>
-        <div id="status">Loading the part…</div>
+        <div id="status" role="status">Loading the model…</div>
       </div>
       <div class="bar">
         <div class="grp" id="partgrp"><span class="lbl" id="parts-l">Part</span><div class="seg" id="parts" role="group" aria-labelledby="parts-l"></div></div>
@@ -387,8 +420,13 @@
     <p class="stampnote" id="stamp-note"></p>
     <section id="sec-checks" aria-labelledby="checks-h">
       <h2 id="checks-h">Before you order</h2>
+      <p class="chksum" id="checksum"></p>
       <div class="checks" id="checks"></div>
       <details id="report"><summary>All the numbers</summary><dl class="specs" id="specs"></dl></details>
+    </section>
+    <section id="sec-plan" aria-labelledby="plan-h" hidden>
+      <h2 id="plan-h">How it was planned</h2>
+      <ul class="plan" id="plan"></ul>
     </section>
     <section id="sec-mats" aria-labelledby="mats-h">
       <h2 id="mats-h">Made in</h2>
@@ -412,6 +450,10 @@
 </div>
 
 <script type="application/json" id="kit-data">__KIT_DATA__</script>
+<script>
+// The 3D view needs three.js from a CDN and WebGL. If either fails, say so instead of leaving the page blank.
+window.viewerFail = why => { const s = document.getElementById('status'); if (s && !window.viewerFailed) { window.viewerFailed = true; s.hidden = false; s.textContent = 'The 3D view could not start: ' + why; } };
+</script>
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
@@ -449,7 +491,9 @@ $('title').textContent = D.title;
 
 /* ---------- scene ---------- */
 const view = $('view');
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); }
+catch (err) { window.viewerFail('this browser can’t draw 3D (WebGL is off or missing).'); throw err; }
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.localClippingEnabled = true;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -510,12 +554,43 @@ const pinGroup = new THREE.Group(), prevGroup = new THREE.Group(); scene.add(pin
 let mesh = null, inner = null, edges = null, box = null, floorZ = null;
 const lookMat = () => layout === 'advanced' ? LOOKS.clay : (LOOKS[P().look] ?? LOOKS.asa);
 
+// The view rail, the sliders and the layer chips sit on the canvas. The model is framed in
+// what they leave free (a camera view offset), so its feet are never behind a control.
+const narrow = matchMedia('(max-width: 1040px)'), cvEl = document.querySelector('.cv'), capturing = root.classList.contains('capture');
+// a row that scrolls (the view rail, the layer chips) fades where there is more of it
+function fade(r) {
+  const more = r.scrollWidth > r.clientWidth + 1, l = r.scrollLeft > 2, e = r.scrollLeft + r.clientWidth < r.scrollWidth - 2;
+  r.dataset.more = !more ? '' : l && e ? 'both' : e ? 'end' : l ? 'start' : '';
+}
+const railFade = () => { fade($('rail')); fade($('layers')); };
+for (const r of [$('rail'), $('layers')]) r.addEventListener('scroll', railFade, { passive: true });
+function freeSpace(w, h) {
+  const c = cvEl.getBoundingClientRect(), bar = cvEl.querySelector('.bar').getBoundingClientRect();
+  const barBottom = bar.height > 0 ? Math.max(0, bar.bottom - c.top) : 0;
+  cvEl.style.setProperty('--bar-bottom', barBottom.toFixed(0) + 'px');
+  if (capturing) return { top: 0, bottom: 0 };
+  let low = c.bottom;
+  for (const e of [$('rail'), ...cvEl.querySelectorAll('.cutrow')]) {
+    if (e.hidden || getComputedStyle(e).position !== 'absolute') continue;
+    const b = e.getBoundingClientRect(); if (b.height) low = Math.min(low, b.top);
+  }
+  const top = barBottom ? barBottom + 6 : 0, bottom = c.bottom > low ? c.bottom - low + 6 : 0;
+  // on a narrow page the piece card would sit on the model, so the model makes room below it
+  const card = $('statusbox'), cb = !card.hidden && narrow.matches ? $('statuscard').getBoundingClientRect().bottom - c.top + 6 : 0;
+  for (const t of cb > top ? [cb, top] : [top]) if (h - t - bottom >= h * 0.28) return { top: t, bottom };
+  return { top: 0, bottom: 0 };
+}
 function resize() {
   const w = view.clientWidth, h = view.clientHeight; if (!w || !h) return;
-  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+  const { top, bottom } = freeSpace(w, h), free = h - top - bottom;
+  if (top || bottom) { camera.aspect = w / free; camera.setViewOffset(w, free, 0, -top, w, h); }
+  else { camera.aspect = w / h; camera.clearViewOffset(); }
+  camera.updateProjectionMatrix(); railFade();
 }
-new ResizeObserver(resize).observe(view);
-let tick = 0, tween = null;
+{ const ro = new ResizeObserver(resize); for (const e of [view, $('rail'), $('statuscard'), cvEl.querySelector('.bar'), ...cvEl.querySelectorAll('.cutrow')]) ro.observe(e); }
+let tick = 0, tween = null, loadingDone = false;     // the loading message stays until a frame with the model is drawn
+$('status').dataset.k = 'loading';
 renderer.setAnimationLoop(now => {
   if (tween) {
     const k = Math.min(1, (now - tween.s) / tween.ms), e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
@@ -523,6 +598,7 @@ renderer.setAnimationLoop(now => {
     if (k >= 1) tween = null;
   }
   controls.update(); updateGhost(); renderer.render(scene, camera);
+  if (loadingDone && mesh && $('status').dataset.k === 'loading') $('status').hidden = true;
   placeLabels(++tick % 6 === 0);            // occlusion check every few frames
   placeOverlay();
 });
@@ -629,7 +705,7 @@ function paint() {
 }
 function setMode(m) {
   mode = m;
-  [...$('checks').querySelectorAll('button.chk')].forEach(x => x.setAttribute('aria-pressed', String(x.dataset.m === m)));
+  [...$('checks').querySelectorAll('[data-m]')].forEach(x => x.setAttribute('aria-pressed', String(x.dataset.m === m)));
   paint();
 }
 function backToPlain() { setMode('shape'); $('cut').value = '0'; setCut(); lookFrom('iso'); }
@@ -702,34 +778,74 @@ function findings(r) {
   return out;
 }
 let found = [];                             // the current findings; those with a spot get a letter
+const unfolded = new Set();                 // passing checks the reader has opened
+const RANK = { fix: 0, check: 1, ok: 2 };
+let chkN = 0;
+// One row of the checks list. A finding that needs a look stays open; a passing check is one
+// line (dot and title) that opens on click. `act` makes the row paint or highlight on the part.
+function checkRow(f, tag) {
+  const act = f.act;
+  if (f.lvl !== 'ok') {
+    const x = el(act ? 'button' : 'div', 'chk ' + f.lvl);
+    x.append(tag ? el('span', 'tag', tag) : el('span', 'dot ' + f.lvl), el('b', '', f.title), el('small', '', f.text));
+    if (act) {
+      x.type = 'button'; if (act.mode) x.dataset.m = act.mode; if (act.id) x.dataset.id = act.id; x.setAttribute('aria-pressed', String(act.pressed));
+      x.append(el('em', '', 'Show on the part')); x.addEventListener('click', act.run);
+    }
+    return x;
+  }
+  const x = el('div', 'chk ok fold'), id = 'chk-' + (++chkN), open = unfolded.has(f.title) || !!act?.pressed;
+  const h = el('button', 'chk-h'), body = el('div', 'chk-body');
+  h.type = 'button'; h.setAttribute('aria-expanded', String(open)); h.setAttribute('aria-controls', id);
+  h.append(el('span', 'dot ok'), el('b', '', f.title), el('span', 'caret')); body.id = id; body.hidden = !open;
+  body.append(el('small', '', f.text));
+  if (act) {
+    const a = el('button', 'chk-act', 'Show on the part'); a.type = 'button'; if (act.mode) a.dataset.m = act.mode; if (act.id) a.dataset.id = act.id;
+    a.setAttribute('aria-pressed', String(act.pressed)); a.addEventListener('click', act.run); body.append(a);
+  }
+  h.addEventListener('click', () => {
+    const o = h.getAttribute('aria-expanded') !== 'true';
+    h.setAttribute('aria-expanded', String(o)); body.hidden = !o; o ? unfolded.add(f.title) : unfolded.delete(f.title);
+  });
+  x.append(h, body); return x;
+}
+// the rows, findings first (fix, then check), passing checks after; a line on top says how it went
+function fillChecks(rows, letters) {
+  const host = $('checks'), n = { fix: 0, check: 0, ok: 0 }; let letter = 0;
+  host.replaceChildren();
+  rows.sort((a, b) => RANK[a.lvl] - RANK[b.lvl]);
+  for (const f of rows) {
+    n[f.lvl]++;
+    if (f.lvl !== 'ok' && f.at) f.letter = letters[letter++] ?? '+';
+    host.append(checkRow(f, f.letter));
+  }
+  const all = n.fix + n.check + n.ok;
+  $('checksum').textContent = !all ? '' : !n.fix && !n.check ? `${all} check${all > 1 ? 's' : ''} passed`
+    : [n.fix && `${n.fix} to fix`, n.check && `${n.check} to look at`, n.ok && `${n.ok} passed`].filter(Boolean).join(', ');
+}
 function renderChecks() {
   if (BUILD) return renderBuildChecks();
-  const r = rep(), p = P(), host = $('checks'); host.replaceChildren(); $('bals').replaceChildren();
+  const r = rep(), p = P(); $('bals').replaceChildren();
   if (!r) return;
   found = findings(r);
-  let letter = 0;
   // Thin walls and overhangs are checks you can look at: their row paints the part.
-  const row = (lvl, title, text, f) => {
-    const x = el(f?.mode ? 'button' : 'div', 'chk ' + lvl);
-    if (f?.at) { f.letter = 'ABCDEF'[letter++]; x.append(el('span', 'tag', f.letter)); } else x.append(el('span', 'dot ' + lvl));
-    x.append(el('b', '', title), el('small', '', text));
-    if (f?.mode) {
-      x.type = 'button'; x.dataset.m = f.mode; x.setAttribute('aria-pressed', String(mode === f.mode));
-      x.append(el('em', '', 'Show on the part'));
-      x.addEventListener('click', () => {
-        if (mode === f.mode) return backToPlain();
-        setMode(f.mode);
-        if (f.at) showSpot(f.at); else if (f.mode === 'over' && side > 0) lookFrom('below');   // supports live underneath
-      });
-    }
-    host.append(x);
+  const list = [], add = (lvl, title, text, f) => {
+    const row = { lvl, title, text, at: f?.at };
+    if (f?.mode) row.act = { mode: f.mode, pressed: mode === f.mode, run: () => {
+      if (mode === f.mode) return backToPlain();
+      setMode(f.mode);
+      if (f.at) showSpot(f.at); else if (f.mode === 'over' && side > 0) lookFrom('below');   // supports live underneath
+    } };
+    list.push(row); if (f) f.row = row;
   };
   const wall = found.find(f => f.mode === 'wall'), over = found.find(f => f.mode === 'over');
-  found.filter(f => !f.mode).forEach(f => row(f.lvl, f.title, f.text, f));
-  row(wall?.lvl ?? 'ok', wall?.title ?? 'Wall thickness', wall?.text ?? `Every wall is thick enough for ${low(mat)} (${p.wall_warn} mm or more).`, wall ?? { mode: 'wall' });
-  row(over?.lvl ?? 'ok', over?.title ?? 'Overhangs', over?.text ?? (p.overhang_deg == null ? `${short(mat)} supports any overhang itself.` : 'Nothing hangs in the air. It prints without supports.'), over ?? { mode: 'over' });
-  if (r.watertight && !(r.cavities && p.needs_escape)) row('ok', 'One solid shape', r.cavities ? `Closed. ${r.cavities} hollow inside, which is fine in ${low(mat)}.` : 'Closed, with no trapped hollows.');
-  row('ok', 'Size', r.size_mm.map(v => v.toFixed(1)).join(' × ') + ' mm');
+  found.filter(f => !f.mode).forEach(f => add(f.lvl, f.title, f.text, f));
+  add(wall?.lvl ?? 'ok', wall?.title ?? 'Wall thickness', wall?.text ?? `Every wall is thick enough for ${low(mat)} (${p.wall_warn} mm or more).`, wall ?? { mode: 'wall' });
+  add(over?.lvl ?? 'ok', over?.title ?? 'Overhangs', over?.text ?? (p.overhang_deg == null ? `${short(mat)} supports any overhang itself.` : 'Nothing hangs in the air. It prints without supports.'), over ?? { mode: 'over' });
+  if (r.watertight && !(r.cavities && p.needs_escape)) add('ok', 'One solid shape', r.cavities ? `Closed. ${r.cavities} hollow inside, which is fine in ${low(mat)}.` : 'Closed, with no trapped hollows.');
+  add('ok', 'Size', r.size_mm.map(v => v.toFixed(1)).join(' × ') + ' mm');
+  fillChecks(list, 'ABCDEF');
+  for (const f of found) if (f.row) f.letter = f.row.letter;
   for (const f of found) if (f.at) {
     const g = sv('g', { class: 'bal ' + f.lvl }), ln = sv('line', {}), c = sv('circle', { r: 12 }), t = sv('text', {}, f.letter);
     g.append(ln, c, t); $('bals').append(g); f.el = { g, ln, c, t };
@@ -813,7 +929,8 @@ function fmtLen(mm) {
   const i = [(inch || (!fr && !ft)) ? inch : '', fr ? `${fr}/${d}` : ''].filter(x => x !== '').join('-');
   return [ft ? `${ft}'` : '', i !== '' ? `${i}"` : ''].filter(Boolean).join(' ');
 }
-const kindName = m => m.kind === 'rafter' && m.id.includes('flying-rafter') ? 'Flying rafter' : (KIND[m.kind] ?? m.kind);
+const SHEET = { roof: 'Roof sheet', sheathing: 'Wall sheathing', floor: 'Floor sheet', walls: 'Wall sheathing' };
+const kindName = m => m.kind === 'rafter' && m.id.includes('flying-rafter') ? 'Flying rafter' : m.kind === 'sheet' ? (SHEET[m.layer] ?? 'Sheet') : (KIND[m.kind] ?? m.kind);
 const itemName = k => Bd().items?.[k]?.name ?? k;
 function memberGeom(m) {
   const [L, W, T] = m.size; let g;
@@ -863,9 +980,9 @@ function showBuild(keepCamera) {
     controls.minDistance = lastSpan * 0.2; controls.maxDistance = lastSpan * 5;
     camera.near = lastSpan / 500; camera.far = lastSpan * 30; camera.updateProjectionMatrix();   // a shed is metres, not millimetres
   }
-  setStage(); buildGhost(); setCut(); applyLayers(); applyLayout(); renderParts(); setExplode(); resize();
+  setStage(); buildGhost(); setCut(); applyLayers(); applyLayout(); renderParts(); renderPlan(); setExplode(); resize();
   if (first) { first = false; controls.autoRotate = layout === 'studio' && !reduced; }
-  $('status').hidden = true;
+  loadingDone = true;
 }
 function paintBuild() {
   const adv = layout === 'advanced';
@@ -907,7 +1024,7 @@ function memberSize(m) {
 }
 function selectMember(id) {
   selected = id && memberMesh.has(id) ? id : null; shownCheck = null;
-  [...$('checks').querySelectorAll('button.chk')].forEach(x => x.setAttribute('aria-pressed', 'false'));
+  [...$('checks').querySelectorAll('[aria-pressed]')].forEach(x => x.setAttribute('aria-pressed', 'false'));
   const boxEl = $('statusbox'), card = $('statuscard');
   if (!selected) { clearHl(); boxEl.hidden = true; return; }
   const m = memberMesh.get(selected).userData.m; highlight_([selected]);
@@ -926,22 +1043,20 @@ function flyAt(at) {
 
 // the side sheet for a build: the checks, then what it is made of
 function renderBuildChecks() {
-  const b = Bd(), host = $('checks'); host.replaceChildren(); $('bals').replaceChildren();
+  const b = Bd(), host = $('checks'); $('bals').replaceChildren();
   found = (b.checks ?? []).map(f => ({ lvl: f.level, title: f.title, text: f.text, at: f.at, members: f.members ?? [], id: f.id }));
-  let letter = 0;
   for (const f of found) {
-    const act = f.lvl !== 'ok' && (f.at || f.members.length), x = el(act ? 'button' : 'div', 'chk ' + f.lvl);
-    if (f.lvl !== 'ok' && f.at) { f.letter = 'ABCDEFGHJK'[letter++] ?? '+'; x.append(el('span', 'tag', f.letter)); } else x.append(el('span', 'dot ' + f.lvl));
-    x.append(el('b', '', f.title), el('small', '', f.text));
-    if (act) {
-      x.type = 'button'; x.setAttribute('aria-pressed', String(shownCheck === f.id)); x.append(el('em', '', 'Show on the part'));
-      x.addEventListener('click', () => {
-        if (shownCheck === f.id) { selectMember(null); lookFrom('iso'); return; }
-        selectMember(null); shownCheck = f.id; highlight_(f.members); if (f.at) flyAt(f.at);
-        [...host.querySelectorAll('button.chk')].forEach(y => y.setAttribute('aria-pressed', String(y === x)));
-      });
-    }
-    host.append(x);
+    if (f.lvl !== 'ok' && !(f.at || f.members.length)) continue;
+    if (f.lvl === 'ok' && !f.members.length) continue;
+    f.act = { id: f.id, pressed: shownCheck === f.id, run: () => {
+      if (shownCheck === f.id) { selectMember(null); lookFrom('iso'); return; }
+      selectMember(null); shownCheck = f.id; highlight_(f.members); if (f.at) flyAt(f.at);
+      [...host.querySelectorAll('[aria-pressed]')].forEach(y => y.setAttribute('aria-pressed', 'false'));
+      [...host.querySelectorAll('[data-id]')].forEach(y => y.setAttribute('aria-pressed', String(y.dataset.id === f.id)));
+    } };
+  }
+  fillChecks(found, 'ABCDEFGHJK');
+  for (const f of found) {
     if (f.letter) { const g = sv('g', { class: 'bal ' + f.lvl }), ln = sv('line', {}), c = sv('circle', { r: 12 }), t = sv('text', {}, f.letter);
       g.append(ln, c, t); $('bals').append(g); f.el = { g, ln, c, t }; }
   }
@@ -982,10 +1097,25 @@ function renderBom(b, bom) {
   $('matcalc').textContent = t.amount
     ? `Total ${moneyT(t.amount, t.currency)}${t.partial ? ` for ${t.priced_lines} of ${t.lines} lines; the rest have no price yet` : ''}. Spare pieces are included. Click a line to see what is cut from it.`
     : 'No prices yet: the list is quantities only. Click a line to see what is cut from it.';
-  const more = $('matmore'), ul = el('ul'); more.replaceChildren(el('summary', '', 'Screws and bought items')); more.hidden = false;
-  for (const f of bom.fasteners ?? []) ul.append(el('li', '', `${f.name}: ${f.to_buy} (${f.packs.map(q => `${q.qty} × ${q.size}`).join(', ')})`));
-  for (const q of bom.bought ?? []) ul.append(el('li', '', `${q.name ?? itemName(q.item)}: ${q.qty} ${q.unit}`));
+  const more = $('matmore'), ul = el('ul'); more.replaceChildren(el('summary', '', 'Nails, screws and bought items')); more.hidden = false;
+  const cost = q => q.priced && q.total != null ? moneyT(q.total, t.currency ?? q.currency ?? '') : 'no price';
+  const qty = n => (Math.round(n * 100) / 100).toLocaleString('en').replace(/,/g, ' ');
+  for (const f of bom.fasteners ?? []) {
+    // nails are sold by weight (kg or lb, in boxes); screws and bolts by the pack
+    const w = f.weight_unit, packs = f.packs.map(q => `${q.qty} × ${qty(q.size)}${w ? ' ' + w : ''}`).join(', ');
+    ul.append(el('li', '', `${f.name}: ${w ? `${qty(f.buy_weight ?? f.weight)} ${w}` : qty(f.to_buy)} (${packs}${w ? `, about ${qty(f.to_buy)} nails` : ''}), ${cost(f)}`));
+  }
+  for (const q of bom.bought ?? []) ul.append(el('li', '', `${q.name ?? itemName(q.item)}: ${qty(q.qty)} ${q.unit}${q.note ? ' (' + q.note + ')' : ''}, ${cost(q)}`));
   more.append(ul);
+}
+// "How it was planned": the sizes the planner chose, and why (a frame's `decisions`, when it has any)
+function renderPlan() {
+  const list = (Bd().decisions ?? []).filter(d => d && d.what), host = $('plan'); host.replaceChildren();
+  for (const d of list) {
+    const li = el('li'); li.append(el('b', '', d.what), document.createTextNode(d.chose ? `: ${d.chose}` : ''), el('span', '', d.why ? ` — ${d.why}` : ''));
+    host.append(li);
+  }
+  $('sec-plan').hidden = !list.length;
 }
 function renderParts() {
   const b = Bd(), host = $('mats'), by = new Map();
@@ -1112,7 +1242,7 @@ async function show(i, keepCamera = false) {
   const part = V[vi].parts[i];
   [...$('parts').children].forEach((b, j) => b.setAttribute('aria-pressed', String(j === i)));
   renderMats(); renderChecks();
-  $('status').hidden = false; $('status').textContent = 'Loading the part…';
+  loadingDone = false; $('status').hidden = false; $('status').dataset.k = 'loading'; $('status').textContent = 'Loading the model…';
   try {
     const { g, lines } = await loadPart(vi, i);
     if (mesh) scene.remove(mesh, inner, edges);
@@ -1130,9 +1260,10 @@ async function show(i, keepCamera = false) {
     setStage();
     buildGhost(); setCut(); applyLayout(); resize(); drawPins(); drawPrev();
     if (first) { first = false; controls.autoRotate = layout === 'studio' && !reduced; }
-    $('status').hidden = true;
+    loadingDone = true;
   } catch (err) {
     console.error(err);
+    $('status').dataset.k = 'error';
     $('status').textContent = 'Couldn’t load this part. If you opened the page as a file, keep its v1, v2… folders next to it.';
   }
 }
@@ -1673,6 +1804,7 @@ function capture() {
 }
 
 /* ---------- start ---------- */
+root.dataset.started = '1';
 buildSteps();
 buildPartButtons();
 renderList();
@@ -1691,4 +1823,12 @@ if (window.claude?.use) {
 } else {
   ready(null);                              // a file opened on its own
 }
+</script>
+<script>
+(() => {
+  const mod = document.querySelector("script[type=module]"), done = () => document.documentElement.dataset.started === '1';
+  mod.addEventListener('error', () => window.viewerFail('the 3D library could not be loaded. Check your connection and reload the page.'));
+  window.addEventListener('error', e => { if (!done() && e.message) window.viewerFail(e.message.replace(/^(Uncaught )?(Error: )?/, '')); });
+  setTimeout(() => { if (!done()) window.viewerFail('the 3D library is taking too long to load. Check your connection and reload the page.'); }, 20000);
+})();
 </script>

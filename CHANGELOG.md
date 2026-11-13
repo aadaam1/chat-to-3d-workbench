@@ -9,6 +9,12 @@ workbench is a working prototype, and anything may still change.
 
 ## [Unreleased]
 
+### Added
+- Preview: a "How it was planned" section listing the sizes the planner chose and why.
+
+### Fixed
+- Preview: passing checks fold to one line, the model stays clear of the controls, the piece card no longer covers the layer buttons, and there is a loading message.
+
 ## [0.7.0] - 2026-11-13
 
 Outdoor structures: a terrace, an open pergola and a summer kitchen on ground screws, pier blocks or concrete footings
