@@ -814,14 +814,13 @@
     "summer_kitchen": {
       "height_eaves_mm": 2200,
       "pitch_deg_mono": 10,
-      "floor_height_mm": 600,
       "sources": [
         "pergola-practice",
         "deck-practice",
         "plan"
       ],
       "unverified": true,
-      "note": "Summer kitchen defaults are workbench choices; its posts, beams, braces, footings, floor and walls take the pergola, terrace and shed defaults. 'height_eaves_mm' is the underside of the lower beam above the ground, 'pitch_deg_mono' the slope of a mono roof (a gable roof takes 'pitch_deg'), 'floor_height_mm' the top of the terrace floor above the ground."
+      "note": "Summer kitchen defaults are workbench choices; its posts, beams, braces, footings, floor and walls take the pergola, terrace and shed defaults. 'height_eaves_mm' is the underside of the lower beam above the ground, 'pitch_deg_mono' the slope of a mono roof (a gable roof takes 'pitch_deg') The floor's height is not a default: unless the description gives `floor_height`, the planner sets the lowest that a flush frame allows on the footing, rounded up to 10 mm."
     },
     "pergola": {
       "foundation": "ground_screw",

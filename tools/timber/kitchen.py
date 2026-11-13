@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import timberlib as tl  # noqa: E402
 from timber.store import EPS, SpecError, _clean  # noqa: E402
 from timber.beam import Beam  # noqa: E402
+from timber import flush as flush_frame, planning as pl  # noqa: E402
 from timber.foundations import Footings, footing_item  # noqa: E402
 from timber.platform import BoardPlatform  # noqa: E402
 from timber.posts import Posts  # noqa: E402
@@ -169,6 +170,21 @@ def build_floor(fr, lib, spec, rect):
     if min(fW, fD) < 2 * inset + 300:
         raise SpecError("floor: the clear area between the posts is too small for a floor "
                         f"({fW:g} x {fD:g} mm); make the structure bigger or use floor: none")
+    notes = getattr(spec, "notes", {})
+    if spec.get("floor_frame") == "flush":
+        beam, deck, recs, ys, xs = flush_frame.build(
+            fr, lib, foot, W=fW, D=fD, H=H, origin=(fx0, fy0), spec=spec, beam_key=spec["floor_beam_item"],
+            plies=spec["floor_beam_plies"], joist_key=spec["joist_item"], board_key=spec["deck_board"],
+            post_key=spec["floor_post_item"], joist_spacing=spec["joist_spacing"], gap=spec["board_gap"],
+            row_spacing=spec["floor_row_spacing"], post_spacing=spec["floor_post_spacing"], inset=inset,
+            prefix_f="floor-foundations", prefix_b="floor-beams", what="floor_height")
+        pl.decide_grid(spec, "Floor beam rows", "rows of beams", ys, notes.get("floor_row_spacing"), "rows")
+        pl.decide_grid(spec, "Floor footings", "footings per row", xs, notes.get("floor_post_spacing"), "footings")
+        foot.buy()
+        beam.buy()
+        foot.assembly("floor-foundations")
+        beam.assembly("floor-beams")
+        return foot
     ys = even(inset, fD - inset, spec["floor_row_spacing"])
     xs = even(inset, fW - inset, spec["floor_post_spacing"])
     pts = [(fx0 + x, fy0 + y) for y in ys for x in xs]
@@ -187,6 +203,8 @@ def build_floor(fr, lib, spec, rect):
         recs = foot.place(pts, carry=(posts.t, posts.w), ground=0.0, prefix="floor-foundations")
         pid = posts.place(pts, top=post_top, footings=recs, prefix="floor-posts")
     nx = len(xs)
+    pl.decide_grid(spec, "Floor beam rows", "rows of beams", ys, notes.get("floor_row_spacing"), "rows")
+    pl.decide_grid(spec, "Floor posts", "posts per row", xs, notes.get("floor_post_spacing"), "posts")
     edges = [0.0] + [(a + b) / 2 for a, b in zip(ys, ys[1:])] + [fD]
     for k, y in enumerate(ys):
         sup = [(fx0 + x, (pid[k * nx + i]["id"] if pid else recs[k * nx + i]["base"])) for i, x in enumerate(xs)]
