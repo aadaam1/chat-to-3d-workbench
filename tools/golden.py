@@ -28,7 +28,7 @@ def outputs(raw):
     full = frame.generate(raw)
     fr = {k: v for k, v in full.items() if k != "assemblies"}
     # a shed's checks fall back to its spec without assemblies; a terrace's read them
-    src = full if full["spec"]["type"] == "terrace" else fr
+    src = full if full["spec"]["type"] in ("terrace", "pergola") else fr
     return {"frame": frame.dumps(fr),
             "checks": json.dumps(framecheck.run(src), sort_keys=True),
             "bom": json.dumps(bom.make_bom(fr, None, 10, 4), sort_keys=True)}

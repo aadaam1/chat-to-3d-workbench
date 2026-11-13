@@ -1156,6 +1156,155 @@ def run_terrace(f):
     check_floating(f)
 
 
+# ============================================================== PERGOLA
+# An open structure: footings, posts, two beams, rafters across them (with an
+# overhang), optional slats and knee braces. Its checks are the rafter and beam
+# spans, post-footing, beam-bearing, and `open-bracing`: every post-to-beam corner
+# that has room for one carries a knee brace. Snow is the only load; wind, uplift
+# and the footings' capacity are not checked.
+
+PERGOLA_MAX_BEAM_END = 500.0    # mm a pergola beam may reach past its last post's centre line
+
+
+def is_pergola(frame):
+    return frame["spec"].get("type") == "pergola"
+
+
+def _slat_dead_kn_m2(lib, spec):
+    sl = spec.get("slats")
+    if not isinstance(sl, dict):
+        return 0.0
+    it = lib["sections"][sl["item"]]
+    return own_weight_kn_m(lib, it["thickness_mm"], it["width_mm"]) / (sl["spacing"] / 1000.0)
+
+
+def pergola_rafter_span(spec, lib):
+    """Centre to centre of the two beams, across them, in mm."""
+    bw = spec["beam_plies"] * lib["sections"][spec["beam_item"]]["thickness_mm"]
+    across = spec["depth"] if spec["beam_axis"] == "x" else spec["width"]
+    return across - 2 * spec["overhang"] - bw
+
+
+def pergola_rafter_allowed(lib, spec):
+    r = lib["sections"][spec["rafter_item"]]
+    s = spec["rafter_spacing"] / 1000.0
+    return allowable_span(lib, r["thickness_mm"], r["width_mm"], _slat_dead_kn_m2(lib, spec) * s,
+                          spec["loads"]["snow_kn_m2"] * s, "snow", repetitive=True)
+
+
+def pergola_beam_allowed(lib, spec, detail=False):
+    """Longest span in mm of a pergola beam between posts, carrying half the rafter span plus the overhang."""
+    b = lib["sections"][spec["beam_item"]]
+    r = lib["sections"][spec["rafter_item"]]
+    t = (pergola_rafter_span(spec, lib) / 2.0 + spec["overhang"]) / 1000.0
+    dead = own_weight_kn_m(lib, r["thickness_mm"], r["width_mm"]) / (spec["rafter_spacing"] / 1000.0) + _slat_dead_kn_m2(lib, spec)
+    res = allowable_span(lib, b["thickness_mm"] * spec["beam_plies"], b["width_mm"], dead * t,
+                         spec["loads"]["snow_kn_m2"] * t, "snow", repetitive=False)
+    return res if detail else res["span_mm"]
+
+
+def check_pergola_rafters(f):
+    fr, lib, spec = f.frame, f.lib, f.frame["spec"]
+    sp = span_of(fr, "rafter")
+    rafters = [m for m in fr["members"] if m["kind"] == "rafter"]
+    if not (sp and rafters):
+        f.add("span-rafters", "check", "Rafters", "There are no rafters in this frame, so no span was checked.")
+        return
+    res = pergola_rafter_allowed(lib, spec)
+    span, allowed = sp["span_mm"], res["span_mm"]
+    level = level_for(span, allowed)
+    verdict = {"ok": "That is comfortable.",
+               "check": "That is close to the limit: use a deeper rafter or put them closer together.",
+               "fix": "That is too long: use a deeper rafter, closer rafters or beams further out."}[level]
+    over = sp["overhang_mm"]
+    note = ""
+    if over > span / 4.0 + 0.5:
+        note = (f" The overhang of {f.length(over)} is more than a quarter of the span: keep the tails shorter "
+                "or check them.")
+        if level == "ok":
+            level = "check"
+    snow = spec["loads"]["snow_kn_m2"]
+    f.add("span-rafters", level, f"Rafters: {section_name(lib, rafters[0]['item'])} at {f.length(sp['spacing_mm'])}",
+          f"Rafters span {f.length(span)} between the beams (centre to centre). This section is good for about "
+          f"{f.length(allowed)} at this spacing and a snow load of {f.load(snow)} (limited by {res['governs']}). {verdict} "
+          f"Counted as simply supported between the beams; the overhang only helps.{note}", [rafters[0]["id"]])
+
+
+def check_pergola_beams(f):
+    fr, lib, spec = f.frame, f.lib, f.frame["spec"]
+    rows = [sp for a in fr.get("assemblies", []) if a["type"] == "beams" for sp in a["spans"] if sp["kind"] == "beam"]
+    if not rows:
+        f.add("span-beams", "check", "Beams", "There are no beams in this frame, so no beam span was checked.")
+        return
+    res = pergola_beam_allowed(lib, spec, detail=True)
+    for r in sorted(rows, key=lambda r: r["id"]):
+        span, allowed = r["span_mm"], res["span_mm"]
+        level = level_for(span, allowed)
+        verdict = {"ok": "That is comfortable.",
+                   "check": "That is close to the limit: use a deeper beam or put a post in sooner.",
+                   "fix": "That is too long: use a deeper beam, more plies or more posts."}[level]
+        name = section_name(lib, r["item"]) + (f", {r['plies']} together" if r["plies"] > 1 else "")
+        f.add(f"span-{r['id'].replace('/', '-')}", level, f"Beam {r['id'].split('/')[-1]}: {name}",
+              f"The beam spans {f.length(span)} between posts and carries {f.length(r['trib_mm'])} of rafters "
+              f"(half the span between the beams plus the overhang) at a snow load of {f.load(spec['loads']['snow_kn_m2'])}. "
+              f"This section is good for about {f.length(allowed)} (limited by {res['governs']}). {verdict}",
+              [r["id"]] if r["id"] in f.by_id else [])
+
+
+def check_open_bracing(f):
+    """Every post-to-beam corner with room for a knee brace has one, touching both the post and the beam."""
+    from timber.pergola import MIN_BRACE_CLEAR
+    fr = f.frame
+    recs = [sp for a in fr.get("assemblies", []) if a["type"] == "beams" for sp in a["spans"] if sp["kind"] == "beam"]
+    posts, braces = _members(f, "post"), _members(f, "brace")
+    if not (recs and posts):
+        f.add("open-bracing", "ok", "Open bracing", "There are no posts under beams in this frame.")
+        return
+    missing, total = [], 0
+    for r in recs:
+        beam = f.by_id.get(r["id"])
+        if beam is None:
+            continue
+        ax = 0 if abs(beam["x"][0]) > 0.5 else 1
+        ends = box_corners(beam)[:, ax]
+        lo, hi = float(ends.min()), float(ends.max())
+        for p in posts:
+            c = centre(p)
+            if abs(c[1 - ax] - r["line"]) > 1.0 or contact(p, beam, 1.0) is None:
+                continue
+            pe = box_corners(p)[:, ax]
+            half = float(pe.max() - pe.min()) / 2.0
+            for side, clear in ((1, hi - (c[ax] + half)), (-1, (c[ax] - half) - lo)):
+                if clear < MIN_BRACE_CLEAR:
+                    continue
+                total += 1
+                ok = any(contact(b, p, 1.0) is not None and contact(b, beam, 1.0) is not None
+                         and (centre(b)[ax] - c[ax]) * side > 0 and abs(centre(b)[1 - ax] - r["line"]) <= 1.0
+                         for b in braces)
+                if not ok:
+                    missing.append((p["id"], side))
+    if missing:
+        names = ", ".join(sorted({m[0] for m in missing}))
+        f.add("open-bracing", "fix", "Post corner with no knee brace",
+              f"{len(missing)} post-to-beam corner(s) have no knee brace touching both the post and the beam "
+              f"(posts: {names}). A pergola has no wall to stop it racking, so every corner where a beam runs on past a "
+              "post needs a 45 degree brace from the post up to the beam. Add the brace, or turn `braces` back on.",
+              [missing[0][0]])
+    else:
+        f.add("open-bracing", "ok", "Open bracing",
+              f"All {total} post-to-beam corners that have room carry a knee brace touching both the post and the beam.")
+
+
+def run_pergola(f):
+    check_pergola_rafters(f)
+    check_pergola_beams(f)
+    check_stock_length(f)
+    check_post_footing(f)
+    check_beam_bearing(f, max_end=PERGOLA_MAX_BEAM_END)
+    check_open_bracing(f)
+    check_floating(f)
+
+
 DISCLAIMER = ("This is guidance from simple formulas, not structural engineering. Joists, rafters and headers were "
               "treated as beams under an even load; wind, uplift, shear, fixings, the ground and the loads on "
               "neighbouring walls were not checked, and local building rules may apply (permits, snow and wind zones, "
@@ -1169,9 +1318,21 @@ DISCLAIMER_TERRACE = ("This is guidance from simple formulas, not structural eng
                       "stand on well above the ground, have it checked by a qualified person.")
 
 
+DISCLAIMER_PERGOLA = ("This is guidance from simple formulas, not structural engineering. Rafters and beams were "
+                      "treated as beams under snow only; wind and uplift (an open pergola can act like a sail), the footings "
+                      "(ground screws, blocks, poured piers), the soil, frost, fixings and the knee braces' strength were not "
+                      "checked, and local building rules may apply (permits, distance from boundaries). If it carries a roof "
+                      "covering or climbing plants, or stands near people, have it checked by a qualified person.")
+
+
 def run(frame):
     lib = tl.load(frame["region"])
     f = Findings(frame, lib)
+    if is_pergola(frame):
+        run_pergola(f)
+        f.add("guidance-only", "ok", "Guidance only", DISCLAIMER_PERGOLA)
+        return {"schema": 1, "region": frame["region"], "units": frame["units"],
+                "factors": FACTORS["common"] | FACTORS[frame["region"]], "findings": f.items}
     if is_terrace(frame):
         run_terrace(f)
         f.add("guidance-only", "ok", "Guidance only", DISCLAIMER_TERRACE)
