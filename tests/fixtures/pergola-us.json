@@ -1,0 +1,10 @@
+{
+  "type": "pergola",
+  "region": "us",
+  "name": "pergola",
+  "width": "14'",
+  "depth": "10'",
+  "height": 2300,
+  "foundation": "ground_screw",
+  "slats": {"item": "1x4", "spacing": 152}
+}

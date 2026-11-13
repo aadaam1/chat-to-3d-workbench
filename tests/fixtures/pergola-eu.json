@@ -1,0 +1,9 @@
+{
+  "type": "pergola",
+  "name": "pergola",
+  "width": 4000,
+  "depth": 3000,
+  "height": 2300,
+  "foundation": "ground_screw",
+  "slats": {"item": "25x50", "spacing": 150}
+}

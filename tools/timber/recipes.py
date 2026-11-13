@@ -16,6 +16,7 @@ from timber.platform import BoardPlatform, Platform  # noqa: E402
 from timber.foundations import Footings, footing_item  # noqa: E402
 from timber.posts import Posts  # noqa: E402
 from timber.beam import Beam  # noqa: E402
+from timber.pergola import Axes, KneeBraces, Rafters, Slats, MIN_BRACE_CLEAR  # noqa: E402
 from timber.roof import MonoRoof, RoofLine  # noqa: E402
 from timber.roof_gable import GableLine, GableRoof  # noqa: E402
 import timberlib as tl  # noqa: E402
@@ -191,6 +192,68 @@ def terrace(spec, lib):
     if pid:
         posts.assembly()
     beam.assembly()
+    apply_edits(fr, spec)
+    return result(fr, spec)
+
+
+def pergola(spec, lib):
+    """The frame dict for a resolved pergola spec: footings, posts, two beams on the
+    posts along the long sides (or `beam_axis`), rafters across the beams on top
+    of them with an overhang past each, optional slats across the rafters, and
+    45 degree knee braces from the posts up to the beams. The ground is at Z 0 and
+    the underside of the beams at `height`."""
+    fr = Frame()
+    ax = Axes(0 if spec["beam_axis"] == "x" else 1)
+    W, D, H = spec["width"], spec["depth"], spec["height"]
+    L, Wd = (W, D) if ax.axis == 0 else (D, W)
+    foot = Footings(fr, lib, footing_item(lib, spec["foundation"], spec["footing_item"]))
+    posts = Posts(fr, lib, spec["post_item"])
+    beam = Beam(fr, lib, spec["beam_item"], spec["beam_plies"], "on_top")
+    bw, bo, oh = beam.width(), spec["beam_overhang"], spec["overhang"]
+    zb = H + beam.hb                                          # top of the beams
+    if H - foot.seat < MIN_POST_LEN:
+        raise SpecError(f"height: {H:g} mm is too low for this footing; use at least {foot.seat + MIN_POST_LEN:g} mm")
+    us = _even(bo, L - bo, spec["post_spacing"])
+    lines = [oh + bw / 2, Wd - oh - bw / 2]
+    pts = [tuple(ax.pt(u, v)[:2]) for v in lines for u in us]
+    recs = foot.place(pts, carry=(posts.t, posts.w), ground=0.0, prefix="foundations")
+    pid = posts.place(pts, top=H, footings=recs, prefix="posts")
+    rs = lines[1] - lines[0]
+    trib = rs / 2 + oh
+    braces = KneeBraces(fr, lib, ax, spec["brace_item"], spec["brace_leg"])
+    n = len(us)
+    plan = []                                                  # (line index, post record, u face, side, leg)
+    if spec["braces"]:
+        for k, v in enumerate(lines):
+            for i, u in enumerate(us):
+                for side in (-1, 1):
+                    if side == 1:
+                        clear = (us[i + 1] - u - posts.t) if i < n - 1 else (L - u - posts.t / 2)
+                    else:
+                        clear = (u - us[i - 1] - posts.t) if i > 0 else (u - posts.t / 2)
+                    if clear < MIN_BRACE_CLEAR:
+                        continue
+                    leg = braces.leg_for(clear)
+                    if H - braces.lowest(leg) < foot.seat - 0.05:
+                        low = foot.seat + braces.lowest(leg)
+                        raise SpecError(f"height: {H:g} mm is too low for 45 degree knee braces on these posts; "
+                                        f"use at least {low:g} mm, a shorter brace_leg, or braces: false")
+                    plan.append((k, pid[k * n + i], u + side * posts.t / 2, side, leg))
+    for k, v in enumerate(lines):
+        sup = [(u, pid[k * n + i]["id"]) for i, u in enumerate(us)]
+        beam.place(v, 0.0, L, zb, sup, posts.w, trib, axis=ax.axis, prefix="beams")
+    plies = [x for r in beam.records for x in r["plies"]]
+    rafters = Rafters(fr, lib, ax, spec["rafter_item"], spec["rafter_spacing"]).build(L, Wd, zb, plies, lines, oh, rs)
+    if spec["slats"] != "none":
+        Slats(fr, lib, ax, spec["slats"]["item"], spec["slats"]["spacing"]).build(L, Wd, rafters.top, rafters.ids)
+    for k, post, u_face, side, leg in plan:
+        braces.add(lines[k], u_face, side, H, leg, post["id"], beam.records[k]["plies"])
+    foot.buy()
+    beam.buy()
+    foot.assembly()
+    posts.assembly()
+    beam.assembly()
+    braces.assembly()
     apply_edits(fr, spec)
     return result(fr, spec)
 
