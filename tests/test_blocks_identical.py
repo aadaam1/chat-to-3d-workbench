@@ -1,7 +1,8 @@
 """The timber generator's output must not change when its code is reorganised.
 (The two gable-shed cases were added with the gable roof, the two terrace cases with the
 terrace, the two pergola cases with the pergola and the two summer kitchen cases with the
-summer kitchen, the five "planned-" cases with the planner; the rest are the pent shed.)
+summer kitchen, the five "planned-" cases with the planner, the "low-" and "long-" cases with the flush frame
+and the joining of pieces longer than the timber on sale; the rest are the pent shed.)
 
 Each case is a description; the sha256 of its frame file (without any
 "assemblies" or "decisions" key), of its check findings and of its shopping list are in
@@ -75,6 +76,13 @@ def cases():
     c["planned-pergola-6x4"] = {"type": "pergola", "width": 6000, "depth": 4000}
     c["planned-gable-4x3-door"] = {"type": "gable-shed", "width": 4000, "depth": 3000,
                                    "openings": [{"wall": "front", "kind": "door", "x": 1000, "width": 900, "height": 2000}]}
+    # added with the flush frame (a low deck) and with joining (pieces longer than the timber on sale)
+    for fnd in ("ground_screw", "pier_block", "concrete_footing"):
+        c[f"low-terrace-300-{fnd}"] = {"type": "terrace", "width": 4000, "depth": 3000, "height": 300, "foundation": fnd}
+    c["low-terrace-250"] = {"type": "terrace", "width": 4000, "depth": 3000, "height": 250}
+    c["low-kitchen-default-floor"] = {"type": "summer-kitchen", "width": 4000, "depth": 3000, "roof": "gable", "floor": "terrace"}
+    c["long-pent-6x3"] = {"type": "pent-shed", "width": 6000, "depth": 3000}
+    c["long-gable-7x3"] = {"type": "gable-shed", "width": 7000, "depth": 3000}
     return c
 
 
@@ -132,6 +140,8 @@ def test_checks_read_assemblies_with_the_same_findings(name):
             assert all(i.startswith("wall-") for i in ids if i not in ("beams", "braces", "foundations", "posts", "roof",
                                                                    "deck", "floor-beams", "floor-foundations", "floor-posts"))
             want = sorted(ids)
+        if CASES[name]["type"] == "terrace" and full["spec"].get("frame") == "flush":
+            want = [w for w in want if w != "posts"]             # a flush frame has no posts: the beams sit on the post bases
         if CASES[name]["type"] == "pergola" and full["spec"]["slats"] == "none":
             want = [w for w in want if w != "slats"]             # no slats, no slats assembly
         assert sorted(a["id"] for a in full["assemblies"]) == want

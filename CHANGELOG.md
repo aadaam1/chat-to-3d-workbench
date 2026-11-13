@@ -12,8 +12,10 @@ workbench is a working prototype, and anything may still change.
 ### Added
 - `tools/frame.py --types` and `--fields <type>` list what can be built and every setting.
 - Preview: a "How it was planned" section listing the sizes the planner chose and why.
+- Low terraces and floors: joists hung between the beams when there is no room to stack them.
 
 ### Changed
+- Pieces longer than the timber on sale are joined over a stud, joist or rafter instead of being flagged.
 - The planner picks a bigger section (or closer spacing) when a default would fail its span, and says why.
 - Default wall and roof heights adjust so the roof drains and the doors you asked for fit.
 

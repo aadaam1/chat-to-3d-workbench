@@ -331,7 +331,7 @@ def _plan_shed(raw, s, lib, d, gable):
     j = pl.size_member(lib, s["floor_item"], s["joist_spacing"], ("joist",), ev_j, item_named=raw.get("floor_item"),
                        spacing_named="joist_spacing" in raw)
     if j.changed:
-        out.append(("Floor joists",) + pl.explain(lib, "joists", j, s["floor_item"], s["joist_spacing"], u))
+        out.append(("Floor joists",) + pl.explain(lib, "joists", j, s["floor_item"], s["joist_spacing"], u, "the floor spans"))
         s["floor_item"], s["joist_spacing"] = j.key, float(j.spacing)
     # wall heights, rafters and headers, which depend on each other a little
     cos_a = 1.0
@@ -356,7 +356,7 @@ def _plan_shed(raw, s, lib, d, gable):
                 return run, spn.shed_rafter_allowed(lib, s, key, spacing, c, repetitive=n >= 4)["span_mm"]
         r = pl.size_member(lib, base_r[0], base_r[1], ("rafter",), ev_r, item_named=raw.get("rafter_item"),
                            spacing_named="rafter_spacing" in raw)
-        rd = ("Rafters",) + pl.explain(lib, "rafters", r, base_r[0], base_r[1], u) if r.changed else None
+        rd = ("Rafters",) + pl.explain(lib, "rafters", r, base_r[0], base_r[1], u, "the roof spans") if r.changed else None
         s["rafter_item"], s["rafter_spacing"] = r.key, float(r.spacing)
         cos_a = _shed_cos(raw, s, lib, d, gable)
         # headers: all at once, the deepest need decides
@@ -381,7 +381,7 @@ def _plan_shed(raw, s, lib, d, gable):
                 nm = lambda k: pl.section_name(lib, k)
                 hdd = ("Headers over the openings", f"{nm(h.key)}, two together" if 2 * lib["sections"][h.key]["thickness_mm"] <= wf_ + EPS
                        else nm(h.key),
-                       f"{nm(base_h)} is good for {pl.length_text(h.base[1], u)} and the widest opening needs "
+                       f"{nm(base_h)} can span up to {pl.length_text(h.base[1], u)}, but the widest opening needs "
                        f"{pl.length_text(h.base[0], u)}")
                 s["header_item"] = h.key
         hh = tl.item(lib, s["header_item"])["width_mm"]
@@ -611,7 +611,7 @@ def _kitchen_spec(raw):
     r = pl.size_member(lib, s["rafter_item"], s["rafter_spacing"], ("rafter",), ev, item_named=raw.get("rafter_item"),
                        spacing_named="rafter_spacing" in raw)
     if r.changed:
-        pl.decide(s, "Rafters", *pl.explain(lib, "rafters", r, s["rafter_item"], s["rafter_spacing"], s["units"]))
+        pl.decide(s, "Rafters", *pl.explain(lib, "rafters", r, s["rafter_item"], s["rafter_spacing"], s["units"], "the roof spans"))
         s["rafter_item"], s["rafter_spacing"] = r.key, float(r.spacing)
         if gable:
             t3 = dict(s_pre, rafter_item=r.key)
@@ -686,7 +686,7 @@ def _kitchen_spec(raw):
                             "under this roof; use a deeper beam or shorter rafters")
         s["post_spacing"] = post_sp
         s.notes["post_spacing"] = pl.spacing_note(allowed, pg["max_post_spacing_mm"], why,
-                                                  f"A roof beam of {s['beam_plies']} x {pl.section_name(lib, s['beam_item'])}")
+                                                  f"a roof beam of {s['beam_plies']} × {pl.section_name(lib, s['beam_item'])}")
     def item_ok(key):
         try:
             return tl.item(lib, key)["category"] in ("sections", "sheets", "cladding")
@@ -835,7 +835,7 @@ def _pergola_spec(raw):
                        spacing_named="rafter_spacing" in raw)
     if r.changed:
         pl.decide(s, "Rafters", *pl.explain(lib, "rafters", r, s["rafter_item"], s["rafter_spacing"], s["units"],
-                                            "the span between the beams is"))
+                                            "the rafters span"))
         s["rafter_item"], s["rafter_spacing"] = r.key, float(r.spacing)
     along = s["width"] if axis == "x" else s["depth"]
     across = s["depth"] if axis == "x" else s["width"]
@@ -858,7 +858,7 @@ def _pergola_spec(raw):
                             f"at this width; use a deeper beam or shorter rafters")
         s["post_spacing"] = post
         s.notes["post_spacing"] = pl.spacing_note(allowed, d["max_post_spacing_mm"], why,
-                                                  f"A beam of {plies} x {pl.section_name(lib, s['beam_item'])} carrying the rafters")
+                                                  f"a beam of {plies} × {pl.section_name(lib, s['beam_item'])}")
     def item_ok(key):
         try:
             return tl.item(lib, key)["category"] in ("sections", "sheets", "cladding")

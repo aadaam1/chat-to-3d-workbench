@@ -128,7 +128,7 @@ def test_decisions_have_what_chose_why():
         assert set(d) == {"what", "chose", "why"} and all(isinstance(v, str) and v for v in d.values())
     j = next(d for d in ds if d["what"] == "Floor joists")
     assert j["chose"] == "50×200 at 400 mm"
-    assert j["why"] == "50×150 at 400 mm is good for 3.66 m; the span is 3.95 m"
+    assert j["why"] == "50×150 at 400 mm can span up to 3.66 m, but the floor spans 3.95 m"
 
 
 def test_outdoor_layout_choices_are_decisions():

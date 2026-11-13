@@ -69,6 +69,41 @@
   "checks": "7fb5cf93a081c02387ce87b5610be5fb317e2de0681318f7d339ffe12a8f36b1",
   "frame": "4ad04a49ad28e1a727dabd272b5480df0b2f2b1cdf362aa7019fc6660ef6e965"
  },
+ "long-gable-7x3": {
+  "bom": "c58a1d65af35b40e40b0e70340438950f1e1ac499dd92eb836a125c11799d1e7",
+  "checks": "9d63ebf78cc9cbb67902b89f20eafc5a029c4145041eb8365b9c5cbcd9aa1d88",
+  "frame": "2e29125557cbd64fe52473a8e36cec620e33c29050868d8e06ca7c82b3b2614a"
+ },
+ "long-pent-6x3": {
+  "bom": "718090ff2c0096a9632f169878be431ca677f5156b6576b4fe9e59924e65d313",
+  "checks": "a9aaa7c28eb6a819ddc2a0f2a4a2ebec41ef85620e0c450955ed954952fd64a6",
+  "frame": "f354fdd78613c6f38422ba6f9c6b26a4f6b18e3a8feaa38a3c1fdae6922fcf04"
+ },
+ "low-kitchen-default-floor": {
+  "bom": "4903df07d2550f8aaddd11c2e0b7cc002f4e9f2368113eab15eabbe557d11103",
+  "checks": "3e288a7aa7c473a6525a117786218e74498f3393f132e117491ca8ed5be8eb72",
+  "frame": "809f1bec7c9d92d45e71a621dcde751b8c805a0c8680fe077a1980fe8a165c0d"
+ },
+ "low-terrace-250": {
+  "bom": "cf26e8e6a785a4adc13b6f038bbeb9aa2c8893cfce2a4e0e4b7b89bdb5714b97",
+  "checks": "15a655e90ceb3ba89c6ef7893a5547b7a3eaa01c664a0d0b8e3a856683eefafa",
+  "frame": "6dada8d2b7f5dda9ca3dfc9b027b9228887e7def6fca6d8dc7528c3180ef31ea"
+ },
+ "low-terrace-300-concrete_footing": {
+  "bom": "e230a884a01db2eaba58af27c000f94b67ac02d3d88ec08f6839cc8dba3e7a38",
+  "checks": "9a65addc08aa0dda7e13707e16a71979c7f5c61a52585b5ad100421eb0993b48",
+  "frame": "45c45bf55b27b5826cae5f97fdb01e0705f89cdb09df5884088b5aced8aae7f6"
+ },
+ "low-terrace-300-ground_screw": {
+  "bom": "c6c309b2664782bb6f3db9782aa4f4118c071df855eed3e2ae3c450e9ad4ac08",
+  "checks": "cb0b571172b2577222ddebe69dee4a2d253be838d82b19d535d464dceca75d56",
+  "frame": "2914df204bc318a4d48ccb86ec3049225cdfa4528acc756c4a28c7be839e230b"
+ },
+ "low-terrace-300-pier_block": {
+  "bom": "236afdbc91ef047325482000fe7130ffb795297b68f7be28aab762f1405efca3",
+  "checks": "9a65addc08aa0dda7e13707e16a71979c7f5c61a52585b5ad100421eb0993b48",
+  "frame": "9b3ac75f80214ff9694f9e719b33b86347fe4e6aecde79ed3a56d5432188a865"
+ },
  "pergola-eu": {
   "bom": "cdf41ed343964f0d0b5b0cbc599fa759a2cfdf23c9521135dd6c4c3c9fc55539",
   "checks": "81d180f307bd04b90c42ec91bd7f1da1a87953015580aa1d396adda0cd030d7e",
