@@ -1,6 +1,6 @@
 """The timber generator's output must not change when its code is reorganised.
-(The two gable-shed cases were added with the gable roof and the two terrace cases with the
-terrace; the rest are the pent shed.)
+(The two gable-shed cases were added with the gable roof, the two terrace cases with the
+terrace and the two pergola cases with the pergola; the rest are the pent shed.)
 
 Each case is a description; the sha256 of its frame file (without any
 "assemblies" key), of its check findings and of its shopping list are in
@@ -63,6 +63,8 @@ def cases():
     c["gable-us"] = _load(os.path.join(FIX, "gable-us.json"))
     c["terrace-eu"] = _load(os.path.join(FIX, "terrace-eu.json"))       # added with the terrace
     c["terrace-us"] = _load(os.path.join(FIX, "terrace-us.json"))
+    c["pergola-eu"] = _load(os.path.join(FIX, "pergola-eu.json"))       # added with the pergola
+    c["pergola-us"] = _load(os.path.join(FIX, "pergola-us.json"))
     return c
 
 
