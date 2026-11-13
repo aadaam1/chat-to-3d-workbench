@@ -506,7 +506,7 @@ const ringMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.9, d
 const floorMat = new THREE.ShadowMaterial({ opacity: 0.3 });
 const floor = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), floorMat); floor.receiveShadow = true; scene.add(floor);
 const pinGroup = new THREE.Group(), prevGroup = new THREE.Group(); scene.add(pinGroup, prevGroup);
-let mesh = null, inner = null, edges = null, box = null;
+let mesh = null, inner = null, edges = null, box = null, floorZ = null;
 const lookMat = () => layout === 'advanced' ? LOOKS.clay : (LOOKS[P().look] ?? LOOKS.asa);
 
 function resize() {
@@ -825,25 +825,38 @@ function memberGeom(m) {
 const memberMat = m => layout === 'advanced' ? WOOD.clay : m.kind === 'sheet' ? WOOD.sheet : m.kind === 'board' ? WOOD.board
   : m.kind === 'deckboard' ? WOOD.deck : m.kind === 'ground-screw' || m.kind === 'post-base' ? WOOD.steel : m.kind === 'pier' || m.kind === 'footing' ? WOOD.concrete
   : m.treated ? WOOD.treated : WOOD.timber;
+// parts below the ground level read as "in the ground": the same material, faded
+const FADE = new Map();
+const fadeOf = base => { let f = FADE.get(base); if (!f) { f = base.clone(); f.transparent = true; f.opacity = 0.38; f.depthWrite = false; FADE.set(base, f); } return f; };
+const showMat = m => memberMat(m) && (m._below ? fadeOf(memberMat(m)) : memberMat(m));
 
 function showBuild(keepCamera) {
   const b = Bd();
   if (mesh) { scene.remove(mesh); mesh.traverse(o => o.geometry?.dispose()); }
   memberMesh.clear(); groupC.clear(); selected = null; shownCheck = null; hl = [];
-  const all = new THREE.Box3(), grp = new THREE.Group(), gb = new Map();
+  const all = new THREE.Box3(), grp = new THREE.Group(), gb = new Map(), above = new THREE.Box3();
+  const ground = b.ground ?? 0;                 // the frame's ground level, mm (footings reach below it)
+  let below = false;
   for (const m of b.members) {
     const g = memberGeom(m); g.computeBoundingBox(); all.union(g.boundingBox);
-    const me = new THREE.Mesh(g, memberMat(m)); me.castShadow = me.receiveShadow = true;
+    m._below = b.ground != null && g.boundingBox.min.z < ground - 0.5;
+    if (m._below) below = true;
+    if (g.boundingBox.max.z > ground + 0.5) { const bb = g.boundingBox.clone(); bb.min.z = Math.max(bb.min.z, ground); above.union(bb); }
+    const me = new THREE.Mesh(g, showMat(m)); me.castShadow = me.receiveShadow = !m._below;
     me.userData = { id: m.id, m, c: g.boundingBox.getCenter(new THREE.Vector3()) };
     const ln = new THREE.LineSegments(new THREE.EdgesGeometry(g, 30), edgeMat); ln.raycast = () => {}; me.add(ln);
     if (!gb.has(m.group)) gb.set(m.group, new THREE.Box3()); gb.get(m.group).union(g.boundingBox);
     memberMesh.set(m.id, me); grp.add(me);
   }
   for (const [k, bx] of gb) groupC.set(k, bx.getCenter(new THREE.Vector3()));
-  if (!offsets.has(b.name)) offsets.set(b.name, all.getCenter(new THREE.Vector3()));
+  // with parts below the ground, frame the part above it (all of it when only the foundations are shown)
+  const onlyFound = below && b.members.every(m => m.layer === 'foundations' || hiddenLayers.has(m.layer));
+  const frameBox = below && !onlyFound && !above.isEmpty() ? above : all;
+  if (!offsets.has(b.name)) offsets.set(b.name, frameBox.getCenter(new THREE.Vector3()));
   centre0.copy(offsets.get(b.name)); grp.position.copy(centre0).negate();
   mesh = grp; inner = null; edges = null; scene.add(grp);
-  box = all.clone().translate(grp.position);
+  box = frameBox.clone().translate(grp.position);
+  floorZ = below ? ground - centre0.z : null;
   if (!keepCamera) {
     lastSpan = box.getSize(new THREE.Vector3()).length(); lookFrom('iso', true);
     controls.minDistance = lastSpan * 0.2; controls.maxDistance = lastSpan * 5;
@@ -856,7 +869,8 @@ function showBuild(keepCamera) {
 function paintBuild() {
   const adv = layout === 'advanced';
   WOOD.clay.color.copy(col('--clay')); hlLine.color.copy(col('--pin'));
-  for (const me of memberMesh.values()) { me.material = memberMat(me.userData.m); me.children[0].visible = adv; }
+  FADE.clear();
+  for (const me of memberMesh.values()) { me.material = showMat(me.userData.m); me.children[0].visible = adv; }
 }
 
 // layers: what is drawn; hidden members can't be clicked or commented on
@@ -1085,7 +1099,7 @@ function buildPartButtons() {
 // the floor and the light that throws the shadow follow the part's size
 function setStage() {
   const s = lastSpan;
-  floor.scale.set(s * 12, s * 12, 1); floor.position.set(0, 0, box.min.z - s * 0.001);
+  floor.scale.set(s * 12, s * 12, 1); floor.position.set(0, 0, (floorZ ?? box.min.z) - s * 0.001);
   key.position.set(-s * 0.55, -s * 0.7, s * 1.4); key.target.position.set(0, 0, 0);
   Object.assign(key.shadow.camera, { left: -s, right: s, top: s, bottom: -s, near: s * 0.05, far: s * 4 }); key.shadow.camera.updateProjectionMatrix();
   rim.position.set(s * 1.2, s * 1.1, s * 0.4);
