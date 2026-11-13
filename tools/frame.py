@@ -42,8 +42,12 @@ KNOWN = ("type", "name", "region", "units", "width", "depth", "height_front", "h
          "floor_item", "rafter_item", "sheathing", "floor_deck", "roof_deck", "cladding",
          "treated_floor", "openings", "loads", "roofing", "corner", "top_plate", "header_item",
          "overhang_side", "fascia_item", "edits",
-         "height_eaves", "pitch_deg", "height_ridge", "ridge_item", "tie_item")
-TYPES = ("pent-shed", "gable-shed")
+         "height_eaves", "pitch_deg", "height_ridge", "ridge_item", "tie_item",
+         "foundation", "footing_item", "footing_spacing")
+TERRACE_KNOWN = ("type", "name", "region", "units", "width", "depth", "height", "foundation", "footing_item",
+                 "post_item", "beam_item", "beam_plies", "beam_mount", "joist_item", "joist_spacing",
+                 "deck_board", "board_gap", "post_spacing", "row_spacing", "loads", "edits")
+TYPES = ("pent-shed", "gable-shed", "terrace")
 GABLE_ONLY = ("height_eaves", "pitch_deg", "height_ridge", "ridge_item", "tie_item")
 PENT_ONLY = ("height_front", "height_back")
 MAX_PITCH_DEG = 60.0
@@ -79,6 +83,8 @@ def resolve_spec(raw):
     for k in REQUIRED:
         if k not in raw:
             raise SpecError(f"{k}: required")
+    if raw["type"] in TYPES and raw["type"] == "terrace":
+        return _terrace_spec(raw)
     for k in raw:
         if k not in KNOWN:
             raise SpecError(f"{k}: unknown field (known: {', '.join(KNOWN)})")
@@ -205,12 +211,141 @@ def resolve_spec(raw):
         raise SpecError(str(e))
     if gable:
         _gable_roof(raw, s, lib, d)
+    _shed_foundation(raw, s, lib)
     tr = tl.item(lib, s["rafter_item"])["thickness_mm"]
     os_ = s["overhang_side"]
     if os_ and not (tr + fr.MIN_OUTRIGGER - EPS <= os_ <= fr.OVERHANG_SIDE_MAX + EPS):
         raise SpecError(f"overhang_side: {os_:g} mm does not work; use 0 (no side overhang) or "
                         f"{tr + fr.MIN_OUTRIGGER:g} to {fr.OVERHANG_SIDE_MAX:g} mm (a flying rafter on "
                         f"outriggers; more needs lookouts back to the second rafter, not built yet)")
+    return s, lib
+
+
+def _shed_foundation(raw, s, lib):
+    """Optional footings under a shed's floor frame (see timber/foundations.py)."""
+    fnd = raw.get("foundation", "none")
+    if fnd == "none":
+        for k in ("footing_item", "footing_spacing"):
+            if k in raw:
+                raise SpecError(f"{k}: only with a foundation (ground_screw, pier_block or concrete_footing)")
+        return
+    from timber.foundations import footing_item
+    it = footing_item(lib, fnd, raw.get("footing_item"))
+    s["foundation"], s["footing_item"] = fnd, it["key"]
+    if "footing_spacing" in raw:
+        s["footing_spacing"] = _length(raw, "footing_spacing")
+        if s["footing_spacing"] < 300:
+            raise SpecError("footing_spacing: must be at least 300 mm")
+    else:
+        s["footing_spacing"] = float(lib["defaults"]["terrace"]["footing_spacing_shed_mm"])
+
+
+def _terrace_spec(raw):
+    """A terrace description with every missing field filled from the library
+    (defaults.terrace), lengths in mm, the beam row and post spacings worked out
+    from the span formulas. Returns (spec, library)."""
+    import framecheck as fc
+    for k in ("width", "depth", "height"):
+        if k not in raw:
+            raise SpecError(f"{k}: required")
+    for k in raw:
+        if k not in TERRACE_KNOWN:
+            raise SpecError(f"{k}: unknown field for a terrace (known: {', '.join(TERRACE_KNOWN)})")
+    region = raw.get("region", "eu")
+    try:
+        lib = tl.load(region)
+    except ValueError as e:
+        raise SpecError(f"region: {e}")
+    t = lib["defaults"]["terrace"]
+    s = {"type": "terrace", "region": region, "units": raw.get("units", lib.get("units", "metric"))}
+    if s["units"] not in ("metric", "imperial"):
+        raise SpecError(f"units: must be 'metric' or 'imperial', not {s['units']!r}")
+    if "name" in raw and (not isinstance(raw["name"], str) or not raw["name"].strip()):
+        raise SpecError("name: must be text")
+    s["name"] = raw.get("name", "terrace").strip()
+    for k in ("width", "depth", "height"):
+        s[k] = _length(raw, k)
+        if not s[k] > 0:
+            raise SpecError(f"{k}: must be greater than 0")
+    for field in ("post_item", "beam_item", "joist_item", "deck_board"):
+        key = raw.get(field, t[field])
+        try:
+            it = tl.item(lib, key) if isinstance(key, str) else None
+        except KeyError:
+            it = None
+        if not it or it["category"] != "sections":
+            raise SpecError(f"{field}: {key!r} is not a timber section in the {region} library")
+        if field == "deck_board" and "deck" not in it:
+            raise SpecError(f"deck_board: {key!r} is not a deck board in the {region} library "
+                            f"(have: {', '.join(k for k, v in lib['sections'].items() if 'deck' in v)})")
+        s[field] = key
+    from timber.foundations import footing_item
+    s["foundation"] = raw.get("foundation", t["foundation"])
+    s["footing_item"] = footing_item(lib, s["foundation"], raw.get("footing_item"))["key"]
+    plies = raw.get("beam_plies", t["beam_plies"])
+    if plies not in (1, 2) or isinstance(plies, bool):
+        raise SpecError("beam_plies: use 1 or 2")
+    s["beam_plies"] = plies
+    mount = raw.get("beam_mount", t["beam_mount"] if plies == 2 else "on_top")
+    if mount not in ("on_top", "sandwich"):
+        raise SpecError("beam_mount: use on_top (on the posts, on a post cap) or sandwich (a ply either side, bolted)")
+    if mount == "sandwich" and plies != 2:
+        raise SpecError("beam_mount: a sandwich beam has two plies; use on_top for one")
+    s["beam_mount"] = mount
+    board = tl.item(lib, s["deck_board"])
+    lim = board["deck"]["max_joist_spacing_mm"]
+    s["joist_spacing"] = _length(raw, "joist_spacing") if "joist_spacing" in raw else float(lim)
+    s["board_gap"] = _length(raw, "board_gap") if "board_gap" in raw else float(board["deck"]["gap_mm"])
+    joist = tl.item(lib, s["joist_item"])
+    if s["joist_spacing"] < 2 * joist["thickness_mm"]:
+        raise SpecError(f"joist_spacing: {s['joist_spacing']:g} mm is closer than two {joist['name']} joists")
+    if not 0 <= s["board_gap"] <= 20:
+        raise SpecError("board_gap: use 0 to 20 mm")
+    loads = {"floor_kn_m2": float(t["floor_kn_m2"])}
+    if "loads" in raw:
+        if not isinstance(raw["loads"], dict):
+            raise SpecError("loads: must be an object")
+        for k, v in raw["loads"].items():
+            if k != "floor_kn_m2":
+                raise SpecError(f"loads.{k}: unknown load for a terrace (known: floor_kn_m2)")
+            if isinstance(v, bool) or not isinstance(v, (int, float)) or v <= 0:
+                raise SpecError("loads.floor_kn_m2: must be a number of kN/m2, more than 0")
+            loads[k] = float(v)
+    s["loads"] = loads
+    # spacings: the library's caps, kept under 80% of what the span formulas allow
+    ld = fc.terrace_loads(lib, s)
+    caps = {}
+    for k, cap_k, calc in (("row_spacing", "max_row_spacing_mm", fc.joist_allowed),
+                           ("post_spacing", "max_post_spacing_mm", None)):
+        if k in raw:
+            caps[k] = _length(raw, k)
+            if caps[k] < 300:
+                raise SpecError(f"{k}: must be at least 300 mm")
+    row = caps.get("row_spacing")
+    if row is None:
+        row = min(t["max_row_spacing_mm"], fc.SPACING_SHARE * fc.joist_allowed(lib, s, ld))
+        if row < 600:
+            raise SpecError(f"joist_item: {s['joist_item']!r} at {s['joist_spacing']:g} mm carries only about "
+                            f"{row / 1000:.2f} m between beams; use a deeper joist or closer spacing")
+        row = math.floor(row / 50) * 50
+    s["row_spacing"] = float(row)
+    post = caps.get("post_spacing")
+    if post is None:
+        post = min(t["max_post_spacing_mm"], fc.SPACING_SHARE * fc.beam_allowed(lib, s, ld, s["row_spacing"]))
+        if post < 600:
+            raise SpecError(f"beam_item: {s['beam_item']!r} carries only about {post / 1000:.2f} m between posts "
+                            f"over beams {s['row_spacing']:g} mm apart; use a deeper beam or closer rows")
+        post = math.floor(post / 50) * 50
+    s["post_spacing"] = float(post)
+    def item_ok(key):
+        try:
+            return tl.item(lib, key)["category"] in ("sections", "sheets", "cladding")
+        except KeyError:
+            return False
+    try:
+        s["edits"] = fe.validate(raw.get("edits", []), item_ok)
+    except fe.EditError as e:
+        raise SpecError(str(e))
     return s, lib
 
 
@@ -339,10 +474,23 @@ def dumps(frame):
 def generate(raw):
     """Frame dict from a spec dict. Raises SpecError."""
     spec, lib = resolve_spec(raw)
+    if spec["type"] == "terrace":
+        _check_terrace(spec, lib)
+        return recipes.terrace(spec, lib)
     _check_geometry(spec, lib)
     if spec["type"] == "gable-shed":
         return recipes.gable_shed(spec, lib)
     return recipes.pent_shed(spec, lib)
+
+
+def _check_terrace(s, lib):
+    for k in ("width", "depth"):
+        if s[k] < 600:
+            raise SpecError(f"{k}: {s[k]:g} mm is too small for a terrace; use at least 600 mm")
+    t = {k: tl.item(lib, s[k]) for k in ("post_item", "beam_item", "joist_item", "deck_board")}
+    low = t["deck_board"]["thickness_mm"] + t["joist_item"]["width_mm"]
+    if s["height"] <= low:
+        raise SpecError(f"height: {s['height']:g} mm leaves no room for the joists and boards ({low:g} mm)")
 
 
 def _check_geometry(s, lib):

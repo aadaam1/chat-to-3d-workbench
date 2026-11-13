@@ -25,10 +25,12 @@ def sha(text):
 def outputs(raw):
     """The three texts whose hashes are compared, for one description."""
     import frame, framecheck, bom
-    fr = frame.generate(raw)
-    fr = {k: v for k, v in fr.items() if k != "assemblies"}
+    full = frame.generate(raw)
+    fr = {k: v for k, v in full.items() if k != "assemblies"}
+    # a shed's checks fall back to its spec without assemblies; a terrace's read them
+    src = full if full["spec"]["type"] == "terrace" else fr
     return {"frame": frame.dumps(fr),
-            "checks": json.dumps(framecheck.run(fr), sort_keys=True),
+            "checks": json.dumps(framecheck.run(src), sort_keys=True),
             "bom": json.dumps(bom.make_bom(fr, None, 10, 4), sort_keys=True)}
 
 

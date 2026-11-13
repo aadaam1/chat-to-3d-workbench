@@ -84,7 +84,20 @@ and either `pitch_deg` (25 by default, at least the roofing's minimum) or
 `height_eaves`; not both); `ridge_item` and `tie_item` are optional (the
 smallest deep-enough section and the rafter section). The ridge runs along
 the width, the front and back walls carry the rafters, and the door
-usually goes in a gable end (`left` or `right`). A new shed goes in
+usually goes in a gable end (`left` or `right`). A terrace is `"type": "terrace"` with
+`width`, `depth` and `height` (the top of the deck above the ground) and
+`foundation` (`ground_screw` by default, `pier_block` or `concrete_footing`);
+optional: `joist_spacing`, `deck_board`, `board_gap`, `post_item`, `beam_item`,
+`beam_plies` and `beam_mount` (`sandwich` or `on_top`), `row_spacing` and
+`post_spacing` (caps, otherwise worked out from the span formulas),
+`footing_item`, `loads.floor_kn_m2`. Beams run along the width, joists across
+them, boards along the width. A very low terrace puts the beams straight on
+the post bases (see `framing.md`); above about 600 mm the check says a
+railing is usually required (rails and steps are not built yet). Footings
+are bought items and their load capacity is not checked: say so. A shed
+sits on footings with `"foundation": "ground_screw"` (or `pier_block`,
+`concrete_footing`), optionally `footing_spacing` and `footing_item`; they go
+under the front and back rim joists. A new shed goes in
 `projects/<name>/`, which git ignores: do not create a branch, commit, pull
 request or changelog entry for a design.
 
@@ -176,7 +189,7 @@ roofing beyond the felt area, paint or stain. Say which lines have no price.
 
 ## What it cannot do yet
 
-Two building types: a mono-pitch shed and a gable-roof shed, both on a timber
-floor. No hip roofs, no lean-to against a house, no decking or pergolas, no doors or windows drawn
-as objects. If someone needs one of these, say so; don't bend the shed
+Three building types: a mono-pitch shed, a gable-roof shed (both on a timber
+floor, optionally on footings) and a terrace. No hip roofs, no lean-to against a house, no
+pergolas yet, no railings or steps, no doors or windows drawn as objects. If someone needs one of these, say so; don't bend the shed
 description into something it isn't.

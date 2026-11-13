@@ -1,6 +1,6 @@
 # Timber building blocks
 
-Status: in progress (B1 and B2 done; B3-B5 decided 2026-11-13)
+Status: in progress (B1-B3 done; B4-B5 decided 2026-11-13)
 Last updated: 2026-11-12
 
 ## The question
@@ -125,6 +125,20 @@ The two gable fixtures are in the oracle matrix (new hashes only; the pent
 hashes did not move). The rules and sources are in `framing.md`.
 The first public release (0.6.0) comes after B2 at the earliest; B3–B5 can
 follow in public.
+B3 done (2026-11-13): `foundations.py` (`Footings`: a body and a post base
+per point, bought by number, layer `foundations`, kinds `ground-screw`,
+`pier`, `footing`, `post-base`), `posts.py` (`Posts`: a grid or points, each
+joined to its base), `beam.py` (`Beam`: 1 or 2 plies, `on_top` or `sandwich`,
+spans and tributary width recorded per beam), `platform.BoardPlatform` (joists
+bearing on beams, deck boards with a gap, staggered, cut on joists) and the
+`terrace` recipe (`recipes.terrace`), plus `foundation` on both sheds. New
+joints `post-base`, `beam-post`, `beam-cap`, `beam-ply`, `joist-beam`,
+`deck-board`; new checks `post-footing`, `beam-bearing`, the board span and
+a railing note above 600 mm (the terrace has its own check list, since it has
+no walls or roof). The 26 oracle hashes did not move; the two terrace
+fixtures are new cases. Library sizes for ground screws, blocks and piers are
+typical figures marked unverified (the maker's page was not readable). Knee
+braces (`open-bracing`) are left for B4.
 
 ## Outdoor structures (B3–B5), decided 2026-11-13
 

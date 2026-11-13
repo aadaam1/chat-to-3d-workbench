@@ -19,10 +19,12 @@ list of the others. Plan in `docs/research/timber-blocks.md`.
 - **Blocks:** today's shed is built from a platform, four walls and a
   mono-pitch roof (done).
 - **Gable-roof shed** (done: a ridge board, rafter pairs, ties, gable
-  walls), then a **deck** and a **pergola**, then a **summer kitchen** and
+  walls), then a **pergola**, then a **summer kitchen** and
   a **lean-to**.
-- **Foundations:** ground screws with their positions, then footings and
-  skids.
+- **Foundations:** ground screws, pier blocks and concrete footings under
+  a terrace or a shed's floor (done; capacity not checked), then skids.
+- **Terrace** (done: footings, posts, beams, joists, deck boards), then
+  railings and steps.
 - **Ventilated cladding:** battens and an air gap behind the boards.
 - **More prices:** a US snapshot, and nails, screws and sheet goods in the
   European one, so the total covers every line.
