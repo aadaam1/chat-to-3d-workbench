@@ -7,12 +7,15 @@ the walls, joins the corners between walls, adds the bought items and applies
 the edits by piece. The result is the frame file's contents (see
 docs/research/timber-structures.md), plus a list of the assemblies that made it.
 """
-import os, sys
+import math, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import frame_edits as fe  # noqa: E402
 from timber.store import (KINDS, SCHEMA, WALLS, Frame, Layout, SpecError, aabb, num, unit, _norm)  # noqa: E402
-from timber.platform import Platform  # noqa: E402
+from timber.platform import BoardPlatform, Platform  # noqa: E402
+from timber.foundations import Footings, footing_item  # noqa: E402
+from timber.posts import Posts  # noqa: E402
+from timber.beam import Beam  # noqa: E402
 from timber.roof import MonoRoof, RoofLine  # noqa: E402
 from timber.roof_gable import GableLine, GableRoof  # noqa: E402
 import timberlib as tl  # noqa: E402
@@ -25,6 +28,7 @@ def pent_shed(spec, lib):
     line = RoofLine(lay)
     fr = Frame()
     platform = Platform(fr, lay).build()
+    foot = shed_footings(fr, lay, spec, lib)
     walls = {n: Wall(fr, lay, n, line) for n in WALLS}
     for w in walls.values():
         w.build()
@@ -36,6 +40,9 @@ def pent_shed(spec, lib):
     corners(fr, lay, walls)
     roof.buy()
     buy_openings(fr, spec)
+    if foot:
+        foot.buy()
+        foot.assembly()
     apply_edits(fr, spec)
     return result(fr, spec)
 
@@ -48,6 +55,7 @@ def gable_shed(spec, lib):
     line = GableLine(lay, rit["thickness_mm"], rit["width_mm"])
     fr = Frame()
     Platform(fr, lay).build()
+    foot = shed_footings(fr, lay, spec, lib)
     walls = {n: Wall(fr, lay, n, line) for n in WALLS}
     for w in walls.values():
         w.build()
@@ -59,8 +67,32 @@ def gable_shed(spec, lib):
     corners(fr, lay, walls)
     roof.buy()
     buy_openings(fr, spec)
+    if foot:
+        foot.buy()
+        foot.assembly()
     apply_edits(fr, spec)
     return result(fr, spec)
+
+
+SHED_FOOTING_INSET = 150.0     # mm, the first footing under a rim from the corner
+
+
+def shed_footings(fr, lay, spec, lib):
+    """Footings under the floor frame's front and back rim joists, when the
+    description has a `foundation`: None otherwise (the frame is then exactly
+    as it always was). The frame keeps its origin (the underside of the rims);
+    the ground is below it, by the height of the footing's post base."""
+    if "foundation" not in spec:
+        return None
+    foot = Footings(fr, lib, footing_item(lib, spec["foundation"], spec["footing_item"]))
+    W, D, tj = lay.W, lay.D, lay.tj
+    n = max(1, math.ceil((W - 2 * SHED_FOOTING_INSET) / spec["footing_spacing"] - 1e-9))
+    xs = [SHED_FOOTING_INSET + (W - 2 * SHED_FOOTING_INSET) * i / n for i in range(n + 1)]
+    pts = [(x, y) for y in (tj / 2, D - tj / 2) for x in xs]
+    recs = foot.place(pts, carry=(100.0, tj), top=0.0, prefix="foundations")
+    for rec in recs:
+        foot.fix(rec, "floor/rim-front" if rec["y"] < D / 2 else "floor/rim-back")
+    return foot
 
 
 def buy_openings(fr, spec):
@@ -97,3 +129,76 @@ def result(fr, s):
     return {"schema": SCHEMA, "name": s["name"], "region": s["region"], "units": s["units"],
             "spec": _norm(s), "members": mem, "joints": jt, "bought": fr.bought,
             "assemblies": fr.assemblies}
+
+
+def terrace(spec, lib):
+    """The frame dict for a resolved terrace spec: footings, posts, beams in rows
+    along X, deck joists across them (along Y) and deck boards on top, with the
+    ground at Z 0 and the top of the boards at `height`.
+
+    Beam rows are inset from the long edges and spaced no further than
+    `row_spacing`; posts sit under every row at most `post_spacing` apart. A post
+    shorter than the library's `min_post_mm` is left out: the beams then rest on the
+    post bases directly, and the footings' above-ground part is built up to meet them."""
+    fr = Frame()
+    W, D, H = spec["width"], spec["depth"], spec["height"]
+    board, joist, beam_it = (tl.item(lib, spec[k]) for k in ("deck_board", "joist_item", "beam_item"))
+    td, hj, hb = board["thickness_mm"], joist["width_mm"], beam_it["width_mm"]
+    z_joist = H - td - hj                                   # underside of the joists = top of the beams
+    foot = Footings(fr, lib, footing_item(lib, spec["foundation"], spec["footing_item"]))
+    posts = Posts(fr, lib, spec["post_item"])
+    mount, plies = spec["beam_mount"], spec["beam_plies"]
+    post_top = z_joist if mount == "sandwich" else z_joist - hb
+    # no posts when they would be shorter than min_post_mm, if the beams then fit on the bases
+    no_posts = (post_top - foot.seat < lib["defaults"]["terrace"]["min_post_mm"]
+                and z_joist - hb >= foot.seat - 0.05)
+    if no_posts:
+        mount = "on_top"
+    beam = Beam(fr, lib, spec["beam_item"], plies, mount)
+    inset = math.ceil((beam.width(posts.w) / 2 + 25) / 5) * 5
+    if no_posts:
+        inset = math.ceil((beam.width() / 2 + 25) / 5) * 5
+    ys = _even(inset, D - inset, spec["row_spacing"])
+    xs = _even(inset, W - inset, spec["post_spacing"])
+    pts = Posts.grid(xs, ys)
+    if no_posts:
+        seat = z_joist - hb
+        if seat < foot.seat - 0.05:
+            low = foot.seat + hb + hj + td
+            raise SpecError(f"height: {H:g} mm is too low for this footing, beam and deck; "
+                            f"at least {low:g} mm (use a shallower beam_item or a lower footing)")
+        recs = foot.place(pts, carry=(posts.t, beam.width()), ground=0.0, top=seat, prefix="foundations")
+        pid = None
+    else:
+        if post_top - foot.seat < MIN_POST_LEN:
+            low = H - (post_top - foot.seat) + MIN_POST_LEN
+            raise SpecError(f"height: {H:g} mm is too low for this footing, beam and deck; "
+                            f"use at least {low:g} mm")
+        recs = foot.place(pts, carry=(posts.t, posts.w), ground=0.0, prefix="foundations")
+        pid = posts.place(pts, top=post_top, footings=recs, prefix="posts")
+    nx = len(xs)
+    edges = [0.0] + [(a + b) / 2 for a, b in zip(ys, ys[1:])] + [D]
+    for k, y in enumerate(ys):
+        sup = [(x, (pid[k * nx + i]["id"] if pid else recs[k * nx + i]["base"])) for i, x in enumerate(xs)]
+        beam.place(y, 0.0, W, z_joist, sup, posts.w, edges[k + 1] - edges[k], axis=0, prefix="beams",
+                   fix=(lambda a, b: fr.joint("post-base", b, a)) if no_posts else None, cap=not no_posts)
+    deck = BoardPlatform(fr, lib, W, D, spec["joist_item"], spec["deck_board"], spec["joist_spacing"], H,
+                         gap=spec["board_gap"]).build(bearers=ys)
+    deck.bear_on([pid for r in beam.records for pid in r["plies"]])
+    foot.buy()
+    beam.buy()
+    foot.assembly()
+    if pid:
+        posts.assembly()
+    beam.assembly()
+    apply_edits(fr, spec)
+    return result(fr, spec)
+
+
+MIN_POST_LEN = 100.0           # mm, a post shorter than this is not worth cutting
+
+
+def _even(lo, hi, max_gap):
+    """Positions from lo to hi, evenly spaced and no more than max_gap apart (at least two)."""
+    n = max(1, math.ceil((hi - lo) / max_gap - 1e-9))
+    return [round(lo + (hi - lo) * i / n, 1) for i in range(n + 1)]

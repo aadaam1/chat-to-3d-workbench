@@ -10,7 +10,7 @@ Each frame opens `page.html?capture=1&view=..&explode=..&layers=..&az=..&el=..&z
 in headless Chrome. Capture mode hides all the UI and draws one still frame;
 see the "capture mode" block in tools/viewer/viewer.html.
 
-Parameters: view=3d|front|side|top|below, explode=0..1, layers=floor,walls,roof,
+Parameters: view=3d|front|side|top|below, explode=0..1, layers=foundations,frame,floor,deck,walls,roof,
 sheathing,cladding (the visible ones), az=<deg> turns the camera around the model
 from the view's own angle, el=<deg> its height, zoom=<factor>, mode=studio|advanced.
 

@@ -793,12 +793,13 @@ const Bd = () => V[vi].build;
 const memberMesh = new Map();               // member id -> its mesh
 const groupC = new Map();                   // assembly -> its centre, model millimetres
 const hiddenLayers = new Set();
-const LAYERS = ['floor', 'walls', 'roof', 'sheathing', 'cladding'];
+const LAYERS = ['foundations', 'frame', 'floor', 'deck', 'walls', 'roof', 'sheathing', 'cladding'];
 const KIND = { joist: 'Floor joist', rim: 'Rim joist', plate: 'Plate', stud: 'Stud', header: 'Header', trimmer: 'Trimmer', king: 'King stud', jack: 'Jack stud', cripple: 'Cripple stud', sill: 'Sill',
-               rafter: 'Rafter', ridge: 'Ridge board', tie: 'Rafter tie', blocking: 'Blocking', outrigger: 'Outrigger', fascia: 'Fascia', bargeboard: 'Bargeboard', brace: 'Brace', board: 'Cladding board', sheet: 'Sheet' };
+               rafter: 'Rafter', ridge: 'Ridge board', tie: 'Rafter tie', blocking: 'Blocking', outrigger: 'Outrigger', fascia: 'Fascia', bargeboard: 'Bargeboard', brace: 'Brace', board: 'Cladding board', sheet: 'Sheet',
+               post: 'Post', beam: 'Beam ply', deckboard: 'Deck board', 'ground-screw': 'Ground screw', pier: 'Pier block', footing: 'Concrete footing', 'post-base': 'Post base' };
 let units = 'metric', selected = null, shownCheck = null, hl = [];
 const wood = c => new THREE.MeshStandardMaterial({ color: c, metalness: 0, roughness: 0.85, envMapIntensity: 0.5, clippingPlanes: [clip], clipShadows: true, side: THREE.DoubleSide });
-const WOOD = { timber: wood('#d8b98b'), treated: wood('#a9b189'), sheet: wood('#c6a268'), board: wood('#b3895a'), clay: wood('#ffffff') };
+const WOOD = { timber: wood('#d8b98b'), treated: wood('#a9b189'), sheet: wood('#c6a268'), board: wood('#b3895a'), deck: wood('#c49a6c'), steel: wood('#7d8590'), concrete: wood('#a8a8a4'), clay: wood('#ffffff') };
 const hlLine = new THREE.LineBasicMaterial({ depthTest: false, toneMapped: false });
 const centre0 = new THREE.Vector3(), tmpV = new THREE.Vector3();
 
@@ -821,7 +822,9 @@ function memberGeom(m) {
   g.applyMatrix4(new THREE.Matrix4().makeBasis(x, y, z).setPosition(...m.origin));
   return g;
 }
-const memberMat = m => layout === 'advanced' ? WOOD.clay : m.kind === 'sheet' ? WOOD.sheet : m.kind === 'board' ? WOOD.board : m.treated ? WOOD.treated : WOOD.timber;
+const memberMat = m => layout === 'advanced' ? WOOD.clay : m.kind === 'sheet' ? WOOD.sheet : m.kind === 'board' ? WOOD.board
+  : m.kind === 'deckboard' ? WOOD.deck : m.kind === 'ground-screw' || m.kind === 'post-base' ? WOOD.steel : m.kind === 'pier' || m.kind === 'footing' ? WOOD.concrete
+  : m.treated ? WOOD.treated : WOOD.timber;
 
 function showBuild(keepCamera) {
   const b = Bd();

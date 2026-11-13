@@ -5,6 +5,7 @@ import os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import framing as fr_rules  # noqa: E402
+import timberlib as tl  # noqa: E402
 from timber.store import EPS, _ov, layout, r1, sheet_cuts, _norm  # noqa: E402
 
 fr = fr_rules
@@ -84,3 +85,98 @@ class Platform:
                 ox, oy = _ov(x0, x1, a0, a1), _ov(y0, y1, b0, b1)
                 if ox > EPS and oy > EPS:
                     self.joint("sheet-frame", sid, mid, edge_mm=max(ox, oy))
+
+# ------------------------------------------------------------ a board deck
+
+DECK_GAP_MAX = 8.0          # mm, the widest gap the boards are spread to
+MIN_RIPPED = 40.0           # mm, no board is ripped narrower than this
+
+
+def board_rows(D, bw, gap):
+    """Boards across a deck D deep: whole boards with `gap` between them, and the
+    left-over either as a ripped last board or spread over the gaps. Returns
+    [(y0, y1)], the first at 0 and the last ending at D."""
+    if D <= bw:
+        return [(0.0, D)]
+    n = int((D + gap + EPS) // (bw + gap))
+    rem = D - (n * bw + (n - 1) * gap)
+    widths, gaps = [bw] * n, [gap] * (n - 1)
+    if rem - gap >= MIN_RIPPED:
+        widths.append(rem - gap)
+        gaps.append(gap)
+    elif n > 1 and gap + rem / (n - 1) <= DECK_GAP_MAX:
+        gaps = [gap + rem / (n - 1)] * (n - 1)
+    elif n > 1:                                     # too much left over to hide in the gaps
+        widths.append(max(rem - gap, MIN_RIPPED))
+        gaps.append(gap)
+    rows, y = [], 0.0
+    for i, w in enumerate(widths):
+        rows.append((r1(y), r1(y + w)))
+        y += w + (gaps[i] if i < len(gaps) else 0)
+    rows[-1] = (rows[-1][0], r1(D))
+    return rows
+
+
+class BoardPlatform:
+    """A deck of boards on joists that bear on beams (or any bearers), instead
+    of the shed floor's sheets on joists on the ground. Joists run along Y from
+    0 to D at `spacing`; boards run along X across them, a gap apart, in pieces
+    no longer than the longest stock length with the ends staggered row to row
+    and landing on joists. `top` is the height of the deck's top face. Exposes
+    `joist_ids`, `joist_x`, `boards` (ids with their rows) and `bottom` (the
+    joists' underside, where the bearers' tops must be)."""
+
+    def __init__(self, frame, lib, W, D, joist_item, board_item, spacing, top, gap=None,
+                 group="deck", treated=True):
+        self.fr, self.lib, self.W, self.D = frame, lib, W, D
+        self.ji, self.bi = tl.item(lib, joist_item), tl.item(lib, board_item)
+        self.joist_item, self.board_item = joist_item, board_item
+        self.tj, self.hj = self.ji["thickness_mm"], self.ji["width_mm"]
+        self.bw, self.td = self.bi["width_mm"], self.bi["thickness_mm"]
+        self.spacing, self.top, self.group = spacing, top, group
+        self.gap = float(gap if gap is not None else self.bi.get("deck", {}).get("gap_mm", 5))
+        self.bottom = top - self.td - self.hj
+        self.kw = dict(treated=treated, variant="impregnated" if treated else "sawn")
+
+    def build(self, bearers=()):
+        """Make the joists and the boards. `bearers` are the Y positions of the beams'
+        centre lines the joists bear on (for the span record)."""
+        fr, W, D, tj, hj = self.fr, self.W, self.D, self.tj, self.hj
+        z0, z1 = self.bottom, self.bottom + hj
+        self.joist_x = layout(W, tj, self.spacing)
+        self.joist_ids = []
+        for i, x0 in enumerate(self.joist_x, 1):
+            self.joist_ids.append(fr.box(f"deck/joist-{i:02d}", "joist", self.group, "floor", self.joist_item,
+                                         (x0, 0, z0), (x0 + tj, D, z1), 1, 2, **self.kw))
+        stock = max(self.bi["stock_lengths_mm"])
+        cand = [x0 + tj / 2 for x0 in self.joist_x]
+        rows = board_rows(D, self.bw, self.gap)
+        self.boards, self.rows = [], rows
+        for r, (y0, y1) in enumerate(rows):
+            cuts = [(0.0, W)] if W <= stock + EPS else sheet_cuts(W, cand, stock, r, "deck_board", "deck")
+            for k, (x0, x1) in enumerate(cuts):
+                a = x0 + (self.gap / 2 if k else 0)
+                b = x1 - (self.gap / 2 if k < len(cuts) - 1 else 0)
+                bid = f"deck/board-{r + 1:02d}" + (f"-{k + 1}" if len(cuts) > 1 else "")
+                fr.box(bid, "deckboard", self.group, "deck", self.board_item,
+                       (a, y0, self.top - self.td), (b, y1, self.top), 0, 1, **self.kw)
+                self.boards.append((bid, r, a, b, y0, y1))
+                for jid, jx in zip(self.joist_ids, self.joist_x):
+                    if _ov(a, b, jx, jx + tj) > EPS:
+                        fr.joint("deck-board", bid, jid, crossings=1)
+        pts = sorted(bearers)
+        span = max((q - p for p, q in zip(pts, pts[1:])), default=D)
+        spacing_to_check = self.spacing
+        fr.assembly("deck", "platform", [
+            {"role": "deck joists", "kind": "joist", "spacing_mm": _norm(spacing_to_check), "span_mm": r1(span),
+             "bearers": [r1(p) for p in pts], "item": self.joist_item, "deck": self.board_item,
+             "deck_role": "boards", "deck_group": "deck"},
+            {"role": "deck boards", "kind": "deckboard", "item": self.board_item, "gap_mm": r1(self.gap),
+             "max_joist_spacing_mm": self.bi.get("deck", {}).get("max_joist_spacing_mm")}])
+        return self
+
+    def bear_on(self, beam_ids):
+        """Record that the joists bear on these beams (plies): a `joist-beam` joint at every crossing."""
+        for bid in beam_ids:
+            for jid in self.joist_ids:
+                self.fr.joint("joist-beam", jid, bid)

@@ -186,6 +186,10 @@ def joint_for(a, b, box):
     span = float(max(np.max(box[1] - box[0]), 0.0))
     for s, t in ((a, b), (b, a)):
         ks, kt = s["kind"], t["kind"]
+        if ks == "post-base" and kt in TIMBER:
+            return {"type": "post-base", "a": s["id"], "b": t["id"]}
+        if ks == "deckboard" and kt in TIMBER:
+            return {"type": "deck-board", "a": s["id"], "b": t["id"], "crossings": 1}
         if ks == "sheet" and kt in TIMBER:
             return {"type": "sheet-frame", "a": s["id"], "b": t["id"], "edge_mm": round(span, 1)}
         if ks == "board" and kt in TIMBER:
@@ -194,6 +198,12 @@ def joint_for(a, b, box):
         return None
     for s, t in ((a, b), (b, a)):
         ks, kt = s["kind"], t["kind"]
+        if ks == "joist" and kt == "beam":
+            return {"type": "joist-beam", "a": s["id"], "b": t["id"]}
+        if ks == "beam" and kt == "post":
+            return {"type": "beam-post", "a": s["id"], "b": t["id"]}
+        if ks == "beam" and kt == "beam":
+            return {"type": "beam-ply", "a": s["id"], "b": t["id"], "edge_mm": round(span, 1)}
         if ks in UPRIGHT and kt in CARRIER:
             return {"type": "stud-plate", "a": s["id"], "b": t["id"]}
         if ks in ("joist", "blocking") and kt in ("rim", "joist"):
