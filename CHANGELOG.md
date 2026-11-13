@@ -9,6 +9,10 @@ workbench is a working prototype, and anything may still change.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-13
+
+Outdoor structures: a terrace, an open pergola and a summer kitchen on ground screws, pier blocks or concrete footings
+
 ### Added
 - A summer kitchen (`"type": "summer-kitchen"`): posts and beams under a mono or gable roof, with an optional floor and walls.
 - An open pergola (`"type": "pergola"`) with knee braces.
@@ -122,5 +126,6 @@ The first version.
 - The tap aerator example.
 - Setup for macOS and Linux, a copy-paste setup prompt, and a self-test.
 
-[Unreleased]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/aadaam1/chat-to-3d-workbench/releases/tag/v0.6.0
