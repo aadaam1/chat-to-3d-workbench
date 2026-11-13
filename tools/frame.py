@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Frame generator for a mono-pitch (pent) shed.
 
-    tools/frame.py projects/<name>/shed.json --out projects/<name>/out/frame.json   (or examples/<name>/...)
+    tools/frame.py projects/<name>/structure.json --out projects/<name>/out/frame.json   (or examples/<name>/...)
 
 Reads the input spec, fills every missing field from the region's library
 defaults (tools/timberlib.py), checks that the shed can be built, and writes

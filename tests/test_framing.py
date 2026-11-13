@@ -83,7 +83,7 @@ def test_cripples_carry_the_sill_and_the_header(shed):
         or max(np.diff(ys)) <= spacing + TOL
 
 
-@pytest.mark.parametrize("path", ["examples/garden-shed/shed.json", "tests/fixtures/tool-shed.json",
+@pytest.mark.parametrize("path", ["examples/garden-shed/structure.json", "tests/fixtures/tool-shed.json",
                                   "tests/fixtures/shed-eu.json", "tests/fixtures/shed-us.json"])
 def test_cripples_are_symmetric_across_each_opening(path):
     with open(path, encoding="utf-8") as f:
@@ -111,7 +111,7 @@ def test_cripples_are_symmetric_across_each_opening(path):
             assert len(c) == 1 or max(np.diff(c)) <= spacing + TOL
 
 
-@pytest.mark.parametrize("path", ["examples/garden-shed/shed.json", "tests/fixtures/shed-us.json"])
+@pytest.mark.parametrize("path", ["examples/garden-shed/structure.json", "tests/fixtures/shed-us.json"])
 def test_roof_deck_covers_the_fascia_and_bargeboards(path):
     with open(path, encoding="utf-8") as f:
         frame = fr.generate(json.load(f))
@@ -326,7 +326,7 @@ def _touch(a, b, tol=1.0):
 
 
 SHEDS = ["tests/fixtures/shed-eu.json", "tests/fixtures/shed-us.json",
-         "examples/garden-shed/shed.json", "tests/fixtures/tool-shed.json"]
+         "examples/garden-shed/structure.json", "tests/fixtures/tool-shed.json"]
 
 
 @pytest.mark.parametrize("path", SHEDS)

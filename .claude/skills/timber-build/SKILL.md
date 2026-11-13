@@ -58,7 +58,7 @@ hashes (`tools/golden.py --update`) only when the change is meant.
 One project folder, one description file:
 
 ```
-projects/<name>/shed.json
+projects/<name>/structure.json
 ```
 
 ```json

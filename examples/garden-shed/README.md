@@ -3,7 +3,7 @@
 The worked example for timber structures: a 3 × 2 m mono-pitch shed with a
 door in the front and a window in the left wall, in European sizes.
 
-- [`shed.json`](shed.json) is the whole design: size, heights, openings and
+- [`structure.json`](structure.json) is the whole design: size, heights, openings and
   loads. Everything else has a default.
 - `./build.sh` makes the frame, the checks and the shopping list in `out/`
   (not committed), priced from the Hungarian timber snapshot in

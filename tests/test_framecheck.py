@@ -354,7 +354,7 @@ def test_conventions_pass_on_the_example(region):
         assert res[i]["level"] == "ok", i
 
 
-@pytest.mark.parametrize("path", ["examples/garden-shed/shed.json", "tests/fixtures/tool-shed.json"])
+@pytest.mark.parametrize("path", ["examples/garden-shed/structure.json", "tests/fixtures/tool-shed.json"])
 def test_conventions_pass_on_the_example_projects(path):
     with open(os.path.join(ROOT, path), encoding="utf-8") as f:
         res = check(fr.generate(json.load(f)))

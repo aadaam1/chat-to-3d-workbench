@@ -10,7 +10,7 @@ take in.
   for, what you expected and what you got is the most useful thing there
   is. A screenshot of the preview helps.
 - **A part or a structure that didn't come out right**: attach the project's
-  description (the `.scad` file or `shed.json`), not the output files.
+  description (the `.scad` file or `structure.json`), not the output files.
 - **Code, rules and data**: a pull request (see below).
 - **Prices and sizes for your region**: a dated price snapshot from a
   public list, with its source (see `data/timber/README.md`).
