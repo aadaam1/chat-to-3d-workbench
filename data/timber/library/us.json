@@ -177,6 +177,53 @@
       ],
       "unverified_stock_lengths": true,
       "note": "Dressed size from PS 20-20; stock lengths 8-16 ft are the plan's assumption until a retailer's range is read."
+    },
+    "6x6": {
+      "name": "6×6",
+      "thickness_mm": 140,
+      "width_mm": 140,
+      "stock_lengths_mm": [
+        2438,
+        3048,
+        3658,
+        4267,
+        4877
+      ],
+      "uses": [
+        "posts"
+      ],
+      "sources": [
+        "ps20",
+        "plan"
+      ],
+      "unverified_stock_lengths": true,
+      "note": "Dressed size 5-1/2 in. (140 mm) as in PS 20-20 for 6x6 timbers; stock lengths 8-16 ft are an assumption."
+    },
+    "deck-5-4x6": {
+      "name": "Deck board 5/4×6",
+      "thickness_mm": 25,
+      "width_mm": 140,
+      "stock_lengths_mm": [
+        2438,
+        3048,
+        3658,
+        4267,
+        4877
+      ],
+      "unverified_stock_lengths": true,
+      "uses": [
+        "deck boards"
+      ],
+      "sources": [
+        "ps20",
+        "deck-practice"
+      ],
+      "deck": {
+        "max_joist_spacing_mm": 406.4,
+        "gap_mm": 5,
+        "unverified": true
+      },
+      "note": "Actual 1 in. x 5-1/2 in. (25 x 140 mm) as 5/4x6 decking is usually sold; the 16 in. joist spacing limit is a rule of thumb."
     }
   },
   "sheets": {
@@ -372,6 +419,54 @@
       "unverified": true,
       "use": "wall panels to each other at the corners",
       "note": "Pack sizes are an assumption, not a supplier's catalogue."
+    },
+    "bolt-m12": {
+      "name": "Carriage bolt 1/2 × 8 in., galvanized, with nut and two washers",
+      "type": "bolt",
+      "diameter_mm": 12.7,
+      "length_mm": 200,
+      "pack_sizes": [
+        10,
+        25
+      ],
+      "sources": [
+        "plan"
+      ],
+      "unverified": true,
+      "use": "beam plies to a post (a sandwich beam)",
+      "note": "Pack sizes are an assumption, not a supplier's catalogue."
+    },
+    "screw-deck": {
+      "name": "Deck screw #10 × 2-1/2 in., stainless, torx",
+      "type": "screw",
+      "diameter_mm": 4.8,
+      "length_mm": 63.5,
+      "pack_sizes": [
+        200,
+        500
+      ],
+      "sources": [
+        "deck-practice"
+      ],
+      "unverified": true,
+      "use": "deck boards onto joists, 2 per joist crossing",
+      "note": "Pack sizes are an assumption, not a supplier's catalogue."
+    },
+    "screw-connector": {
+      "name": "Connector screw #10 × 1-1/2 in., galvanized (for post bases and caps)",
+      "type": "screw",
+      "diameter_mm": 4.8,
+      "length_mm": 38,
+      "pack_sizes": [
+        100,
+        250
+      ],
+      "sources": [
+        "plan"
+      ],
+      "unverified": true,
+      "use": "post bases and post caps",
+      "note": "Many bought post bases come with their own screws or bolts; pack sizes are an assumption."
     }
   },
   "joint_rules": {
@@ -472,10 +567,41 @@
       "per_joint": 3,
       "note": "tie (ceiling joist) toe nailed to the top plate: 3 nails per joint (unverified: from the IRC ceiling-joist-to-plate row, not read)"
     },
+    "post-base": {
+      "fastener": "screw-connector",
+      "per_joint": 8,
+      "note": "post (or beam) into its post base: 4 screws each side (unverified: a bought base comes with its own fixing schedule, follow it)"
+    },
+    "beam-post": {
+      "fastener": "bolt-m12",
+      "per_joint": 1,
+      "note": "a sandwich beam: one ply to the post. A bolt passes through both plies and the post, so one per ply gives two bolts per post, staggered (unverified)"
+    },
+    "beam-cap": {
+      "fastener": "screw-connector",
+      "per_joint": 8,
+      "note": "a beam on a post cap: the cap's schedule, 4 screws into the post and 4 into the beam per ply (unverified; the cap is listed as a bought item)"
+    },
+    "beam-ply": {
+      "fastener": "screw-corner",
+      "every_mm": 400,
+      "note": "plies of a built-up beam screwed together every 400 mm, staggered (unverified)"
+    },
+    "joist-beam": {
+      "fastener": "screw-corner",
+      "per_joint": 2,
+      "note": "joist bearing on a beam ply: two skew screws (or a joist hanger where the joist butts a beam), per ply (unverified)"
+    },
+    "deck-board": {
+      "fastener": "screw-deck",
+      "per_crossing": 2,
+      "note": "two stainless screws where a deck board crosses a joist"
+    },
     "_meta": {
       "sources": [
-        "plan",
-        "irc2021-nailing"
+        "deck-practice",
+        "irc2021-nailing",
+        "plan"
       ],
       "unverified": true,
       "note": "Nail and screw counts per joint follow the IRC 2021 fastening schedule R602.3(1) as read from a distributor's chart and the ICC code-change proposal text (see docs/research/timber-structures.md), adapted to the joints the generator records. They are workbench rules, not a code check. Nails are sold by weight, structural screws only where they are stronger (rafter to plate, wall corners). Review before relying on them."
@@ -540,6 +666,34 @@
       "corner": "three-stud",
       "top_plate": "double",
       "note": "Platform framing defaults: corner assembly and a double top plate lapped at the corners."
+    },
+    "terrace": {
+      "post_item": "4x4",
+      "beam_item": "2x10",
+      "beam_plies": 2,
+      "beam_mount": "sandwich",
+      "joist_item": "2x8",
+      "deck_board": "deck-5-4x6",
+      "foundation": "ground_screw",
+      "footings": {
+        "ground_screw": "ground-screw-3x32in",
+        "pier_block": "pier-block-12in",
+        "concrete_footing": "concrete-footing-d12x32in"
+      },
+      "max_post_spacing_mm": 2032,
+      "max_row_spacing_mm": 2032,
+      "footing_spacing_shed_mm": 1524,
+      "railing_height_mm": 610,
+      "min_post_mm": 152,
+      "floor_kn_m2": 1.9,
+      "floor_kn_m2_source": "irc2021-decks",
+      "sources": [
+        "deck-practice",
+        "ground-screws",
+        "irc2021-decks"
+      ],
+      "unverified": true,
+      "note": "Terrace defaults are workbench choices. The maximum post and row spacings are caps: the generator also keeps each span under 80% of what the span formulas allow. 'min_post_mm': a post shorter than this is left out and the beams sit on the post bases. 'railing_height_mm': a terrace higher than this is flagged as needing a railing."
     }
   },
   "bought": {
@@ -591,6 +745,161 @@
       "sources": [
         "plan"
       ]
+    },
+    "post-cap": {
+      "name": "Post cap / beam saddle, galvanized (to fit the post and the beam)",
+      "unit": "pcs",
+      "sources": [
+        "plan"
+      ],
+      "unverified": true
+    },
+    "post-base-u": {
+      "name": "Ground screw head with U post bracket (fits the post)",
+      "unit": "pcs",
+      "sources": [
+        "ground-screws"
+      ],
+      "unverified": true,
+      "post_base": {
+        "height_mm": 120
+      }
+    },
+    "post-base-adjustable": {
+      "name": "Adjustable post base for a concrete block, galvanized steel (fits the post)",
+      "unit": "pcs",
+      "sources": [
+        "precast-pier-practice"
+      ],
+      "unverified": true,
+      "post_base": {
+        "height_mm": 60
+      }
+    },
+    "post-base-bolt-on": {
+      "name": "Post base, bolt-on or cast-in, galvanized steel (fits the post)",
+      "unit": "pcs",
+      "sources": [
+        "precast-pier-practice"
+      ],
+      "unverified": true,
+      "post_base": {
+        "height_mm": 60
+      }
+    },
+    "ground-screw-3x32in": {
+      "name": "Ground screw 3 in. × 32 in. (Ø76 × 813 mm), with a post bracket",
+      "unit": "pcs",
+      "sources": [
+        "ground-screws"
+      ],
+      "unverified": true,
+      "foundation": {
+        "kind": "ground_screw",
+        "body_mm": [
+          76,
+          76
+        ],
+        "below_mm": 813,
+        "above_mm": 0,
+        "base": "post-base-u"
+      },
+      "note": "A bought foundation. Its sizes are typical, not read from a maker's table, and its load capacity is NOT checked."
+    },
+    "ground-screw-3x40in": {
+      "name": "Ground screw 3 in. × 40 in. (Ø76 × 1016 mm), with a post bracket",
+      "unit": "pcs",
+      "sources": [
+        "ground-screws"
+      ],
+      "unverified": true,
+      "foundation": {
+        "kind": "ground_screw",
+        "body_mm": [
+          76,
+          76
+        ],
+        "below_mm": 1016,
+        "above_mm": 0,
+        "base": "post-base-u"
+      },
+      "note": "A bought foundation. Its sizes are typical, not read from a maker's table, and its load capacity is NOT checked."
+    },
+    "ground-screw-3x48in": {
+      "name": "Ground screw 3 in. × 48 in. (Ø76 × 1219 mm), with a post bracket",
+      "unit": "pcs",
+      "sources": [
+        "ground-screws"
+      ],
+      "unverified": true,
+      "foundation": {
+        "kind": "ground_screw",
+        "body_mm": [
+          76,
+          76
+        ],
+        "below_mm": 1219,
+        "above_mm": 0,
+        "base": "post-base-u"
+      },
+      "note": "A bought foundation. Its sizes are typical, not read from a maker's table, and its load capacity is NOT checked."
+    },
+    "pier-block-12in": {
+      "name": "Precast concrete pier block 12 × 12 × 8 in., on compacted gravel",
+      "unit": "pcs",
+      "sources": [
+        "precast-pier-practice"
+      ],
+      "unverified": true,
+      "foundation": {
+        "kind": "pier_block",
+        "body_mm": [
+          305,
+          305
+        ],
+        "below_mm": 102,
+        "above_mm": 102,
+        "base": "post-base-adjustable"
+      },
+      "note": "A bought foundation. Its sizes are typical, not read from a maker's table, and its load capacity is NOT checked."
+    },
+    "concrete-footing-d12x32in": {
+      "name": "Poured concrete pier Ø12 × 32 in. (tube form), post base cast in or bolted on",
+      "unit": "pcs",
+      "sources": [
+        "precast-pier-practice"
+      ],
+      "unverified": true,
+      "foundation": {
+        "kind": "concrete_footing",
+        "body_mm": [
+          305,
+          305
+        ],
+        "below_mm": 711,
+        "above_mm": 102,
+        "base": "post-base-bolt-on"
+      },
+      "note": "A bought foundation. Its sizes are typical, not read from a maker's table, and its load capacity is NOT checked."
+    },
+    "concrete-footing-16x16x16in": {
+      "name": "Poured concrete pad 16 × 16 × 16 in., post base bolted on",
+      "unit": "pcs",
+      "sources": [
+        "precast-pier-practice"
+      ],
+      "unverified": true,
+      "foundation": {
+        "kind": "concrete_footing",
+        "body_mm": [
+          406,
+          406
+        ],
+        "below_mm": 305,
+        "above_mm": 102,
+        "base": "post-base-bolt-on"
+      },
+      "note": "A bought foundation. Its sizes are typical, not read from a maker's table, and its load capacity is NOT checked."
     }
   },
   "sources": [
@@ -635,6 +944,34 @@
       "url": "https://www.admiralsteel.com/assets/pdf/products/nails.pdf",
       "read": "2026-11-12",
       "note": "Mitek: https://mitek-us.com/wp-content/uploads/files/product/us/tables/Nails.pdf. Counts vary with coating and maker."
+    },
+    {
+      "id": "ground-screws",
+      "title": "Ground screw makers (Krinner and similar): range of Ø76 mm screws, about 800 to 1200 mm long, with post brackets or flat head plates",
+      "url": "https://www.krinner.com/en/products/ground-screws/",
+      "read": "2026-11-13",
+      "note": "NOT read: the page answered HTTP 429 (too many requests) when the workbench tried it. Sizes and the 2 m post spacing are what such ranges typically offer and are marked unverified; read the maker's table for the screw you buy, with the soil it will stand in."
+    },
+    {
+      "id": "precast-pier-practice",
+      "title": "Precast concrete pier (deck) blocks with adjustable post bases, and poured concrete footings: common sizes in builders' guides",
+      "url": "docs/research/timber-blocks.md",
+      "read": "2026-11-13",
+      "note": "Not read from a maker's page: sizes (a 300 mm block, a 300 mm diameter pier 800 mm deep, a 400 mm square pad) are typical figures. Frost depth, soil and loads decide the real size: check locally."
+    },
+    {
+      "id": "deck-practice",
+      "title": "Decking practice: boards 25-28 mm thick on joists at 400-500 mm, a gap of about 5 mm, two stainless screws at every joist, balcony and terrace live load",
+      "url": "docs/research/timber-blocks.md",
+      "read": "2026-11-13",
+      "note": "Not read from a datasheet. The 28 x 145 board and the span limit per thickness are the workbench's usual figures; the 25 x 150 board is sold by the supplier in the price snapshot. Check the board maker's span table."
+    },
+    {
+      "id": "irc2021-decks",
+      "title": "IRC 2021 R301.5: live load on decks 40 psf (1.9 kN/m2); R507 deck framing",
+      "url": "https://codes.iccsafe.org/content/IRC2021P1/chapter-5-floors",
+      "read": "2026-11-13",
+      "note": "Not read: the 40 psf deck live load is the figure usually quoted from R301.5; R507 span tables were not used. Marked unverified."
     }
   ]
 }

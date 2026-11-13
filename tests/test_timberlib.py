@@ -45,8 +45,9 @@ def test_nails_are_sold_by_weight_and_screws_in_packs(lib):
             assert u == ("kg" if lib["region"] == "eu" else "lb"), k
             assert d[f"pcs_per_{u}"] > 0 and d[f"box_{u}"] == sorted(d[f"box_{u}"]), k
         else:
-            assert d["type"] == "screw" and d["pack_sizes"], k
-    assert {k for k, d in lib["fasteners"].items() if d["type"] == "screw"} == {"screw-rafter", "screw-corner"}
+            assert d["type"] in ("screw", "bolt") and d["pack_sizes"], k
+    assert {k for k, d in lib["fasteners"].items() if d["type"] == "screw"} == {
+        "screw-rafter", "screw-corner", "screw-deck", "screw-connector"}
 
 
 def test_old_screw_keys_give_a_clear_error(lib):
@@ -87,15 +88,17 @@ def test_us_has_osb_and_real_dressed_sizes():
     assert (two_by_four["thickness_mm"], two_by_four["width_mm"]) == (38, 89)
     sizes = {k: (d["thickness_mm"], d["width_mm"]) for k, d in us["sections"].items()}
     assert sizes == {"1x4": (19, 89), "2x2": (38, 38), "2x3": (38, 64), "2x4": (38, 89),
-                     "2x6": (38, 140), "2x8": (38, 184), "2x10": (38, 235), "4x4": (89, 89)}
+                     "2x6": (38, 140), "2x8": (38, 184), "2x10": (38, 235), "4x4": (89, 89),
+                     "6x6": (140, 140), "deck-5-4x6": (25, 140)}
     assert us["sections"]["2x4"]["stock_lengths_mm"][0] == 2438   # 8 ft
     assert us["sections"]["2x4"]["stock_lengths_mm"][-1] == 4877  # 16 ft
 
 
-def test_eu_sections_are_the_planned_nine():
+def test_eu_sections_are_the_planned_nine_and_the_outdoor_ones():
     eu = tl.load("eu")
     assert sorted(eu["sections"]) == sorted(
-        ["25x50", "25x100", "50x50", "50x75", "50x100", "50x150", "50x200", "75x75", "100x100"])
+        ["25x50", "25x100", "50x50", "50x75", "50x100", "50x150", "50x200", "75x75", "100x100",
+         "120x120", "140x140", "deck-28x145", "deck-25x150"])
 
 
 def test_grade_values_from_the_published_tables():
