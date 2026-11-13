@@ -10,7 +10,12 @@ workbench is a working prototype, and anything may still change.
 ## [Unreleased]
 
 ### Added
+- `tools/frame.py --types` and `--fields <type>` list what can be built and every setting.
 - Preview: a "How it was planned" section listing the sizes the planner chose and why.
+
+### Changed
+- The planner picks a bigger section (or closer spacing) when a default would fail its span, and says why.
+- Default wall and roof heights adjust so the roof drains and the doors you asked for fit.
 
 ### Fixed
 - Preview: passing checks fold to one line, the model stays clear of the controls, the piece card no longer covers the layer buttons, and there is a loading message.
