@@ -153,9 +153,10 @@ knee braces at 45 degrees with centreline legs of 600 mm (24 in. in `us`) in a 7
 post and two screws per beam ply; one on each side of a post where at least 700 mm of beam
 runs on (end posts: inward only; a 300 mm beam tail has no room). Rafters sit on the beams
 without a notch (a notch weakens a beam that already carries the span) and are skew-screwed
-into each ply; a hurricane tie is the upgrade for windy sites. Not done: bracing across the
-beams (the short sides; no member to meet, a rafter or a cross beam would be needed),
-sandwich beams, decorative rafter tails, wind and uplift. The 45 degree rule and the leg
+into each ply; a hurricane tie is the upgrade for windy sites. Across the beams a rafter is centred over every post and a cross brace runs from each
+post's inner face up to it (ripped to the rafter's thickness, rafters at least 38 mm; no tie
+beam was needed); `open-bracing` checks both directions and names the post and direction;
+joint `brace-rafter`. Not done: sandwich beams, decorative rafter tails, wind and uplift. The 45 degree rule and the leg
 length are builders' rules of thumb; no page was read to confirm them (marked unverified in
 the libraries, source `pergola-practice`).
 

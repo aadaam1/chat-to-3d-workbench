@@ -344,7 +344,8 @@ the beams at `height`; `width` x `depth` is the whole roofed area.
   what the span formula allows the beam, whichever is less).
 - Beams are one or two plies on the post, on a post cap (`on_top`). A sandwich beam
   is refused: a brace needs the beam's underside to meet.
-- Rafters lie on the beams, spaced `rafter_spacing`, one flush at each end; slats lie
+- Rafters lie on the beams: one flush at each end, one centred over every post, and
+  more between them, no further apart than `rafter_spacing`; slats lie
   flat across them, one flush at each edge. Rafters are not notched (a notch
   takes wood from a beam that already carries the span) and are skew-screwed
   into each beam ply; a hurricane tie is the upgrade where wind matters.
@@ -353,17 +354,21 @@ the beams at `height`; `width` x `depth` is the whole roofed area.
   against the beam's underside, bolted through the post and screwed into the beam.
   One goes on each side of a post where at least 700 mm of beam runs on past the
   post face, so end posts are braced inward only and middle posts both ways. The
-  leg shrinks to fit between close posts (at most 45% of the gap each). Bracing
-  across the beams, along the short sides, is not generated (nothing to meet but
-  the rafters): if the pergola stands free, brace it by an edit or fix the posts in
-  the ground more firmly. The legs and the angle are the usual builders' rule of
-  thumb; no source was read (marked unverified, id `pergola-practice`).
+  leg shrinks to fit between close posts (at most 45% of the gap each).
+- **Cross braces.** Every post also gets a brace across the beams (the short sides),
+  on the inner side, from the post up to the rafter that sits over it (same 45
+  degrees, leg and section; the foot is on the post face under the beam, so the
+  brace passes beside the beam). It is ripped to the rafter's thickness, so a rafter
+  must be at least 38 mm thick (a 2x), otherwise the description is refused with
+  `rafter_item` (or turn `braces` off). A tie beam across the ends was not needed.
+  The legs and the angle are the usual builders' rule of thumb; no source was
+  read (marked unverified, id `pergola-practice`).
 - Checks: spans of the rafters (between beam centres, snow `loads.snow_kn_m2`,
   the overhang only helps and is flagged above a quarter of the span) and of each
   beam (half the rafter span plus the overhang), `post-footing`, `beam-bearing`
   (a beam may reach up to 500 mm past its last post), and `open-bracing`: a `fix`
-  naming the post when a corner that has room for a brace has none touching both
-  the post and the beam. Wind, uplift, footing capacity and the braces' strength
+  naming the post and the direction (along the beams or across them) when a
+  brace is missing, or does not touch both the post and the beam or rafter. Wind, uplift, footing capacity and the braces' strength
   are **not** checked; an open pergola can act like a sail.
 
 ## European (UK/EU) names and equivalents

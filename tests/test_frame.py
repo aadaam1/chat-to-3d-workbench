@@ -324,7 +324,7 @@ def test_joint_coverage(shed):
     assert types == set(tl.JOINT_TYPES) - {"rafter-ridge", "tie-rafter", "tie-plate",       # the gable roof's
                                                            "post-base", "beam-post", "beam-cap", "beam-ply",
                                                            "joist-beam", "deck-board",
-                                                           "brace-post", "brace-beam", "rafter-beam", "slat-rafter"}         # the terrace's
+                                                           "brace-post", "brace-beam", "brace-rafter", "rafter-beam", "slat-rafter"}         # the terrace's
     by = by_id(shed)
     # every stud-plate joint is a stud end on something it touches
     for j in shed["joints"]:

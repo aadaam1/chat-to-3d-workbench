@@ -132,7 +132,7 @@ def test_slats_lie_across_the_rafters(perg):
 
 def test_a_knee_brace_at_every_post_beam_corner_at_45_degrees(perg):
     by = by_id(perg)
-    braces, posts, beams = kind(perg, "brace"), kind(perg, "post"), kind(perg, "beam")
+    braces, posts, beams = [b for b in kind(perg, "brace") if "/brace-" in b["id"]], kind(perg, "post"), kind(perg, "beam")
     s = perg["spec"]
     ax = 0 if s["beam_axis"] == "x" else 1
     assert braces
@@ -157,9 +157,51 @@ def test_a_knee_brace_at_every_post_beam_corner_at_45_degrees(perg):
     assert levels(perg)["open-bracing"] == "ok"
 
 
+def test_a_cross_brace_from_every_post_up_to_the_rafter_over_it(perg):
+    s = perg["spec"]
+    ax = 0 if s["beam_axis"] == "x" else 1
+    posts, rafters = kind(perg, "post"), kind(perg, "rafter")
+    cross = [b for b in kind(perg, "brace") if "/cross-" in b["id"]]
+    assert len(cross) == len(posts)
+    zb = max(ext(b, 2)[1] for b in kind(perg, "beam"))
+    mid = (min(np.mean(ext(p, 1 - ax)) for p in posts) + max(np.mean(ext(p, 1 - ax)) for p in posts)) / 2
+    for p in posts:
+        mine = [b for b in cross if _touch(b, p, 0.5)]
+        assert len(mine) == 1
+        b = mine[0]
+        assert b["cut_deg"] == [45, 45]
+        x = np.array(b["x"], float)
+        assert abs(x[2]) == pytest.approx(math.sqrt(0.5), abs=1e-6) and abs(x[1 - ax]) == pytest.approx(math.sqrt(0.5), abs=1e-6)
+        assert abs(np.mean(ext(b, ax)) - np.mean(ext(p, ax))) < TOL                    # in the post's own plane
+        assert (np.mean(ext(b, 1 - ax)) - np.mean(ext(p, 1 - ax))) * (mid - np.mean(ext(p, 1 - ax))) > 0   # on the inner side
+        over = [r for r in rafters if _touch(b, r, 0.5)]
+        assert len(over) == 1 and abs(np.mean(ext(over[0], ax)) - np.mean(ext(p, ax))) < TOL
+        assert ext(b, 2)[1] == pytest.approx(ext(over[0], 2)[0], abs=TOL)               # head under the rafter
+        assert ext(b, ax)[1] - ext(b, ax)[0] <= over[0]["size"][2] + TOL                  # no thicker than the rafter
+        assert any(j["type"] == "brace-post" and {j["a"], j["b"]} == {b["id"], p["id"]} for j in perg["joints"])
+        assert any(j["type"] == "brace-rafter" and {j["a"], j["b"]} == {b["id"], over[0]["id"]} for j in perg["joints"])
+    xs = sorted(np.mean(ext(r, ax)) for r in rafters)
+    assert all(c - a <= s["rafter_spacing"] + 0.5 for a, c in zip(xs, xs[1:]))
+
+
+def test_removing_a_cross_brace_trips_open_bracing(spec):
+    f = fr.generate(copy.deepcopy(spec))
+    gone = next(b["id"] for b in kind(f, "brace") if "/cross-" in b["id"])
+    g = fr.generate(dict(copy.deepcopy(spec), edits=[{"op": "remove", "id": gone}]))
+    item = next(x for x in fc.run(g)["findings"] if x["id"] == "open-bracing")
+    assert item["level"] == "fix" and "across the beams" in item["text"] and "post-" in item["text"]
+
+
+def test_a_rafter_too_thin_for_the_cross_braces_is_refused():
+    with pytest.raises(fr.SpecError) as e:
+        fr.generate({"type": "pergola", "width": 4000, "depth": 3000, "rafter_item": "25x100"})
+    assert str(e.value).startswith("rafter_item")
+    fr.generate({"type": "pergola", "width": 4000, "depth": 3000, "rafter_item": "25x100", "braces": False})
+
+
 def test_removing_one_brace_trips_open_bracing(spec):
     f = fr.generate(copy.deepcopy(spec))
-    gone = kind(f, "brace")[0]["id"]
+    gone = next(b["id"] for b in kind(f, "brace") if "/brace-" in b["id"])
     g = fr.generate(dict(copy.deepcopy(spec), edits=[{"op": "remove", "id": gone}]))
     assert gone not in by_id(g) and len(kind(g, "brace")) == len(kind(f, "brace")) - 1
     lv = levels(g)
@@ -198,7 +240,7 @@ def test_beam_axis_y_builds_the_same_structure_turned(spec):
                          beam_axis="y"))
     assert f["spec"]["beam_axis"] == "y"
     assert "fix" not in levels(f).values()
-    assert len(kind(f, "brace")) == 8
+    assert len([b for b in kind(f, "brace") if "/brace-" in b["id"]]) == 8
 
 
 def test_long_spans_are_reported():

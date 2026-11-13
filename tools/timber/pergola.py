@@ -65,9 +65,30 @@ class Rafters:
         self.kw = dict(treated=treated, variant="impregnated" if treated else "sawn")
         self.ids, self.us = [], []
 
-    def build(self, L, Wd, z0, beam_plies, bearing, overhang, span):
-        """`z0` the beams' tops; `beam_plies` the ids of every beam ply (to join to)."""
-        self.us = layout(L, self.t, self.spacing)
+    def positions(self, L, over):
+        """Left faces of the rafters: one flush at each end, one centred on every
+        post line `over` (u of each post), and more between them so that no two
+        are further apart (centre to centre) than the spacing."""
+        t, hs = self.t, self.t / 2.0
+        fixed = sorted({r1(min(max(u, hs), L - hs)) for u in over} | {r1(hs), r1(L - hs)})
+        keep = []
+        for c in fixed:                       # two rafters closer than their thickness are one
+            if keep and c - keep[-1] < t + 1.0:
+                if c in (r1(L - hs),):
+                    keep[-1] = c
+                continue
+            keep.append(c)
+        cs = [keep[0]]
+        for a, b in zip(keep, keep[1:]):
+            n = max(1, math.ceil((b - a) / self.spacing - 1e-9))
+            cs += [r1(a + (b - a) * i / n) for i in range(1, n + 1)]
+        return [r1(c - hs) for c in cs]
+
+    def build(self, L, Wd, z0, beam_plies, bearing, overhang, span, over=()):
+        """`z0` the beams' tops; `beam_plies` the ids of every beam ply (to join to);
+        `over` the u of each post, where a rafter is centred."""
+        self.us = self.positions(L, over)
+        gap = max((b - a for a, b in zip(self.us, self.us[1:])), default=self.spacing)
         for i, u0 in enumerate(self.us, 1):
             rid = self.ax.box(self.fr, f"rafters/rafter-{i:02d}", "rafter", self.group, "roof", self.key,
                               (u0, 0.0, z0), (u0 + self.t, Wd, z0 + self.h), 1, 2, **self.kw)
@@ -76,7 +97,7 @@ class Rafters:
                 self.fr.joint("rafter-beam", rid, pid)
         self.top = z0 + self.h
         self.fr.assembly("rafters", "pergola-rafters", [
-            {"role": "rafters", "kind": "rafter", "item": self.key, "spacing_mm": r1(self.spacing),
+            {"role": "rafters", "kind": "rafter", "item": self.key, "spacing_mm": r1(min(self.spacing, gap)),
              "span_mm": r1(span), "overhang_mm": r1(overhang), "supports": [r1(b) for b in bearing]}])
         return self
 
@@ -125,24 +146,31 @@ class KneeBraces:
         """How far below the beam underside the foot of a brace of this centreline run reaches."""
         return leg + self.w * C45
 
-    def add(self, line, u_face, side, zb, leg, post_id, plies):
-        """A brace on the post face at u_face; side +1 goes toward higher u, -1 toward lower."""
+    def add(self, line, u_face, side, zb, leg, post_id, plies, across=False, thick=None):
+        """A brace on a post face. Along the beams (default): in the beam's plane at v = line,
+        its foot on the post face at u_face, side +1 toward higher u, -1 toward lower, its head
+        under the beam at height zb. Across the beams (`across`): in the plane at u = `line`, its
+        foot on the post face at v = u_face, side +1 toward higher v, its head under the rafter
+        (`plies` is then the rafter to join) at height zb. `thick` rips the brace thinner."""
         L, h, z, outline = brace_geometry(leg, self.w, zb)
-        n = len(self.records) + 1
-        u = u_face + side * h
+        n = 1 + sum(1 for r in self.records if r["across"] == across)
         c = C45
-        x = self.ax.vec(side * c, 0.0, c)
-        y = self.ax.vec(-side * c, 0.0, c)
-        bid = self.fr.add(f"braces/brace-{n:02d}", "brace", self.group, "frame", self.key,
-                          [L, self.w, self.t], self.ax.pt(u, line, z), x, y, cut=(45, 45), outline=outline, **self.kw)
+        T = self.t if thick is None else min(self.t, thick)
+        if across:
+            pos, x, y = self.ax.pt(line, u_face + side * h, z), self.ax.vec(0.0, side * c, c), self.ax.vec(0.0, -side * c, c)
+        else:
+            pos, x, y = self.ax.pt(u_face + side * h, line, z), self.ax.vec(side * c, 0.0, c), self.ax.vec(-side * c, 0.0, c)
+        bid = self.fr.add(f"braces/{'cross' if across else 'brace'}-{n:02d}", "brace", self.group, "frame", self.key,
+                          [L, self.w, T], pos, x, y, cut=(45, 45), outline=outline, **self.kw)
         self.fr.joint("brace-post", bid, post_id)
         for pid in plies:
-            self.fr.joint("brace-beam", bid, pid)
-        self.records.append({"id": bid, "post": post_id, "side": side, "leg_mm": r1(leg), "line": r1(line)})
+            self.fr.joint("brace-rafter" if across else "brace-beam", bid, pid)
+        self.records.append({"id": bid, "post": post_id, "side": side, "leg_mm": r1(leg), "line": r1(line),
+                             "across": across})
         return bid
 
     def assembly(self):
         if self.records:
             self.fr.assembly("braces", "braces", [
-                {"role": "knee braces", "kind": "brace", "item": self.key, "count": len(self.records),
+                {"role": "knee braces", "kind": "brace", "item": self.key, "count": len(self.records), "across_count": sum(1 for r in self.records if r["across"]),
                  "angle_deg": 45, "leg_mm": max(r["leg_mm"] for r in self.records)}])

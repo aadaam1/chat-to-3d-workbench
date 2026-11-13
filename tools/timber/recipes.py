@@ -16,7 +16,7 @@ from timber.platform import BoardPlatform, Platform  # noqa: E402
 from timber.foundations import Footings, footing_item  # noqa: E402
 from timber.posts import Posts  # noqa: E402
 from timber.beam import Beam  # noqa: E402
-from timber.pergola import Axes, KneeBraces, Rafters, Slats, MIN_BRACE_CLEAR  # noqa: E402
+from timber.pergola import Axes, KneeBraces, Rafters, Slats, MIN_BRACE_CLEAR, C45  # noqa: E402
 from timber.roof import MonoRoof, RoofLine  # noqa: E402
 from timber.roof_gable import GableLine, GableRoof  # noqa: E402
 import timberlib as tl  # noqa: E402
@@ -196,6 +196,16 @@ def terrace(spec, lib):
     return result(fr, spec)
 
 
+MIN_RAFTER_FOR_BRACE = 38.0    # mm: a cross brace is ripped to the rafter's thickness, so no thinner than a 2x
+
+
+def _centre(m, axis):
+    """Centre of a member along a world axis (members here are axis aligned)."""
+    from timber.store import aabb
+    lo, hi = aabb(m)
+    return (lo[axis] + hi[axis]) / 2.0
+
+
 def pergola(spec, lib):
     """The frame dict for a resolved pergola spec: footings, posts, two beams on the
     posts along the long sides (or `beam_axis`), rafters across the beams on top
@@ -223,6 +233,13 @@ def pergola(spec, lib):
     braces = KneeBraces(fr, lib, ax, spec["brace_item"], spec["brace_leg"])
     n = len(us)
     plan = []                                                  # (line index, post record, u face, side, leg)
+    cross_plan = []                                            # (post record, u, v face, side, leg)
+    rt = tl.item(lib, spec["rafter_item"])["thickness_mm"]
+    if spec["braces"] and rt < MIN_RAFTER_FOR_BRACE:
+        raise SpecError(f"rafter_item: {spec['rafter_item']!r} is {rt:g} mm thick; the knee braces across the beams "
+                        f"meet a rafter over each post and need one at least {MIN_RAFTER_FOR_BRACE:g} mm thick "
+                        "(or braces: false)")
+    pv = posts.w if ax.axis == 0 else posts.t                  # a post's size across the beams
     if spec["braces"]:
         for k, v in enumerate(lines):
             for i, u in enumerate(us):
@@ -239,15 +256,28 @@ def pergola(spec, lib):
                         raise SpecError(f"height: {H:g} mm is too low for 45 degree knee braces on these posts; "
                                         f"use at least {low:g} mm, a shorter brace_leg, or braces: false")
                     plan.append((k, pid[k * n + i], u + side * posts.t / 2, side, leg))
+        clear = rs - pv
+        if clear >= MIN_BRACE_CLEAR:
+            leg = braces.leg_for(clear)
+            if zb - braces.lowest(leg) < foot.seat - 0.05 or zb - (leg - braces.w * C45) > H + 0.05:
+                raise SpecError(f"height: {H:g} mm does not fit 45 degree knee braces across the beams under the "
+                                "rafters; use a shorter brace_leg, a taller pergola, or braces: false")
+            for k, v in enumerate(lines):
+                for i, u in enumerate(us):
+                    cross_plan.append((pid[k * n + i], u, v + (1 if k == 0 else -1) * pv / 2, 1 if k == 0 else -1, leg))
     for k, v in enumerate(lines):
         sup = [(u, pid[k * n + i]["id"]) for i, u in enumerate(us)]
         beam.place(v, 0.0, L, zb, sup, posts.w, trib, axis=ax.axis, prefix="beams")
     plies = [x for r in beam.records for x in r["plies"]]
-    rafters = Rafters(fr, lib, ax, spec["rafter_item"], spec["rafter_spacing"]).build(L, Wd, zb, plies, lines, oh, rs)
+    rafters = Rafters(fr, lib, ax, spec["rafter_item"], spec["rafter_spacing"]).build(L, Wd, zb, plies, lines, oh, rs, over=us)
     if spec["slats"] != "none":
         Slats(fr, lib, ax, spec["slats"]["item"], spec["slats"]["spacing"]).build(L, Wd, rafters.top, rafters.ids)
     for k, post, u_face, side, leg in plan:
         braces.add(lines[k], u_face, side, H, leg, post["id"], beam.records[k]["plies"])
+    for post, u, vface, side, leg in cross_plan:
+        rid = next(r for r in rafters.ids if abs(_centre(fr.member(r), ax.axis) - u) < 0.2 or
+                   _centre(fr.member(r), ax.axis) - rt / 2 < u < _centre(fr.member(r), ax.axis) + rt / 2 + 0.2)
+        braces.add(u, vface, side, zb, leg, post["id"], [rid], across=True, thick=rt)
     foot.buy()
     beam.buy()
     foot.assembly()

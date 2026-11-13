@@ -694,6 +694,11 @@
       "per_crossing": 1,
       "note": "one stainless screw where a slat crosses a rafter (unverified)"
     },
+    "brace-rafter": {
+      "fastener": "screw-corner",
+      "per_joint": 2,
+      "note": "cross knee brace head screwed up into the rafter over the post: two structural screws (unverified)"
+    },
     "_meta": {
       "sources": [
         "deck-practice",
