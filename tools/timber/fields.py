@@ -133,6 +133,9 @@ def terrace(c):
         F("beam_item", "beams", t["beam_item"], c.sections(), t["beam_item"]),
         F("beam_plies", "boards side by side in a beam", str(t["beam_plies"]), "1 or 2", 2),
         F("beam_mount", "how the beam sits on the posts", t["beam_mount"] + " (on_top for one ply)", "on_top or sandwich", "on_top"),
+        F("frame", "how joists meet beams: stacked (beams under the joists) or flush (joists hung between the beams, "
+          "for a low deck)", "chosen from the height: stacked when there is room, flush when there is not",
+          "stacked or flush", "flush"),
         F("joist_item", "deck joists", t["joist_item"], c.sections(), t["joist_item"]),
         F("joist_spacing", "deck joists, centre to centre", "the deck board's limit", LEN, None),
         F("deck_board", "deck boards", t["deck_board"], c.deck_boards(), t["deck_board"]),

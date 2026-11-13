@@ -1001,6 +1001,8 @@ def run_terrace(f):
     check_stock_length(f)
     check_post_footing(f)
     check_beam_bearing(f)
+    if f.frame["spec"].get("frame") == "flush":      # a low frame: the beams are close to the ground
+        check_ground(f)
     check_railing(f)
     check_floating(f)
 

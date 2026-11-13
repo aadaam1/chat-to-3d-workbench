@@ -29,7 +29,8 @@ JOINT_TYPES = ("stud-plate", "plate-plate", "joist-rim", "rafter-plate",
                "blocking-rafter", "fascia-rafter", "barge-rafter",
                "rafter-ridge", "tie-rafter", "tie-plate",
                "post-base", "beam-post", "beam-cap", "beam-ply", "joist-beam", "deck-board",
-               "brace-post", "brace-beam", "brace-rafter", "rafter-beam", "slat-rafter")
+               "brace-post", "brace-beam", "brace-rafter", "rafter-beam", "slat-rafter",
+               "joist-hanger", "butt")
 MM_PER_IN = 25.4
 
 

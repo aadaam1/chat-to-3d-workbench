@@ -100,3 +100,9 @@ class Footings:
             {"role": "footings", "kind": "footing", "count": len(self.records), "item": self.it["key"],
              "foundation": self.f["kind"],
              "ground_mm": self.records[0]["ground"] if self.records else 0.0}])
+
+
+def seat_height(lib, item):
+    """Height above the ground of the top of the post base of a footing item (its natural seat)."""
+    f = item["foundation"]
+    return float(f["above_mm"]) + float(tl.item(lib, f["base"])["post_base"]["height_mm"])

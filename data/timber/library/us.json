@@ -622,6 +622,16 @@
       "per_joint": 2,
       "note": "cross knee brace head screwed up into the rafter over the post: two structural screws (unverified)"
     },
+    "joist-hanger": {
+      "fastener": "screw-connector",
+      "per_joint": 8,
+      "note": "a joist hung between two beams in a joist hanger: 4 screws into the joist and 4 into the beam, at each end (unverified: a bought hanger comes with its own fixing schedule, follow it)"
+    },
+    "butt": {
+      "fastener": "nail-toe",
+      "per_joint": 4,
+      "note": "two pieces butted end to end over a support (stud, joist, rafter or post): 2 face or toe nails each side of the joint, on top of the nails each piece has into the support (unverified)"
+    },
     "_meta": {
       "sources": [
         "deck-practice",
@@ -814,6 +824,14 @@
     },
     "post-cap": {
       "name": "Post cap / beam saddle, galvanized (to fit the post and the beam)",
+      "unit": "pcs",
+      "sources": [
+        "plan"
+      ],
+      "unverified": true
+    },
+    "joist-hanger": {
+      "name": "Joist hanger, galvanized (to fit the joist and the beam)",
       "unit": "pcs",
       "sources": [
         "plan"

@@ -280,7 +280,7 @@ def test_spacings_follow_the_span_formulas_and_the_library_caps():
     ({"type": "terrace", "width": 3000, "depth": 2400, "height": 600, "footing_item": "pier-block-300"}, "footing_item"),
     ({"type": "terrace", "width": 3000, "depth": 2400, "height": 600, "roofing": "x"}, "roofing"),
     ({"type": "terrace", "width": 3000, "depth": 2400, "height": 100}, "height"),
-    ({"type": "terrace", "width": 3000, "depth": 2400, "height": 300}, "height"),
+    ({"type": "terrace", "width": 3000, "depth": 2400, "height": 200}, "height"),
     ({"type": "terrace", "width": 3000, "depth": 2400, "height": 600, "loads": {"snow_kn_m2": 1}}, "loads.snow_kn_m2"),
 ])
 def test_bad_descriptions_name_the_field(raw, field):

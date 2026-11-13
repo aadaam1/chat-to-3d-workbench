@@ -75,23 +75,23 @@ def spacing_note(allowed, cap, limiter, what):
     return {"allowed": allowed, "cap": cap, "limiter": limiter, "what": what}
 
 
-def spacing_why(note, units):
+def spacing_why(note, units, thing="they"):
+    """One plain sentence: what the member can span and how the spacing was kept under it."""
     n = note
-    good = f"{n['what']}: good for {length_text(n['allowed'], units)}"
+    can = f"{n['what']} can span up to {length_text(n['allowed'], units)}"
     if n["limiter"] == "cap":
-        return (f"{good}; the library's usual maximum of {length_text(n['cap'], units)} is within "
-                f"{sp.SPACING_SHARE:.0%} of that, so it applies")
-    return f"{good}; spans are kept under {sp.SPACING_SHARE:.0%} of that, in steps of {STEP:g} mm"
+        return f"{can}; {thing} are kept under {length_text(n['cap'], units)} and spaced evenly"
+    return f"{can}; {thing} are kept under {sp.SPACING_SHARE:.0%} of that, {length_text(sp.SPACING_SHARE * n['allowed'], units)}, and spaced evenly"
 
 
-def decide_grid(spec, what, noun, positions, note):
+def decide_grid(spec, what, noun, positions, note, thing="they"):
     """Record a layout: `positions` along one direction, spaced by the planner (a description that
-    named the spacing has no note, and no decision)."""
+    named the spacing has no note, and no decision). The spacing named is the real one, evenly spread."""
     if note is None or len(positions) < 2:
         return
     u = spec["units"]
     gap = positions[1] - positions[0]
-    decide(spec, what, f"{len(positions)} {noun}, {length_text(gap, u)} apart", spacing_why(note, u))
+    decide(spec, what, f"{len(positions)} {noun}, {length_text(gap, u)} apart", spacing_why(note, u, thing))
 
 
 # --------------------------------------------------------------- sections and spacings
@@ -161,3 +161,86 @@ def explain(lib, role, res, default_key, default_spacing, units, span_text="the 
         why += (f". Nothing in the library fits comfortably: this is the best it can do "
                 f"(good for {length_text(res.allowed, units)}), and the checks say so")
     return chose, why
+
+
+# --------------------------------------------------------------- a low deck: joists hung between the beams
+
+FRAMES = ("stacked", "flush")
+
+
+def ceil_10(mm):
+    return math.ceil(mm / 10.0 - 1e-9) * 10.0
+
+
+class Flush:
+    """A flush frame: beams on the post bases, joists hung between them at the same level. `ok` False
+    means nothing fits `avail`; `lowest` is then the lowest finished height that works."""
+
+    def __init__(self):
+        self.ok, self.beam, self.joist = False, None, None
+        self.row = self.post = None
+        self.row_note = self.post_note = None
+        self.lowest = None
+
+
+def flush_pairs(lib, beam_default, joist_default, beam_named, joist_named):
+    """(beam, joist) section keys to try, deepest first: the joist no deeper than the beam (a hanger needs
+    a beam at least as deep as the joist), neither deeper than its default unless the description named it."""
+    def cands(default, named, words):
+        if named:
+            return [named]
+        w = lib["sections"][default]["width_mm"]
+        ks = [k for k in candidates(lib, default, words, area_up=False) if lib["sections"][k]["width_mm"] <= w]
+        return sorted(ks, key=lambda k: -lib["sections"][k]["width_mm"])
+    out = []
+    for b in cands(beam_default, beam_named, ("joist",)):
+        for j in cands(joist_default, joist_named, ("joist",)):
+            if lib["sections"][j]["width_mm"] <= lib["sections"][b]["width_mm"]:
+                out.append((b, j))
+    return out
+
+
+def flush_spacings(lib, tspec, cap_row, cap_post, row_named=None, post_named=None):
+    """The rows and the posts of a flush frame for the sections in `tspec`, or None when the beam rows
+    would be closer than MIN_SPACING or the footings closer still. Returns (row, row_note, post, post_note)."""
+    ld = sp.terrace_loads(lib, tspec)
+    u = tspec.get("units", "metric")
+    allowed = sp.joist_allowed(lib, tspec, ld)
+    if row_named:
+        row, rnote = row_named, None
+    else:
+        row, why, lim = spacing_under(allowed, cap_row)
+        if row is None:
+            return None
+        rnote = spacing_note(allowed, cap_row, why, f"deck joists of {section_name(lib, tspec['joist_item'])}")
+    ballowed = sp.beam_allowed(lib, tspec, ld, row)
+    if post_named:
+        post, pnote = post_named, None
+    else:
+        post, why, lim = spacing_under(ballowed, cap_post)
+        if post is None:
+            return None
+        pnote = spacing_note(ballowed, cap_post, why,
+                             f"a beam of {tspec['beam_plies']} × {section_name(lib, tspec['beam_item'])}")
+    return row, rnote, post, pnote
+
+
+def plan_flush(lib, tspec, avail, cap_row, cap_post, *, beam_named=None, joist_named=None,
+               row_named=None, post_named=None):
+    """Choose the sections of a flush frame that fit `avail` mm of depth under the boards, stepping down
+    through shallower beams and joists while their spans still pass, at closer footings. `tspec` holds the
+    defaults (beam_item, joist_item, beam_plies, joist_spacing, deck_board, loads)."""
+    res = Flush()
+    lows = []
+    for b, j in flush_pairs(lib, tspec["beam_item"], tspec["joist_item"], beam_named, joist_named):
+        t2 = dict(tspec, beam_item=b, joist_item=j)
+        got = flush_spacings(lib, t2, cap_row, cap_post, row_named, post_named)
+        if got is None:
+            continue
+        hb = lib["sections"][b]["width_mm"]
+        lows.append(hb)
+        if hb <= avail + 0.05 and not res.ok:
+            res.ok, res.beam, res.joist = True, b, j
+            res.row, res.row_note, res.post, res.post_note = got
+    res.min_depth = min(lows) if lows else None
+    return res

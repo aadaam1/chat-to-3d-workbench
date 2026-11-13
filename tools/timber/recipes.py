@@ -16,6 +16,7 @@ from timber.platform import BoardPlatform, Platform  # noqa: E402
 from timber.foundations import Footings, footing_item  # noqa: E402
 from timber.posts import Posts  # noqa: E402
 from timber.beam import Beam  # noqa: E402
+from timber import flush as flush_frame  # noqa: E402
 from timber.pergola import Axes, KneeBraces, Rafters, Slats, MIN_BRACE_CLEAR, C45  # noqa: E402
 from timber.roof import MonoRoof, RoofLine  # noqa: E402
 from timber.roof_gable import GableLine, GableRoof  # noqa: E402
@@ -146,6 +147,8 @@ def terrace(spec, lib):
     post bases directly, and the footings' above-ground part is built up to meet them."""
     fr = Frame()
     W, D, H = spec["width"], spec["depth"], spec["height"]
+    if spec.get("frame") == "flush":
+        return terrace_flush(fr, spec, lib)
     board, joist, beam_it = (tl.item(lib, spec[k]) for k in ("deck_board", "joist_item", "beam_item"))
     td, hj, hb = board["thickness_mm"], joist["width_mm"], beam_it["width_mm"]
     z_joist = H - td - hj                                   # underside of the joists = top of the beams
@@ -165,8 +168,8 @@ def terrace(spec, lib):
     ys = _even(inset, D - inset, spec["row_spacing"])
     xs = _even(inset, W - inset, spec["post_spacing"])
     notes = getattr(spec, "notes", {})
-    pl.decide_grid(spec, "Beam rows", "beam rows", ys, notes.get("row_spacing"))
-    pl.decide_grid(spec, "Posts", "posts per row", xs, notes.get("post_spacing"))
+    pl.decide_grid(spec, "Beam rows", "rows of beams", ys, notes.get("row_spacing"), "rows")
+    pl.decide_grid(spec, "Posts", "posts per row", xs, notes.get("post_spacing"), "posts")
     pts = Posts.grid(xs, ys)
     if no_posts:
         seat = z_joist - hb
@@ -202,6 +205,28 @@ def terrace(spec, lib):
     return result(fr, spec)
 
 
+def terrace_flush(fr, spec, lib):
+    """A terrace whose joists hang between the beams (see timber/flush.py): beams on the post bases."""
+    W, D, H = spec["width"], spec["depth"], spec["height"]
+    foot = Footings(fr, lib, footing_item(lib, spec["foundation"], spec["footing_item"]))
+    bw = spec["beam_plies"] * tl.item(lib, spec["beam_item"])["thickness_mm"]
+    inset = math.ceil((bw / 2 + 25) / 5) * 5
+    beam, deck, recs, ys, xs = flush_frame.build(
+        fr, lib, foot, W=W, D=D, H=H, origin=(0.0, 0.0), spec=spec, beam_key=spec["beam_item"], plies=spec["beam_plies"],
+        joist_key=spec["joist_item"], board_key=spec["deck_board"], post_key=spec["post_item"],
+        joist_spacing=spec["joist_spacing"], gap=spec["board_gap"], row_spacing=spec["row_spacing"],
+        post_spacing=spec["post_spacing"], inset=inset, prefix_f="foundations", prefix_b="beams")
+    notes = getattr(spec, "notes", {})
+    pl.decide_grid(spec, "Beam rows", "rows of beams", ys, notes.get("row_spacing"), "rows")
+    pl.decide_grid(spec, "Footings", "footings per row", xs, notes.get("post_spacing"), "footings")
+    foot.buy()
+    beam.buy()
+    foot.assembly()
+    beam.assembly()
+    apply_edits(fr, spec)
+    return result(fr, spec)
+
+
 MIN_RAFTER_FOR_BRACE = 38.0    # mm: a cross brace is ripped to the rafter's thickness, so no thinner than a 2x
 
 
@@ -230,7 +255,7 @@ def pergola(spec, lib):
     if H - foot.seat < MIN_POST_LEN:
         raise SpecError(f"height: {H:g} mm is too low for this footing; use at least {foot.seat + MIN_POST_LEN:g} mm")
     us = _even(bo, L - bo, spec["post_spacing"])
-    pl.decide_grid(spec, "Posts", "posts along each beam", us, getattr(spec, "notes", {}).get("post_spacing"))
+    pl.decide_grid(spec, "Posts", "posts along each beam", us, getattr(spec, "notes", {}).get("post_spacing"), "posts")
     lines = [oh + bw / 2, Wd - oh - bw / 2]
     pts = [tuple(ax.pt(u, v)[:2]) for v in lines for u in us]
     recs = foot.place(pts, carry=(posts.t, posts.w), ground=0.0, prefix="foundations")
@@ -329,7 +354,7 @@ def summer_kitchen(spec, lib):
                             f"use at least {foot.seat + MIN_POST_LEN:g} mm")
     us = _even(ptx / 2, W - ptx / 2, spec["post_spacing"])
     n = len(us)
-    pl.decide_grid(spec, "Posts", "posts along each beam", us, getattr(spec, "notes", {}).get("post_spacing"))
+    pl.decide_grid(spec, "Posts", "posts along each beam", us, getattr(spec, "notes", {}).get("post_spacing"), "posts")
     lines = [pty / 2, D - pty / 2]
     pts = [(u, y) for y in lines for u in us]
     recs = foot.place(pts, carry=(ptx, pty), ground=0.0, prefix="foundations")

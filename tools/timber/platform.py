@@ -6,7 +6,7 @@ import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import framing as fr_rules  # noqa: E402
 import timberlib as tl  # noqa: E402
-from timber.store import EPS, _ov, layout, r1, sheet_cuts, _norm  # noqa: E402
+from timber.store import EPS, _ov, aabb, layout, r1, sheet_cuts, _norm  # noqa: E402
 
 fr = fr_rules
 
@@ -127,7 +127,7 @@ class BoardPlatform:
     joists' underside, where the bearers' tops must be)."""
 
     def __init__(self, frame, lib, W, D, joist_item, board_item, spacing, top, gap=None,
-                 group="deck", treated=True, origin=(0.0, 0.0)):
+                 group="deck", treated=True, origin=(0.0, 0.0), flush=None):
         self.fr, self.lib, self.W, self.D = frame, lib, W, D
         self.ox, self.oy = origin                  # where the deck's front-left corner is (a floor inside a larger frame)
         self.ji, self.bi = tl.item(lib, joist_item), tl.item(lib, board_item)
@@ -138,6 +138,7 @@ class BoardPlatform:
         self.gap = float(gap if gap is not None else self.bi.get("deck", {}).get("gap_mm", 5))
         self.bottom = top - self.td - self.hj
         self.kw = dict(treated=treated, variant="impregnated" if treated else "sawn")
+        self.flush = flush              # the beams' width across, for a flush frame: joists hang between the beams
 
     def build(self, bearers=()):
         """Make the joists and the boards. `bearers` are the Y positions of the beams'
@@ -147,9 +148,22 @@ class BoardPlatform:
         ox, oy = self.ox, self.oy
         self.joist_x = layout(W, tj, self.spacing)
         self.joist_ids = []
+        self.cols = []                      # per joist position: the ids of its pieces, front to back
+        pts = sorted(bearers)
+        if self.flush:
+            hw = self.flush / 2.0
+            gaps = [(p + hw, q - hw) for p, q in zip(pts, pts[1:])]
+            self.gaps = gaps
+        else:
+            gaps = [(0.0, D)]
         for i, x0 in enumerate(self.joist_x, 1):
-            self.joist_ids.append(fr.box(f"deck/joist-{i:02d}", "joist", self.group, "floor", self.joist_item,
-                                         (ox + x0, oy, z0), (ox + x0 + tj, oy + D, z1), 1, 2, **self.kw))
+            col = []
+            for g, (a, b) in enumerate(gaps, 1):
+                mid = f"deck/joist-{i:02d}" + (f"-{g}" if len(gaps) > 1 else "")
+                col.append(fr.box(mid, "joist", self.group, "floor", self.joist_item,
+                                  (ox + x0, oy + a, z0), (ox + x0 + tj, oy + b, z1), 1, 2, **self.kw))
+            self.cols.append(col)
+            self.joist_ids += col
         stock = max(self.bi["stock_lengths_mm"])
         cand = [x0 + tj / 2 for x0 in self.joist_x]
         rows = board_rows(D, self.bw, self.gap)
@@ -163,11 +177,16 @@ class BoardPlatform:
                 fr.box(bid, "deckboard", self.group, "deck", self.board_item,
                        (ox + a, oy + y0, self.top - self.td), (ox + b, oy + y1, self.top), 0, 1, **self.kw)
                 self.boards.append((bid, r, a, b, y0, y1))
-                for jid, jx in zip(self.joist_ids, self.joist_x):
+                for col, jx in zip(self.cols, self.joist_x):
                     if _ov(a, b, jx, jx + tj) > EPS:
-                        fr.joint("deck-board", bid, jid, crossings=1)
-        pts = sorted(bearers)
-        span = max((q - p for p, q in zip(pts, pts[1:])), default=D)
+                        for jid in col:
+                            lo_, hi_ = aabb(fr.member(jid))
+                            if _ov(oy + y0, oy + y1, lo_[1], hi_[1]) > EPS:
+                                fr.joint("deck-board", bid, jid, crossings=1)
+        if self.flush:
+            span = max(b - a for a, b in self.gaps)
+        else:
+            span = max((q - p for p, q in zip(pts, pts[1:])), default=D)
         spacing_to_check = self.spacing
         fr.assembly("deck", "platform", [
             {"role": "deck joists", "kind": "joist", "spacing_mm": _norm(spacing_to_check), "span_mm": r1(span),
@@ -176,6 +195,28 @@ class BoardPlatform:
             {"role": "deck boards", "kind": "deckboard", "item": self.board_item, "gap_mm": r1(self.gap),
              "max_joist_spacing_mm": self.bi.get("deck", {}).get("max_joist_spacing_mm")}])
         return self
+
+    def hang_on(self, beam_records):
+        """A flush frame: every joist piece is hung from the faces of the two beams either side of it
+        (a `joist-hanger` joint to the facing ply of each), and the boards are fixed to the beams they lie on."""
+        recs = sorted(beam_records, key=lambda r: r["line"])
+        for col in self.cols:
+            for g, jid in enumerate(col):
+                self.fr.joint("joist-hanger", jid, recs[g]["plies"][-1])
+                self.fr.joint("joist-hanger", jid, recs[g + 1]["plies"][0])
+                self.hangers = getattr(self, "hangers", 0) + 2
+        for bid, r, a, b, y0, y1 in self.boards:
+            for rec in recs:
+                for ply in rec["plies"]:
+                    lo_, hi_ = aabb(self.fr.member(ply))
+                    if _ov(self.oy + y0, self.oy + y1, lo_[1], hi_[1]) > EPS:
+                        self.fr.joint("deck-board", bid, ply, crossings=1)
+
+    def buy_hangers(self):
+        n = getattr(self, "hangers", 0)
+        if n:
+            self.fr.bought.append({"item": "joist-hanger", "qty": n, "unit": "pcs",
+                                   "note": "one at each end of every deck joist; sized to the joist and the beam"})
 
     def bear_on(self, beam_ids):
         """Record that the joists bear on these beams (plies): a `joist-beam` joint at every crossing."""
