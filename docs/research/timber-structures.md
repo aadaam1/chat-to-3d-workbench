@@ -559,7 +559,7 @@ of the floor frame, X = width, Y = depth.
 
 ### The input spec
 
-`projects/<name>/shed.json`, written by Claude from the conversation:
+`projects/<name>/structure.json`, written by Claude from the conversation:
 
 ```json
 { "type": "pent-shed", "region": "eu", "units": "metric",

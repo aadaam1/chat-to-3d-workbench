@@ -41,7 +41,7 @@ def _openings_all_walls():
 
 def cases():
     eu, us = _load(os.path.join(FIX, "shed-eu.json")), _load(os.path.join(FIX, "shed-us.json"))
-    garden = _load(_find("examples/garden-shed/shed.json"))
+    garden = _load(_find("examples/garden-shed/structure.json", "examples/garden-shed/shed.json"))
     tool = _load(_find("tests/fixtures/tool-shed.json"))
     c = {"shed-eu": eu, "shed-us": us, "garden-shed": garden, "tool-shed": tool}
     for base, spec in (("eu", eu), ("us", us)):
