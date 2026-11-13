@@ -9,6 +9,9 @@ workbench is a working prototype, and anything may still change.
 
 ## [Unreleased]
 
+### Changed
+- The preview's verdict says "Looks good" instead of "Ready to build" or "Ready to order", with the disclaimer right under it.
+
 ## [0.6.0] - 2026-11-12
 
 First public release: printed parts and garden sheds (single-slope and gable roofs), designed in chat and iterated in a 3D preview

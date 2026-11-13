@@ -183,7 +183,7 @@ Version 0.6, a working prototype. macOS and Linux.
 This is a tool for exploring designs faster, and you are responsible for
 what you make and how you use it. The checks catch a lot, but they can't
 promise a part will work, fit or hold up, or that a structure is safe.
-"Ready to build" means the workbench's own checks passed, nothing more.
+"Looks good" means the workbench's own checks passed, nothing more.
 
 - **Start with the cheapest print** and test it before ordering a better
   one.
