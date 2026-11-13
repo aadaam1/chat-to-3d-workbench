@@ -1,10 +1,10 @@
 """The timber generator's output must not change when its code is reorganised.
 (The two gable-shed cases were added with the gable roof, the two terrace cases with the
 terrace, the two pergola cases with the pergola and the two summer kitchen cases with the
-summer kitchen; the rest are the pent shed.)
+summer kitchen, the five "planned-" cases with the planner; the rest are the pent shed.)
 
 Each case is a description; the sha256 of its frame file (without any
-"assemblies" key), of its check findings and of its shopping list are in
+"assemblies" or "decisions" key), of its check findings and of its shopping list are in
 tests/golden/frames.json, made by `tools/golden.py --update`.
 
     .venv/bin/python -m pytest tests/test_blocks_identical.py
@@ -68,6 +68,13 @@ def cases():
     c["pergola-us"] = _load(os.path.join(FIX, "pergola-us.json"))
     c["summer-kitchen-eu"] = _load(os.path.join(FIX, "summer-kitchen-eu.json"))   # added with the summer kitchen
     c["summer-kitchen-us"] = _load(os.path.join(FIX, "summer-kitchen-us.json"))
+    # added with the planner (sections, spacings and heights the description leaves open are chosen)
+    c["planned-pent-5x4"] = {"type": "pent-shed", "width": 5000, "depth": 4000}
+    c["planned-gable-5x4"] = {"type": "gable-shed", "width": 5000, "depth": 4000}
+    c["planned-kitchen-mono-5x4"] = {"type": "summer-kitchen", "width": 5000, "depth": 4000, "roof": "mono"}
+    c["planned-pergola-6x4"] = {"type": "pergola", "width": 6000, "depth": 4000}
+    c["planned-gable-4x3-door"] = {"type": "gable-shed", "width": 4000, "depth": 3000,
+                                   "openings": [{"wall": "front", "kind": "door", "x": 1000, "width": 900, "height": 2000}]}
     return c
 
 

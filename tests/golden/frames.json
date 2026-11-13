@@ -79,6 +79,31 @@
   "checks": "fad250c617d6d4a1901a8599da8fa43e5d5e9397654951c24f60d0f6fe2fc6f6",
   "frame": "9efc27132b23b9d93dde31099493bcc471c1b1f63690084bc25340fad1708fb2"
  },
+ "planned-gable-4x3-door": {
+  "bom": "f196a09128ecf690f5b5ab76461dea4753f4712e6e0ff9f74af7e38301fdebf5",
+  "checks": "1d3213d59f79c260c48c5c3f6fd880702c14cbac0485ec22f6beb37323c56ef2",
+  "frame": "ad718bd3c1fd21984bdefb6e8506e379f0281a6ad9501a1083870b89190e8119"
+ },
+ "planned-gable-5x4": {
+  "bom": "924545a35c0dc87d962d9fde9cfa84a6c7371e2ec33e1c7922e191f53f5ae3a4",
+  "checks": "eff29aa61f94a7c1babc44d87edc17ac5a8b7eda6440ba0802e47ab6a63b13fa",
+  "frame": "78978e429b3a9a53ef57c5f5377ca7ebbf1331a74eea568f8409eac20a73b4fc"
+ },
+ "planned-kitchen-mono-5x4": {
+  "bom": "a4af2fc15d7216525f4ed70494d1b1d477ed52af85f2702033557f06ebe98888",
+  "checks": "5ea2ebb2fe3b511f8f8c158754d2e2a7cb69c6ce39c7139902db1028daffbdf9",
+  "frame": "078e2847b152bdf2d72a90b5d4ee4dcf9ed3ad6cd7b1a4a791ed78a125cd6027"
+ },
+ "planned-pent-5x4": {
+  "bom": "aaffeeb4a42d4ae47116dbed424cb2b5b8fe72552c971ca34dd1efdef992fe3e",
+  "checks": "46b15e7251f7bc96221aecda1bd32128549da6d9c95cfc2558356b5b60630839",
+  "frame": "3f343a674aba1e4750e36365e0f484c9f91d58842be270bc732ca070419fbb9f"
+ },
+ "planned-pergola-6x4": {
+  "bom": "fa40c4827bdfaf5a5173005a930a8ffba618594cc468546d2d9dea003d6315c3",
+  "checks": "c9b7483fac1fd7cc9c1dee06ea6cee93e852b23efd5e11597c6087d60994eb62",
+  "frame": "0620686fb3b18e1d0b427d2d3560b0016f63d892bfd122a0c63b8c4b7c14b053"
+ },
  "shed-eu": {
   "bom": "e9d658d35a804aec9764145fe34d4f21a0e722455f9b987ffbe9f6d0e2f2abdc",
   "checks": "655e2ea11dd76a2d146bca488080d8d17c7e15f46c4ecc0dd9627f876c143edc",

@@ -22,6 +22,7 @@ from timber.roof_gable import GableLine, GableRoof  # noqa: E402
 from timber.kitchen import BeamRoofLine, KitchenLayout, KitchenWall, build_floor  # noqa: E402
 from timber.pergola import sloped_brace  # noqa: E402
 import timberlib as tl  # noqa: E402
+from timber import planning as pl  # noqa: E402
 from timber.wall import Wall, corners  # noqa: E402
 
 
@@ -163,6 +164,9 @@ def terrace(spec, lib):
         inset = math.ceil((beam.width() / 2 + 25) / 5) * 5
     ys = _even(inset, D - inset, spec["row_spacing"])
     xs = _even(inset, W - inset, spec["post_spacing"])
+    notes = getattr(spec, "notes", {})
+    pl.decide_grid(spec, "Beam rows", "beam rows", ys, notes.get("row_spacing"))
+    pl.decide_grid(spec, "Posts", "posts per row", xs, notes.get("post_spacing"))
     pts = Posts.grid(xs, ys)
     if no_posts:
         seat = z_joist - hb
@@ -226,6 +230,7 @@ def pergola(spec, lib):
     if H - foot.seat < MIN_POST_LEN:
         raise SpecError(f"height: {H:g} mm is too low for this footing; use at least {foot.seat + MIN_POST_LEN:g} mm")
     us = _even(bo, L - bo, spec["post_spacing"])
+    pl.decide_grid(spec, "Posts", "posts along each beam", us, getattr(spec, "notes", {}).get("post_spacing"))
     lines = [oh + bw / 2, Wd - oh - bw / 2]
     pts = [tuple(ax.pt(u, v)[:2]) for v in lines for u in us]
     recs = foot.place(pts, carry=(posts.t, posts.w), ground=0.0, prefix="foundations")
@@ -324,6 +329,7 @@ def summer_kitchen(spec, lib):
                             f"use at least {foot.seat + MIN_POST_LEN:g} mm")
     us = _even(ptx / 2, W - ptx / 2, spec["post_spacing"])
     n = len(us)
+    pl.decide_grid(spec, "Posts", "posts along each beam", us, getattr(spec, "notes", {}).get("post_spacing"))
     lines = [pty / 2, D - pty / 2]
     pts = [(u, y) for y in lines for u in us]
     recs = foot.place(pts, carry=(ptx, pty), ground=0.0, prefix="foundations")
