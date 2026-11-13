@@ -25,7 +25,8 @@ list of the others. Plan in `docs/research/timber-blocks.md`.
   **lean-to**.
 - **Foundations:** ground screws, pier blocks and concrete footings under
   a terrace or a shed's floor (done; capacity not checked), then skids.
-- **Terrace** (done: footings, posts, beams, joists, deck boards), then
+- **Terrace** (done: footings, posts, beams, joists, deck boards, low decks with hung joists; long
+  pieces are joined), then
   railings and steps.
 - **Ventilated cladding:** battens and an air gap behind the boards.
 - **More prices:** a US snapshot, and nails, screws and sheet goods in the

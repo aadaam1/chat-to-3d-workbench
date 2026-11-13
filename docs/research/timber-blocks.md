@@ -261,6 +261,25 @@ stocked ones: a 5 m wide shed's boards are 5.02 m). Open: beams are not resized 
 closer instead; 2 plies of the deepest section is the limit of the library), and a wall taller
 than one sheet is still refused.
 
+## Low decks and long pieces, 2026-11-13
+
+Two gaps found with the planner. (1) A terrace 15 to 30 cm up was refused ("use at least 398
+mm"; a summer kitchen's floor needed 598 mm). Decision: `frame` is `stacked` or `flush`; the
+planner takes stacked when the post base, beam, joist and board fit and otherwise flush: beams on
+the post bases, joists hung between them (`joist-hanger` joint, hangers counted), tops level.
+The beam is at least as deep as the joist (AWC DCA 6 note on hangers), and sections step down
+(50x200, 150, 100) while the spans pass, with closer footings; the lowest height is about 250 mm
+on ground screws and 290 mm on blocks and piers (eu). The kitchen floor defaults to that lowest
+height. (2) A 6 m shed was flagged (cladding 6.02 m, plates, fascia). Decision: after the frame
+is built, `tools/timber/joining.py` cuts a piece longer than its item's longest stock or order
+length where a rule gives a sound joint (stud, joist, rafter, post, beam; see framing.md) with a
+`butt` joint between pieces and the original's joints repeated for each piece that touches the
+other member; floor joists, rafters and ties as long as their span stay flagged with advice.
+The upper top plate's joint is 600 mm from the lower plate's (IRC R602.3.2, 24 in., read in the
+2012 text). Open: a ridge splice plate is not drawn (the joint sits at a rafter pair), joints
+carry no engineering check, and a floor joist longer than the longest stock needs a beam under
+it (not built).
+
 ## Open questions
 
 - Load capacity of ground screws and footings (needs a manufacturer's

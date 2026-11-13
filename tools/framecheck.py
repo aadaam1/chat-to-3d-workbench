@@ -122,6 +122,16 @@ class Findings:
         return f"{kn_m2:g} kN/m2"
 
 
+def piece_ids(members, mid):
+    """The members that make up the piece `mid`: itself, or the pieces `mid-a`, `mid-b`... it was joined from."""
+    pat = re.compile(re.escape(mid) + r"(-[a-z])?")
+    return [m for m in members if pat.fullmatch(m["id"])]
+
+
+def first_piece(by, mid):
+    return by.get(mid) or by.get(mid + "-a")
+
+
 def section_name(lib, item):
     return lib["sections"][item]["name"] if item in lib["sections"] else item
 
@@ -180,7 +190,7 @@ def rafter_run(frame):
     if sp and "span_mm" in sp:
         return sp["span_mm"]
     by = {m["id"]: m for m in frame["members"]}
-    ridge, plate = by.get("roof/ridge"), by.get("wall-front/plate-top")
+    ridge, plate = first_piece(by, "roof/ridge"), first_piece(by, "wall-front/plate-top")
     if not (ridge and plate):
         return frame["spec"]["depth"] / 2.0
     return round(float(box_corners(ridge)[:, 1].min() - box_corners(plate)[:, 1].min()), 1)
@@ -227,7 +237,8 @@ def check_rafters(f):
     cos_a = math.cos(ang)
     m = rafters[0]
     sp = span_of(fr, "rafter")
-    plates = {p["id"]: p for p in fr["members"] if p["id"] in ("wall-front/plate-top", "wall-back/plate-top")}   # same line as any upper plate
+    plates = {i: first_piece({m["id"]: m for m in fr["members"]}, i) for i in ("wall-front/plate-top", "wall-back/plate-top")}   # same line as any upper plate
+    plates = {i: p for i, p in plates.items() if p}
     if is_gable(fr):
         span = rafter_run(fr)
     elif sp and "span_mm" in sp:
@@ -391,6 +402,25 @@ def check_sheet_edges(f, step=25.0):
         f.add("sheet-edge", "ok", "Sheet edges", "Every sheet edge that is fixed to the frame has timber behind it.")
 
 
+STOCK_ADVICE = {
+    "joist": "A floor joist is as long as the floor is deep and cannot be joined without a beam or wall under the joint: "
+             "make the floor shallower, put a beam under it, or use a longer section.",
+    "rafter": "A rafter is as long as the roof it covers and is not joined: make the roof shallower, put a wall or beam under it, "
+              "or use a longer section.",
+    "tie": "A tie crosses the whole building and is not joined: use a longer section or a smaller building.",
+    "beam": "Put a post under a joint (posts closer together), or use a longer beam section.",
+    "post": "Use a shorter post or a longer section.",
+    "stud": "Use a lower wall or a longer section.",
+}
+
+
+def _stock_advice(over):
+    """What to do about the pieces still too long after the planner has joined what it can."""
+    kinds = {m["kind"] for m, _ in over}
+    parts = [STOCK_ADVICE[k] for k in STOCK_ADVICE if k in kinds]
+    return " ".join(parts) if parts else "Join it over a support, add a support, or change the size."
+
+
 def check_stock_length(f):
     lib = f.lib
     over = []
@@ -408,7 +438,7 @@ def check_stock_length(f):
         m, longest = max(over, key=lambda p: p[0]["size"][0] - p[1])
         f.add("stock-length", "fix", "Piece longer than the longest timber for sale",
               f"{len(over)} piece(s) are longer than the longest stock length in the library; the worst is {m['id']} at "
-              f"{f.length(m['size'][0])} against {f.length(longest)}. Join it, add a support, or change the size.",
+              f"{f.length(m['size'][0])} against {f.length(longest)}. " + _stock_advice(over),
               [p[0]["id"] for p in over][:50], at=centre(m))
     else:
         f.add("stock-length", "ok", "Timber lengths", "Every piece can be cut from the longest stock length in the library.")
@@ -532,11 +562,13 @@ def check_plate_lap(f):
         f.add("plate-lap", "ok", "Top plates", "The walls have a single top plate, so there is no upper plate to lap at the corners.")
         return
     pairs = {frozenset(p) for p in _joined(f, ("plate-lap",))}
+    ms = f.frame["members"]
     bad = [side for side in ("left", "right")
-           if frozenset((f"wall-{side}/plate-top-2", "wall-back/plate-top")) not in pairs]
+           if not any(frozenset((p["id"], q["id"])) in pairs for p in piece_ids(ms, f"wall-{side}/plate-top-2")
+                      for q in piece_ids(ms, "wall-back/plate-top"))]
     if bad:
-        ids = [f"wall-{s}/plate-top-2" for s in bad if f"wall-{s}/plate-top-2" in f.by_id] or \
-              (["wall-back/plate-top"] if "wall-back/plate-top" in f.by_id else [])
+        ids = [p["id"] for s in bad for p in piece_ids(ms, f"wall-{s}/plate-top-2")][:3] or \
+              [p["id"] for p in piece_ids(ms, "wall-back/plate-top")][:1]
         f.add("plate-lap", "check", "Upper top plate does not lap the corner",
               f"The {' and '.join(bad)} wall's upper top plate does not run over the back wall's top plate. "
               "With two top plates, the upper one should overlap the one below at each back corner, so the corner "
@@ -610,7 +642,7 @@ def check_fascia(f):
                 for sd in ("left", "right") for sl in ("front", "back")]
     if spec.get("overhang", 0) > 0:
         want = [("roof/fascia-front", "fascia board at the front"), ("roof/fascia-back", "fascia board at the back")] + want
-    lacking = [(i, w) for i, w in want if i not in f.by_id]
+    lacking = [(i, w) for i, w in want if first_piece(f.by_id, i) is None]
     if lacking:
         f.add("roof-edges", "check", "Roof edge board missing",
               "The roof has no " + " and no ".join(w for _, w in lacking) + ". These boards cover the cut ends of the "
@@ -636,7 +668,8 @@ def check_ridge(f):
     """A gable roof's ridge board: thick enough, deep enough for the rafters' plumb cut,
     and every rafter pair meets it face to face."""
     by = f.by_id
-    ridge = by.get("roof/ridge")
+    ridge = first_piece(by, "roof/ridge")
+    ridge_all = piece_ids(f.frame["members"], "roof/ridge")
     rafters = [m for m in f.frame["members"] if m["kind"] == "rafter"]
     if not ridge:
         f.add("ridge", "fix", "No ridge board",
@@ -655,10 +688,11 @@ def check_ridge(f):
     if depth < need - 0.5:
         bad.append(f"it is {f.length(depth)} deep, less than the rafters' plumb cut ({f.length(need)})")
     ylo, yhi = _extent([ridge], 1)
+    touches = lambda m: any(contact(m, r, 1.0) is not None for r in ridge_all)
     lone = []
     for a, b in _rafter_pairs(f):
         for m, face in ((a, ylo), (b, yhi)):
-            if m is None or contact(m, ridge, 1.0) is None or abs(_prism(m, 1)[1 if m is a else 0] - face) > 1.0:
+            if m is None or not touches(m) or abs(_prism(m, 1)[1 if m is a else 0] - face) > 1.0:
                 lone.append(m["id"] if m else a["id"].replace("-front-", "-back-"))
     if lone:
         bad.append(f"{len(lone)} rafter(s) do not meet it face to face (first: {lone[0]})")
@@ -666,11 +700,11 @@ def check_ridge(f):
         f.add("ridge", "fix", "Ridge board too small or rafters not meeting it",
               "The ridge board: " + "; ".join(bad) + ". The ridge board must be at least 25 mm thick and at least as "
               "deep as the cut end of the rafters, with each pair of rafters landing opposite each other against its faces.",
-              ["roof/ridge"] + lone[:5])
+              [ridge["id"]] + lone[:5])
     else:
         f.add("ridge", "ok", "Ridge board",
               f"The ridge board is {f.length(thick)} thick and {f.length(depth)} deep (the rafters' plumb cut is "
-              f"{f.length(need)}), and every rafter pair meets it face to face.", ["roof/ridge"])
+              f"{f.length(need)}), and every rafter pair meets it face to face.", [ridge["id"]])
 
 
 def check_rafter_ties(f):
@@ -682,13 +716,14 @@ def check_rafter_ties(f):
     gab_lo = min((lo for lo, _ in walls), default=0.0)
     gab_w = max((hi - lo for lo, hi in walls), default=0.0)
     width = f.frame["spec"]["width"]
-    top = max((_extent([m], 2)[1] for m in f.frame["members"] if m["id"] == "wall-front/plate-top-2"),
-              default=None)
+    top = max((_extent([m], 2)[1] for m in piece_ids(f.frame["members"], "wall-front/plate-top-2")), default=None)
     if top is None:
-        top = max(_extent([m], 2)[1] for m in f.frame["members"] if m["id"] == "wall-front/plate-top")
+        top = max(_extent([m], 2)[1] for m in piece_ids(f.frame["members"], "wall-front/plate-top"))
     joined = {frozenset((j["a"], j["b"])) for j in f.frame["joints"] if j["type"] in ("tie-rafter", "tie-plate")}
-    bear = {sl: next((by[i] for i in (f"wall-{sl}/plate-top-2", f"wall-{sl}/plate-top") if i in by), None)
-            for sl in ("front", "back")}
+    ms = f.frame["members"]
+    bear_ids = {sl: next(([p["id"] for p in piece_ids(ms, i)] for i in (f"wall-{sl}/plate-top-2", f"wall-{sl}/plate-top")
+                         if piece_ids(ms, i)), []) for sl in ("front", "back")}
+    bear = {sl: by[ids[0]] if ids else None for sl, ids in bear_ids.items()}
     y_lo = _extent([bear["front"]], 1)[0] if bear["front"] else 0.0       # outer face of the front plate
     y_hi = _extent([bear["back"]], 1)[1] if bear["back"] else f.frame["spec"]["depth"]
     missing, loose, over = [], [], 0
@@ -702,10 +737,11 @@ def check_rafter_ties(f):
             missing.append(a["id"])
             continue
         ys, zs, xs = _extent([tie], 1), _extent([tie], 2), _extent([tie], 0)
-        need = [(tie["id"], m["id"]) for m in (a, b, bear["front"], bear["back"]) if m is not None]
+        need = [(tie["id"], m["id"]) for m in (a, b) if m is not None]
+        plates_ok = all(any(frozenset((tie["id"], pid)) in joined for pid in ids) for ids in bear_ids.values() if ids)
         if (abs(zs[0] - top) > 1.0 or abs(ys[0] - y_lo) > 1.0 or abs(ys[1] - y_hi) > 1.0
                 or abs(xs[0] - hi) > 1.0 or b is None or None in bear.values()
-                or any(frozenset(pair) not in joined for pair in need)):
+                or not plates_ok or any(frozenset(pair) not in joined for pair in need)):
             loose.append(tie["id"])
     if missing or loose:
         text = []
@@ -960,11 +996,12 @@ def check_beam_bearing(f, max_end=300.0, atype="beams", prefix=None, fid="beam-b
     by = f.by_id
     bad = []
     for r in recs:
-        b = by.get(r["id"])
-        if b is None:
+        ps = piece_ids(f.frame["members"], r["id"])      # a beam joined over a post has several pieces
+        if not ps:
             continue
+        b = ps[0]
         ax = 0 if abs(b["x"][0]) > 0.5 else 1
-        ends = box_corners(b)[:, ax]
+        ends = np.concatenate([box_corners(p_)[:, ax] for p_ in ps])
         lo, hi = float(ends.min()), float(ends.max())
         line = 1 - ax
         cl = [float(centre(s)[ax]) for s in sup if abs(float(centre(s)[line]) - r["line"]) <= 1.0]

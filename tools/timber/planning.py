@@ -150,16 +150,16 @@ def size_member(lib, default_key, default_spacing, words, ev, *, item_named=None
     return Sized(k, sp_, span, allowed, False, (k, sp_) != (key0, default_spacing), base)
 
 
-def explain(lib, role, res, default_key, default_spacing, units, span_text="the span is"):
-    """(chose, why) for a sized member that differs from the plain default."""
+def explain(lib, role, res, default_key, default_spacing, units, span_text="the span here is"):
+    """(chose, why) for a sized member that differs from the plain default, in plain words."""
     nm = lambda k: section_name(lib, k)
     chose = f"{nm(res.key)} at {length_text(res.spacing, units)}"
     b_span, b_allowed = res.base
-    why = (f"{nm(default_key)} at {length_text(default_spacing, units)} is good for {length_text(b_allowed, units)}; "
-           f"{span_text} {length_text(b_span, units)}")
+    why = (f"{nm(default_key)} at {length_text(default_spacing, units)} can span up to {length_text(b_allowed, units)}, "
+           f"but {span_text} {length_text(b_span, units)}")
     if not res.ok:
-        why += (f". Nothing in the library fits comfortably: this is the best it can do "
-                f"(good for {length_text(res.allowed, units)}), and the checks say so")
+        why += (f". Nothing in the library fits comfortably, so this is the best it can do (up to "
+                f"{length_text(res.allowed, units)}) and the checks say so")
     return chose, why
 
 

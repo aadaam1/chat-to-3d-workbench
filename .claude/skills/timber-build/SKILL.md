@@ -54,7 +54,11 @@ you building**, then the questions for that recipe, then the common ones.
 - **Terrace:** width, depth, the height of the deck above the ground, and what the
   ground is like (firm soil or slope, clay, rock, an old slab): that picks the
   foundation: ground screws (the default; most soils), pier blocks (level, firm
-  ground; low decks) or concrete footings (where they want it permanent).
+  ground; low decks) or concrete footings (where they want it permanent). A deck
+  15 to 30 cm up is common and works: below about 50 cm the planner hangs the joists
+  between the beams (`"frame": "flush"`, chosen for you; `"stacked"` is beams under the
+  joists). The lowest is about 25 cm on ground screws and 29 cm on blocks or piers; a
+  lower height is refused with the lowest that works.
 - **Pergola:** the roofed width and depth, the clear height under the beams, slats
   across the top or open rafters, free standing (it always is: it has no walls).
 - **Summer kitchen:** width and depth, the roof shape (mono: one slope; gable: a
@@ -118,6 +122,9 @@ Rules that matter:
   (see "What it cannot do yet").
 - Footings are bought items and their load capacity is not checked: say so.
   Wind and uplift are not covered for the open structures.
+- A piece longer than the timber on sale is joined for you (plates and cladding on a stud,
+  beams over a post, and so on) and a decision says so; floor joists, rafters and ties that
+  are too long are not, and the `stock-length` fix says what to do.
 - A terrace above about 600 mm needs a railing in most places (rails and steps
   are not built yet): the check says so.
 - A summer kitchen's walls are infill (the posts carry the roof).

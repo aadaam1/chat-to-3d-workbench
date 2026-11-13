@@ -293,10 +293,22 @@ are bought items, drawn on the `foundations` layer.
   post, bolted through, its top level with the post top and the joists lying
   on it. An **on_top** beam lies on the posts' tops on a post cap. One ply
   needs `on_top`.
-- **Low terraces.** A post shorter than the library's `min_post_mm` (150 mm) is
-  left out: the beams then sit on the post bases directly (`on_top`), and the
-  footings' above-ground part is built up to meet them. If even that does not
-  fit, the description is refused with the lowest height that works.
+- **Low terraces: a flush frame.** `frame` is `stacked` (beams under the joists: a sandwich or
+  on_top beam, as above) or `flush`. Left out, the planner takes stacked when the height has room
+  for it (the footing's post base, the beam, the joist and the board: 498 mm for the default
+  ground screw) and flush when it has not. In a **flush** frame the beams sit directly on the
+  post bases (no posts; the footing's above-ground part is built up to meet them), the joists
+  hang **between** the beams in joist hangers with their tops level with the beams', and the
+  boards lie on both. The beam must be at least as deep as the joist (a hanger needs that).
+  When the height leaves less room than the default 50x200 beam and 50x150 joist, the planner
+  steps down through shallower sections (50x200, 50x150, 50x100; 2x10, 2x8, 2x6) as long as they
+  pass the span checks, the footings getting closer; when nothing fits, the description is
+  refused and the error names the lowest height that works (about 250 mm on ground screws and
+  290 mm on blocks and poured piers in `eu`, with 50x100 beams and joists 1.3 m apart). A
+  summer kitchen's `floor: "terrace"` works the same way; without `floor_height` it takes
+  that lowest height. All the timber of a flush frame is treated and low frames get the
+  `ground-treated` check (timber within 150 mm of the ground). Each joist end is a
+  `joist-hanger` joint and the hangers are counted as a bought item.
 - Deck boards run across the joists, the gap `board_gap` (5 mm) between rows,
   spread to at most 8 mm to use up the remainder or finished with one ripped
   board. A row longer than the longest stock length is cut on joists with the
@@ -433,6 +445,38 @@ shed. The front is always open.
   for the open sides only. Wind, uplift, racking, footing capacity, fire and flues are
   **not** checked; say so, and say a stove or chimney needs a qualified person.
 
+## Pieces longer than the timber on sale
+
+**In plain words.** A 6 m wall needs wall plates and cladding boards longer than most
+yards stock. Where a piece is longer than the longest length of its item (stock or order
+lengths in the library), the planner cuts it the way a carpenter would and records a decision
+("Top plates joined over a stud"). Frames whose pieces all fit are untouched.
+
+**Rules the generator follows** (`tools/timber/joining.py`). Each joined piece becomes
+members `<id>-a`, `<id>-b` ... with a `butt` joint between neighbours; every joint the
+original had is repeated for each piece that touches the other member, so a joint over a
+stud, joist, rafter or post is fixed on both sides.
+- **Cladding boards:** butt joint on a stud; the first cut is at most half the stock length
+  on every other course, so joints stagger from course to course.
+- **Bottom and lower top plates:** butt joint over a stud. **Upper top plate:** its joints
+  are at least 600 mm (24 in.) along from the lower plate's. IRC R602.3.2: "End joints in top
+  plates shall be offset at least 24 inches (610 mm). Joints in plates need not occur over
+  studs." (2012 IRC text as printed in the Seattle Residential Code 2012, chapter 6,
+  read 2026-11-13: https://www.seattle.gov/documents/Departments/SDCI/Codes/SeattleResidentialCode/2012SRCChapter6.pdf;
+  the studs are the workbench's choice: they give a plain place to nail both pieces.)
+- **Rim joists:** over a floor joist. **Fascia:** over a rafter. **Bargeboards:** beside a
+  roof block, on the end rafter that runs behind them. **Ridge board:** at a rafter pair, so
+  the rafters either side hold the joint (no splice plate drawn). **Beams** (terrace, pergola,
+  summer kitchen): over a post; the two plies of a beam are cut at different posts when there is
+  a choice. **Deck joists:** over a beam.
+- Left as they are, and reported by `stock-length` with what to do: floor joists, rafters, ties
+  and studs that are as long as the span they cover (put a beam or wall under them, or use a
+  longer section), posts. A beam is joined only where a post stands.
+- Pieces are never cut shorter than 300 mm.
+
+**Source / status.** Workbench rules, not a standard, apart from the 24 in. plate offset above.
+Nail counts for the `butt` joint are unverified.
+
 ## How sizes are chosen
 
 **In plain words.** The description only has to say what the person wants (size, doors,
@@ -465,7 +509,13 @@ would be too flat; the front goes up, or the back down once the wall would be ta
 sheet), and for the tallest door or window to fit under its header and the plates. A height the person gave is
 never raised; the error then says which height would work.
 
-**Source / status.** The 85% margin is the checks' own "ok" threshold; the 80% share and the
+**Low decks.** A deck whose height leaves no room for beams under the joists gets a flush
+frame (see the terrace section): the planner picks the deepest beam and joist that fit under
+the boards and pass their spans, and a decision says so. The error for a height that is still
+too low names the lowest that works.
+
+**Source / status.** Joist hangers need a beam at least as deep as the joist: AWC DCA 6 span
+table note, 2015 edition, as quoted by a 2026-11-13 search (no primary copy read). The 85% margin is the checks' own "ok" threshold; the 80% share and the
 spacing ladder are workbench choices, not from a standard.
 
 ## European (UK/EU) names and equivalents

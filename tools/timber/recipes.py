@@ -128,7 +128,28 @@ def apply_edits(fr, spec):
                 j[k] = num(v)
 
 
+def join_pieces(fr, s):
+    """Join the pieces longer than the timber on sale where a rule covers them (timber/joining.py), and
+    record what was joined as decisions."""
+    from timber import joining
+    lib = tl.load(s["region"])
+    notes = joining.join_long(fr, lib)
+    for label, n in notes.items():
+        u = s["units"]
+        chose = f"{n['count']} {label.lower()} joined over a {n['support']}"
+        if label == "Cladding boards":
+            chose = f"{n['count']} cladding boards joined on a stud, staggered from course to course"
+        if label == "Upper top plates":
+            chose = f"{n['count']} upper top plates joined over a stud, at least 600 mm from the joint in the plate below"
+        item = n["item"]
+        name = lib["sections"][item]["name"] if item in lib["sections"] else item
+        why = (f"the longest piece is {pl.length_text(n['max_len'], u)}, and the longest {name} on sale is "
+               f"{pl.length_text(n['limit'], u)}")
+        pl.decide(s, label + " joined", chose, why)
+
+
 def result(fr, s):
+    join_pieces(fr, s)
     mem = sorted(fr.members, key=lambda m: m["id"])
     jt = sorted(fr.joints, key=lambda j: (j["type"], j["a"], j["b"]))
     return {"schema": SCHEMA, "name": s["name"], "region": s["region"], "units": s["units"],
