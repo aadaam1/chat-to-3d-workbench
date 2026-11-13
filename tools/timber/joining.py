@@ -1,4 +1,5 @@
-"""Joining: a piece longer than the longest timber on sale for its item is cut in two (or more) where a
+"""Joining: a piece longer than the longest timber on sale for its item (less the TRIM the shopping list keeps
+of every length) is cut in two (or more) where a
 carpenter would join it, once the frame is built, so frames whose pieces all fit are untouched.
 
 A piece is joined only where a simple rule gives a sound joint, each end of the joint resting on the same
@@ -28,6 +29,7 @@ import frame_edits as fe  # noqa: E402
 from timber.store import EPS, _is_rect, _poly_clip, num  # noqa: E402
 
 UPPER_OFFSET = 600.0        # mm: the upper top plate's joint this far (at least) from the one below (IRC R602.3.2: 24 in.)
+TRIM = 20.0                 # mm: what the shopping list keeps of every stock length for squaring its ends (bom.py --trim)
 MIN_PIECE = 300.0           # mm: no piece is cut shorter than this
 VERT = ("stud", "king", "jack", "cripple")
 LETTERS = "abcdefghijklmnopqrstuvwxyz"
@@ -188,7 +190,7 @@ class Joiner:
             if m["kind"] == "sheet":
                 continue
             lim = longest(lib, m["item"])
-            if lim is not None and m["size"][0] > lim + 0.5:
+            if lim is not None and m["size"][0] > lim - TRIM + 0.5:       # longer than the stock less its trim
                 over.append((m, lim))
         if not over:
             return []
@@ -201,7 +203,7 @@ class Joiner:
         order = sorted(over, key=lambda p: (p[0]["id"].endswith("-2") or "-ply" in p[0]["id"], p[0]["id"]))
         pieces = {}
         for m, lim in order:
-            got = self.plan(m, lim, rank)
+            got = self.plan(m, lim - TRIM, rank)
             if not got or got[0] is None or not got[0]:
                 continue
             cuts, label, support = got
