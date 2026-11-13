@@ -45,14 +45,16 @@ the Claude desktop app (Code tab). Do every step yourself, in plain words.
    install Homebrew or open a terminal.
 2. `tools/selftest.sh` must print `READY`. If not, fix what it names.
 3. Tell them it's ready and ask what they'd like to make, then follow the
-   **print-part** skill. Explain jargon (STL, STEP, ASA) the first time.
+   **print-part** skill for a part or the **timber-build** skill for a
+   structure. Explain jargon (STL, STEP, ASA, joist, rafter) the first time.
 Windows isn't supported yet; say so rather than improvising.
 
 ## Start here
 - New part, change to a part, or "can this be made in X": use the
   **print-part** skill (`.claude/skills/print-part/`). It points to the
   tools, the process rules and the lessons from earlier parts.
-- A shed or another small timber structure: use the **timber-build** skill
+- A shed, terrace, pergola, summer kitchen or another small timber
+  structure: use the **timber-build** skill
   (`.claude/skills/timber-build/`). One description file, then
   `tools/build_frame.sh <project>` makes the frame, checks and shopping list.
 - Fresh machine or container (macOS or Linux): `tools/setup.sh` installs
