@@ -622,8 +622,8 @@ def _kitchen_spec(raw):
             s["fascia_item"] = _pick_item(raw, lib, "fascia_item", d.get("details", {}).get("fascia_item", s["rafter_item"]))
     # the floor
     if s["floor"] == "terrace":
-        s["floor_height"] = _length(raw, "floor_height") if "floor_height" in raw else float(kd["floor_height_mm"])
-        if not s["floor_height"] > 0:
+        s["floor_height"] = _length(raw, "floor_height") if "floor_height" in raw else 0.0
+        if "floor_height" in raw and not s["floor_height"] > 0:
             raise SpecError("floor_height: must be greater than 0")
         s["joist_item"] = _pick_item(raw, lib, "joist_item", tt["joist_item"])
         s["deck_board"] = _pick_item(raw, lib, "deck_board", tt["deck_board"])
@@ -642,6 +642,8 @@ def _kitchen_spec(raw):
             raise SpecError(f"joist_spacing: {s['joist_spacing']:g} mm is closer than two joists")
         if not 0 <= s["board_gap"] <= 20:
             raise SpecError("board_gap: use 0 to 20 mm")
+        _plan_terrace_frame(raw, s, lib, tt, {}, keys=("floor_beam_item", "floor_beam_plies", "floor_frame", "floor_height"),
+                            lowest="floor_height" not in raw)
         tspec = {"deck_board": s["deck_board"], "joist_item": s["joist_item"], "joist_spacing": s["joist_spacing"],
                  "beam_item": s["floor_beam_item"], "beam_plies": s["floor_beam_plies"], "loads": s["loads"]}
         ld = fc.terrace_loads(lib, tspec)
@@ -651,20 +653,16 @@ def _kitchen_spec(raw):
             raise SpecError(f"joist_item: {s['joist_item']!r} at {s['joist_spacing']:g} mm carries only about "
                             f"{lim / 1000:.2f} m between beams; use a deeper joist or closer spacing")
         s["floor_row_spacing"] = row
-        pl.decide(s, "Floor beam rows", f"no further apart than {pl.length_text(row, s['units'])}",
-                  pl.spacing_why(pl.spacing_note(allowed, tt["max_row_spacing_mm"], why,
-                                                 f"{pl.section_name(lib, s['joist_item'])} deck joists at {pl.length_text(s['joist_spacing'], s['units'])}"),
-                                 s["units"]))
+        s.notes["floor_row_spacing"] = pl.spacing_note(allowed, tt["max_row_spacing_mm"], why,
+                                                       f"deck joists of {pl.section_name(lib, s['joist_item'])}")
         allowed = fc.beam_allowed(lib, tspec, ld, s["floor_row_spacing"])
         fpost, why, lim = pl.spacing_under(allowed, tt["max_post_spacing_mm"])
         if fpost is None:
             raise SpecError(f"floor_beam_item: {s['floor_beam_item']!r} carries only about {lim / 1000:.2f} m between posts; "
                             "use a deeper beam or more plies")
         s["floor_post_spacing"] = fpost
-        pl.decide(s, "Floor posts", f"no further apart than {pl.length_text(fpost, s['units'])}",
-                  pl.spacing_why(pl.spacing_note(allowed, tt["max_post_spacing_mm"], why,
-                                                 f"A floor beam of {s['floor_beam_plies']} x {pl.section_name(lib, s['floor_beam_item'])}"),
-                                 s["units"]))
+        s.notes["floor_post_spacing"] = pl.spacing_note(allowed, tt["max_post_spacing_mm"], why,
+                                                        f"a beam of {s['floor_beam_plies']} × {pl.section_name(lib, s['floor_beam_item'])}")
     else:
         for k in ("floor_height", "joist_item", "joist_spacing", "deck_board", "board_gap", "floor_beam_item",
                   "floor_beam_plies", "floor_post_item"):
@@ -873,49 +871,71 @@ def _pergola_spec(raw):
     return s, lib
 
 
-def _plan_terrace_frame(raw, s, lib, t, caps, ld):
+def _plan_terrace_frame(raw, s, lib, t, caps, keys=None, lowest=False):
     """Stacked (beams under the joists) or flush (joists hung between the beams, on the post bases): the
     description's `frame`, else stacked when the height leaves room for it and flush when it does not. A
     flush frame steps down through shallower beams and joists that still pass their spans; if even the
-    shallowest does not fit, the error names the lowest height that works. Sets `frame`, and the beam and
-    joist items when they change, and records the decisions."""
+    shallowest does not fit, the error names the lowest height that works. Sets the frame, the beam and
+    joist items when they change, and records the decisions. `keys` name the spec's beam item, beam plies,
+    frame and height (a terrace's own by default, a summer kitchen's floor's otherwise). With `lowest` the
+    height is not given: it is set to the lowest the flush frame allows, rounded up to 10 mm."""
     from timber.foundations import footing_item, seat_height
-    want = raw.get("frame")
+    kb, kp, kf, kh = keys or ("beam_item", "beam_plies", "frame", "height")
+    want = raw.get(kf)
     if want not in (None, "stacked", "flush"):
-        raise SpecError("frame: use stacked (beams under the joists) or flush (joists hung between the beams)")
-    u, H = s["units"], s["height"]
+        raise SpecError(f"{kf}: use stacked (beams under the joists) or flush (joists hung between the beams)")
+    u = s["units"]
     seat = seat_height(lib, footing_item(lib, s["foundation"], s["footing_item"]))
     td = tl.item(lib, s["deck_board"])["thickness_mm"]
-    hj, hb = tl.item(lib, s["joist_item"])["width_mm"], tl.item(lib, s["beam_item"])["width_mm"]
+    hj, hb = tl.item(lib, s["joist_item"])["width_mm"], tl.item(lib, s[kb])["width_mm"]
     stacked_min = seat + hb + hj + td
     if want:
-        s["frame"] = want
-    if want == "stacked" or (want is None and H >= stacked_min - 0.05):
-        if H < stacked_min - 0.05:
-            raise SpecError(f"height: {H:g} mm is too low for beams under the joists on this footing; use at least "
-                            f"{pl.ceil_10(stacked_min):g} mm, or frame: flush (joists hung between the beams)")
+        s[kf] = want
+    if want == "stacked":
+        if lowest:
+            s[kh] = pl.ceil_10(stacked_min)
+        elif s[kh] < stacked_min - 0.05:
+            raise SpecError(f"{kh}: {s[kh]:g} mm is too low for beams under the joists on this footing; use at least "
+                            f"{pl.ceil_10(stacked_min):g} mm, or {kf}: flush (joists hung between the beams)")
         return
-    s["frame"] = "flush"
-    tspec = {k: s[k] for k in ("deck_board", "joist_item", "joist_spacing", "beam_item", "beam_plies", "loads")}
-    res = pl.plan_flush(lib, tspec, H - td - seat, t["max_row_spacing_mm"], t["max_post_spacing_mm"],
-                        beam_named=raw.get("beam_item"), joist_named=raw.get("joist_item"),
+    if not lowest and want is None and s[kh] >= stacked_min - 0.05:
+        return
+    s[kf] = "flush"
+    tspec = {"deck_board": s["deck_board"], "joist_item": s["joist_item"], "joist_spacing": s["joist_spacing"],
+             "beam_item": s[kb], "beam_plies": s[kp], "loads": s["loads"]}
+    avail = 1e9 if lowest else s[kh] - td - seat
+    res = pl.plan_flush(lib, tspec, avail, t["max_row_spacing_mm"], t["max_post_spacing_mm"],
+                        beam_named=raw.get(kb), joist_named=raw.get("joist_item"),
                         row_named=caps.get("row_spacing"), post_named=caps.get("post_spacing"))
+    if res.min_depth is None:
+        raise SpecError(f"{kb}: no beam and joist of the library carry this deck at this spacing; "
+                        "use closer joists or a deeper section")
+    low = pl.ceil_10(seat + res.min_depth + td)
+    if lowest:
+        s[kh] = low
+        pl.decide(s, "Floor height", pl.length_text(low, u),
+                  f"it is the lowest a flush frame goes on this footing: the post base is {pl.length_text(seat, u)} tall, "
+                  f"the shallowest beam and joist that pass their spans {pl.length_text(res.min_depth, u)}, "
+                  f"the boards {pl.length_text(td, u)}")
+        res = pl.plan_flush(lib, tspec, low - td - seat, t["max_row_spacing_mm"], t["max_post_spacing_mm"],
+                            beam_named=raw.get(kb), joist_named=raw.get("joist_item"),
+                            row_named=caps.get("row_spacing"), post_named=caps.get("post_spacing"))
     if not res.ok:
-        if res.min_depth is None:
-            raise SpecError("height: no beam and joist of the library carry this deck at this spacing; "
-                            "use closer joists or a deeper section")
-        low = pl.ceil_10(seat + res.min_depth + td)
-        raise SpecError(f"height: {H:g} mm is too low for this footing; the lowest that works is {low:g} mm "
+        raise SpecError(f"{kh}: {s[kh]:g} mm is too low for this footing; the lowest that works is {low:g} mm "
                         f"(the post base is {pl.length_text(seat, u)} tall, the shallowest beam and joist that still pass "
                         f"their spans {pl.length_text(res.min_depth, u)}, the boards {pl.length_text(td, u)}). "
                         "A footing with a lower post base may go lower")
-    changed = (res.beam, res.joist) != (s["beam_item"], s["joist_item"])
-    s["beam_item"], s["joist_item"] = res.beam, res.joist
-    s["beam_mount"] = "on_top"
+    changed = (res.beam, res.joist) != (s[kb], s["joist_item"])
+    s[kb], s["joist_item"] = res.beam, res.joist
+    if kb == "beam_item":
+        s["beam_mount"] = "on_top"
+    H = s[kh]
     why = f"{pl.length_text(H, u)} leaves no room for beams under the joists"
     if want == "flush" and H >= stacked_min - 0.05:
         why = "a flush frame was asked for"
-    pl.decide(s, "Frame", "joists hung between the beams, on the post bases", why)
+    elif lowest:
+        why = "the floor is kept low"
+    pl.decide(s, "Frame" if kb == "beam_item" else "Floor frame", "joists hung between the beams, on the post bases", why)
     if changed:
         nm = lambda k: pl.section_name(lib, k)
         pl.decide(s, "Beams and joists", f"beams of {nm(res.beam)} and joists of {nm(res.joist)}",
@@ -1005,7 +1025,7 @@ def _terrace_spec(raw):
             if caps[k] < 300:
                 raise SpecError(f"{k}: must be at least 300 mm")
     u = s["units"]
-    _plan_terrace_frame(raw, s, lib, t, caps, ld)
+    _plan_terrace_frame(raw, s, lib, t, caps)
     row = caps.get("row_spacing")
     if row is None:
         allowed = fc.joist_allowed(lib, s, ld)

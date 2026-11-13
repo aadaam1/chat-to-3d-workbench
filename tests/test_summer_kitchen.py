@@ -405,7 +405,7 @@ def test_a_door_in_a_side_wall():
 
 def test_the_floor_height_has_a_floor():
     with pytest.raises(fr.SpecError, match="too low"):
-        fr.generate(variant("gable", [], "terrace", floor_height=300))
+        fr.generate(variant("gable", [], "terrace", floor_height=200))
 
 
 def test_edits_and_the_checks_after_an_edit():
