@@ -1,7 +1,7 @@
 # Timber building blocks
 
-Status: in progress (B1-B4 done; B5 decided 2026-11-13)
-Last updated: 2026-11-12
+Status: done (B1-B5 shipped; the lean-to and the open questions below remain)
+Last updated: 2026-11-13
 
 ## The question
 
@@ -159,6 +159,39 @@ beam was needed); `open-bracing` checks both directions and names the post and d
 joint `brace-rafter`. Not done: sandwich beams, decorative rafter tails, wind and uplift. The 45 degree rule and the leg
 length are builders' rules of thumb; no page was read to confirm them (marked unverified in
 the libraries, source `pergola-practice`).
+
+B5 done (2026-11-13): `"type": "summer-kitchen"` (`recipes.summer_kitchen`, `timber/kitchen.py`
+with `KitchenLayout`, `KitchenWall`, `BeamRoofLine` and `build_floor`). Posts, footings and `Beam` are the
+pergola's; the roof blocks now bear on any member they are given: `MonoRoof` and `GableRoof` take a bearing
+member or a list of them (the plies of a beam, joint `rafter-beam`) in place of a wall plate, a rafter
+positions list (one centred over every post), the beams' inset from the footprint (`eave_inset`: the gable
+line and the eave blocking follow the beam's outer face) and a range for the gable ties; a roof on beams
+also ties the end pair on its inner side. The mono line is `BeamRoofLine` (through the front beam's inner
+top edge and the back beam's outer top edge); the gable keeps `GableLine`. `Wall` got hooks (the ids' prefix
+and group, the openings, where the sheathing strips end, the top plate's span, the cladding clip) so a panel
+between two posts is a `KitchenWall`, built like a shed's side wall. The oracle: the 30 earlier hashes did not
+move; the two kitchen fixtures are new cases. Decisions:
+- **Footprint** `width` x `depth` is the outer faces of the posts; the roof overhangs past it as on a shed;
+  the beam is centred on its posts and may be narrower (never wider), so its outer face is a few mm in.
+- **Walls** are infill, one panel per bay between two posts, the inner face flush with the posts' inner
+  faces (the frame must be no wider than a post), so no wall overlaps another or a post. The top plate's top
+  is the underside of the beam (the lower beam on the ends); a back wall's plate touches the beam, an end wall's
+  infill studs rise to the end rafter. The beams rest on the posts alone, so a **header carries no roof load**
+  and is not checked (a note says so). Sheathing sticks out of the post plane by the skin's thickness less
+  what the posts are wider than the frame; it is not recessed.
+- **Sole plate** under the bottom plates: the wall's frame section lying flat, treated, fixed to the two posts,
+  at the post feet without a floor and level with the deck with one.
+- **Floor** `terrace`: a terrace platform (own footings, posts when tall enough, beams, joists, boards) filling
+  the clear rectangle between the posts' and walls' inner faces, so the deck is built around the posts and
+  touches none; the walls' sole plates lie in the strip the posts occupy. The default beams need a floor at
+  least about 600 mm high; a lower floor needs joists straight on footings, not built. Footings that would
+  overlap the posts' (pier blocks) are refused.
+- **Knee braces** on open sides with the pergola's rules; the cross braces go up to the sloping rafter underside
+  and are cut along it (`sloped_brace`); the corner posts of a walled end have none, a back line with a wall
+  has no along-beam braces. `open-bracing` knows the exemptions.
+- A mono roof's side walls taller than a sheet are sheathed in two rows, as a gable end is.
+Not done: a front wall or a door-sized opening in the front, a hip roof, a lean-to against a host wall, chimney
+and stove, a floor under 600 mm, sandwich beams, wind and uplift.
 
 ## Outdoor structures (B3–B5), decided 2026-11-13
 

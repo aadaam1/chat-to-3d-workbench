@@ -89,6 +89,16 @@
   "checks": "2e22516132e2c4cfe0039300fd38b70e63540824fa0f57908c5ea16a5918e053",
   "frame": "a66d12cbd6169b4581573ac3655a53cdc6ce71bcb05f7ba37d1496f353e14fe5"
  },
+ "summer-kitchen-eu": {
+  "bom": "39ce88547dfe647c06fea47fd105d7cc3f98522c1bd7d2c001fabab2978e4243",
+  "checks": "02bdfabb88911a2f5c833c0363fd79cc0c226c2c9410df816346eeea25c61206",
+  "frame": "11f3cfe38d8f7a0190538cfd654bb583b63e45f76a26f0ba3115a2a51676aa26"
+ },
+ "summer-kitchen-us": {
+  "bom": "9f0dd28bed3b5bcc8aa4e07bf2c099f8260120b7cf060e9babf9a91b355ee8e9",
+  "checks": "8b86a1ad51d0fbcfb4477375aab405cd48d93764eb02eeae9e53a45cd5f41ae2",
+  "frame": "fd5119812336a38473ddb70a89291b40026974c6001d23dd3fa8599d10379012"
+ },
  "terrace-eu": {
   "bom": "ba3b9e3b04add4b00a5ec4460579d69c3ef78462bbcad86349175174bbe8af44",
   "checks": "af0e5d57fc9c33b4c1374f12c2ad26baaf3bdba229c69a5b6fe5c2827d3d72ed",
