@@ -597,6 +597,26 @@
       "per_crossing": 2,
       "note": "two stainless screws where a deck board crosses a joist"
     },
+    "brace-post": {
+      "fastener": "bolt-m12",
+      "per_joint": 1,
+      "note": "knee brace foot bolted through the post (M12 x 200 passes a 75-89 mm brace and the post); unverified, a builder's rule of thumb"
+    },
+    "brace-beam": {
+      "fastener": "screw-corner",
+      "per_joint": 2,
+      "note": "knee brace head screwed up into each beam ply: two structural screws per ply (unverified)"
+    },
+    "rafter-beam": {
+      "fastener": "screw-rafter",
+      "per_joint": 1,
+      "note": "rafter on top of the beam, one skew structural screw into each beam ply it crosses (uplift); a hurricane tie is the upgrade for windy sites (unverified, uplift not checked)"
+    },
+    "slat-rafter": {
+      "fastener": "screw-deck",
+      "per_crossing": 1,
+      "note": "one stainless screw where a slat crosses a rafter (unverified)"
+    },
     "_meta": {
       "sources": [
         "deck-practice",
@@ -694,6 +714,30 @@
       ],
       "unverified": true,
       "note": "Terrace defaults are workbench choices. The maximum post and row spacings are caps: the generator also keeps each span under 80% of what the span formulas allow. 'min_post_mm': a post shorter than this is left out and the beams sit on the post bases. 'railing_height_mm': a terrace higher than this is flagged as needing a railing."
+    },
+    "pergola": {
+      "foundation": "ground_screw",
+      "post_item": "6x6",
+      "beam_item": "2x10",
+      "beam_plies": 2,
+      "beam_mount": "on_top",
+      "rafter_item": "2x6",
+      "rafter_spacing_mm": 610,
+      "overhang_mm": 305,
+      "beam_overhang_mm": 305,
+      "slat_item": "1x4",
+      "slat_spacing_mm": 152,
+      "brace_item": "4x4",
+      "brace_leg_mm": 610,
+      "max_post_spacing_mm": 2438,
+      "height_mm": 2300,
+      "sources": [
+        "pergola-practice",
+        "deck-practice",
+        "ground-screws"
+      ],
+      "unverified": true,
+      "note": "Pergola defaults are workbench choices. 'height_mm' is the underside of the beams above the ground. 'overhang_mm' is how far the rafters reach past the outer face of each beam, 'beam_overhang_mm' how far a beam reaches past its end post's centre line. The maximum post spacing is a cap: the generator also keeps each beam span under 80% of what the span formulas allow. Knee braces: 45 degrees, centreline legs of 'brace_leg_mm' (the common builders' figure of about 2 ft; not read from a standard)."
     }
   },
   "bought": {
@@ -972,6 +1016,13 @@
       "url": "https://codes.iccsafe.org/content/IRC2021P1/chapter-5-floors",
       "read": "2026-11-13",
       "note": "Not read: the 40 psf deck live load is the figure usually quoted from R301.5; R507 span tables were not used. Marked unverified."
+    },
+    {
+      "id": "pergola-practice",
+      "title": "Pergola building practice: posts 100-150 mm, doubled beams on the posts, rafters at 400-600 mm with an overhang of about 300 mm, slats on top, 45 degree knee braces with legs of about 600 mm (builders' and timber-frame guides)",
+      "url": "docs/research/timber-blocks.md",
+      "read": "2026-11-13",
+      "note": "NOT read from a standard or a single page; these are the figures such guides commonly give and are marked unverified. Knee brace angle 45 degrees and leg length about 2 ft are the usual rule of thumb; check local rules and wind loads."
     }
   ]
 }
