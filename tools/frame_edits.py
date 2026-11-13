@@ -26,7 +26,7 @@ OPS = ("move", "resize", "remove", "add")
 KEEPS = ("start", "centre", "end")
 CONTACT = 1.0           # mm: members this close count as touching
 TIMBER = {"joist", "rim", "plate", "stud", "header", "trimmer", "king", "jack", "cripple",
-          "sill", "rafter", "blocking", "brace", "outrigger", "fascia", "bargeboard", "ridge", "tie"}
+          "sill", "rafter", "blocking", "brace", "outrigger", "fascia", "bargeboard", "ridge", "tie", "post", "beam", "slat"}
 KINDS = TIMBER | {"board", "sheet"}
 LAYERS = ("floor", "walls", "roof", "sheathing", "cladding")
 GROUPS = ("floor", "wall-front", "wall-back", "wall-left", "wall-right", "roof")
@@ -198,6 +198,14 @@ def joint_for(a, b, box):
         return None
     for s, t in ((a, b), (b, a)):
         ks, kt = s["kind"], t["kind"]
+        if ks == "brace" and kt == "post":
+            return {"type": "brace-post", "a": s["id"], "b": t["id"]}
+        if ks == "brace" and kt == "beam":
+            return {"type": "brace-beam", "a": s["id"], "b": t["id"]}
+        if ks == "rafter" and kt == "beam":
+            return {"type": "rafter-beam", "a": s["id"], "b": t["id"]}
+        if ks == "slat" and kt == "rafter":
+            return {"type": "slat-rafter", "a": s["id"], "b": t["id"], "crossings": 1}
         if ks == "joist" and kt == "beam":
             return {"type": "joist-beam", "a": s["id"], "b": t["id"]}
         if ks == "beam" and kt == "post":

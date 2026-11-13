@@ -60,7 +60,7 @@ KIND_NAMES = {
     "ridge": ("Ridge board", "ridge boards"), "tie": ("Rafter tie", "rafter ties"),
     "brace": ("Brace", "braces"), "board": ("Cladding board", "cladding boards"),
     "sheet": ("Sheet", "sheets"),
-    "post": ("Post", "posts"), "beam": ("Beam ply", "beam plies"), "deckboard": ("Deck board", "deck boards"),
+    "post": ("Post", "posts"), "beam": ("Beam ply", "beam plies"), "deckboard": ("Deck board", "deck boards"), "slat": ("Slat", "slats"),
 }
 
 # What a recorded joint joins, for the fastener table. Every type in timberlib.JOINT_TYPES has one.
@@ -77,6 +77,8 @@ JOINT_NAMES = {
     "post-base": "post, beam or rim joist to its post base", "beam-post": "beam ply bolted to a post",
     "beam-cap": "beam ply on a post cap", "beam-ply": "beam plies screwed together",
     "joist-beam": "deck joist to beam", "deck-board": "deck board to joist",
+    "brace-post": "knee brace to post", "brace-beam": "knee brace to beam",
+    "rafter-beam": "pergola rafter on a beam", "slat-rafter": "slat to rafter",
 }
 
 
