@@ -1,6 +1,7 @@
 """The timber generator's output must not change when its code is reorganised.
 (The two gable-shed cases were added with the gable roof, the two terrace cases with the
-terrace and the two pergola cases with the pergola; the rest are the pent shed.)
+terrace, the two pergola cases with the pergola and the two summer kitchen cases with the
+summer kitchen; the rest are the pent shed.)
 
 Each case is a description; the sha256 of its frame file (without any
 "assemblies" key), of its check findings and of its shopping list are in
@@ -65,6 +66,8 @@ def cases():
     c["terrace-us"] = _load(os.path.join(FIX, "terrace-us.json"))
     c["pergola-eu"] = _load(os.path.join(FIX, "pergola-eu.json"))       # added with the pergola
     c["pergola-us"] = _load(os.path.join(FIX, "pergola-us.json"))
+    c["summer-kitchen-eu"] = _load(os.path.join(FIX, "summer-kitchen-eu.json"))   # added with the summer kitchen
+    c["summer-kitchen-us"] = _load(os.path.join(FIX, "summer-kitchen-us.json"))
     return c
 
 
@@ -112,9 +115,16 @@ def test_checks_read_assemblies_with_the_same_findings(name):
     through a JSON round trip, as the build script reads the file."""
     import frame, framecheck
     full = frame.generate(copy.deepcopy(CASES[name]))
-    if CASES[name]["type"] in ("terrace", "pergola"):     # their checks read the assemblies only
-        want = ["beams", "deck", "foundations", "posts"] if CASES[name]["type"] == "terrace" else \
-            ["beams", "braces", "foundations", "posts", "rafters", "slats"]
+    if CASES[name]["type"] in ("terrace", "pergola", "summer-kitchen"):     # their checks read the assemblies only
+        want = {"terrace": ["beams", "deck", "foundations", "posts"],
+                "pergola": ["beams", "braces", "foundations", "posts", "rafters", "slats"],
+                "summer-kitchen": None}[CASES[name]["type"]]
+        if want is None:
+            ids = [a["id"] for a in full["assemblies"]]
+            assert {"beams", "braces", "foundations", "posts", "roof"} <= set(ids)
+            assert all(i.startswith("wall-") for i in ids if i not in ("beams", "braces", "foundations", "posts", "roof",
+                                                                   "deck", "floor-beams", "floor-foundations", "floor-posts"))
+            want = sorted(ids)
         assert sorted(a["id"] for a in full["assemblies"]) == want
         for fr in (full, json.loads(frame.dumps(full))):
             got = __import__("hashlib").sha256(json.dumps(framecheck.run(fr), sort_keys=True).encode()).hexdigest()

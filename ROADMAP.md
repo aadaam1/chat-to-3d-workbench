@@ -20,7 +20,9 @@ list of the others. Plan in `docs/research/timber-blocks.md`.
   mono-pitch roof (done).
 - **Gable-roof shed** (done: a ridge board, rafter pairs, ties, gable
   walls), a **pergola** (done: posts, beams, rafters, slats, knee
-  braces), then a **summer kitchen** and a **lean-to**.
+  braces), a **summer kitchen** (done: a mono or gable roof on posts and
+  beams, an optional floor, 0 to 3 walls between the posts), then a
+  **lean-to**.
 - **Foundations:** ground screws, pier blocks and concrete footings under
   a terrace or a shed's floor (done; capacity not checked), then skids.
 - **Terrace** (done: footings, posts, beams, joists, deck boards), then

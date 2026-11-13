@@ -434,8 +434,21 @@ def summer_kitchen(spec, lib):
     posts.assembly()
     beam.assembly()
     braces.assembly()
+    _merge_bought(fr)
     apply_edits(fr, spec)
     return result(fr, spec)
+
+
+def _merge_bought(fr):
+    """One line per bought item and note: the roof's and the floor's footings are listed together."""
+    out = {}
+    for b in fr.bought:
+        key = (b["item"], b["unit"], b.get("note"))
+        if key in out:
+            out[key]["qty"] += b["qty"]
+        else:
+            out[key] = dict(b)
+    fr.bought[:] = list(out.values())
 
 
 def _foundation_clash(fr, kinds=("ground-screw", "pier", "footing", "post-base")):

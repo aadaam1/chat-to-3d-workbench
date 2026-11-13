@@ -371,6 +371,68 @@ the beams at `height`; `width` x `depth` is the whole roofed area.
   brace is missing, or does not touch both the post and the beam or rafter. Wind, uplift, footing capacity and the braces' strength
   are **not** checked; an open pergola can act like a sail.
 
+## Summer kitchen: a roof on beams, walls between the posts, a floor inside them
+
+**In plain words.** A summer kitchen is a roofed open structure: posts on
+footings, a beam on top of each long side (front and back), a mono or gable roof
+resting on the two beams, and, as the person asks, a terrace floor, a wall on the
+back and on either end, and knee braces on whatever is left open.
+`"type": "summer-kitchen"` builds it with the ground at Z 0; `width` x `depth` is
+the rectangle of the posts' outer faces and the roof overhangs past it, as on a
+shed. The front is always open.
+
+**Rules the generator follows.**
+- **Posts and beams** are the pergola's: posts at the four corners and between (at
+  most `post_spacing`, the cap or 80% of what the beam span formula allows under the
+  roof), a one- or two-ply beam on each row on post caps. The beam is centred on its
+  posts and may be narrower, never wider. `height_eaves` is the underside of the lower
+  beam (both beams for a gable roof); a mono roof's front posts are longer.
+- **The roof bears on the beams.** The rafters rest on the beam tops the way they rest
+  on a wall plate: no birdsmouth, the rafter's underside touching the beam's top edge
+  (the inner edge of the front beam and the outer edge of the back beam for a mono
+  roof, the outer edge of both for a gable roof); the joint is `rafter-beam`, to every
+  ply. A mono roof falls from the front beam to the back; `pitch_deg` (default 10)
+  or `height_front` (with `height_back` or `height_eaves` the lower beam) sets it. A
+  gable roof has a ridge board along the width, `pitch_deg` (25) or `height_ridge`,
+  and a tie (a full-length ceiling joist) beside every rafter pair on both beams,
+  fixed to both rafters, as the gable shed has; the end pair gets its tie on the
+  inner side, and a pair over a walled end has none (that wall holds it). A rafter is
+  centred over every post, so a cross brace can reach it.
+- **Walls are infill between the posts.** `walls` lists 0 to 3 sides (`back`, `left`,
+  `right`), each optionally with `openings` (windows, doors; `x` along the wall from
+  the front-left corner of the footprint, as for a shed). A wall is built as one framed
+  panel per bay between two posts: end studs against the posts, a bottom plate, studs,
+  king and jack studs, header, sill and cripples at every opening, one or two top
+  plates (`top_plate`), the sheathing and cladding of the sheds on the outer face. Its
+  inner face is flush with the posts' inner faces (so the frame must be no wider than
+  a post); the top plate's top is the underside of the beam (the lower beam on the
+  ends), so a back wall's top plate touches the beam above it and an end wall's
+  studs rise to the end rafter, as in a shed. A door or window must lie wholly in one
+  bay. The beams rest on the posts alone: **a header carries no roof load** and is not
+  checked; the walls brace by their sheathing and need no knee brace.
+- **Sole plate.** The wall panels' bottom plates stand on a treated sole plate (the
+  wall's frame section lying flat) screwed to the two posts, at the post feet (150 mm
+  or so above the ground) when there is no floor and level with the floor's top when
+  there is one.
+- **Floor** (`"floor": "terrace"`). A terrace platform on its own footings and beams,
+  `floor_height` above the ground (the top of the boards; at least about 600 mm with
+  the default beams; lower needs another build), inside the posts: it fills the area
+  between the posts' inner faces and the walls' inner faces, so the deck is built
+  around the posts and never touches them, and the walls' sole plates lie in the strip
+  the posts occupy. Same rules as the terrace (joists across the beams, boards along
+  the width with a gap, spans checked); its footings must not overlap the posts'
+  (the description is refused if they do, a risk with pier blocks).
+- **Knee braces on every open side**, with the pergola's rules (45 degrees, 600 mm
+  legs, 75 x 75 mm, 700 mm of beam room). Along the beams: on the front row always, on
+  the back row only without a back wall. Across the beams, from each post up to the
+  rafter over it (it follows the sloping underside, cut along it): on every post except
+  the corner posts of a walled end. A side with a wall needs no brace.
+- Checks: the sheds' rafter, ridge, tie, edge, pitch, sheet and opening checks on what
+  is there, the roof beams' spans under snow and the roof's weight, the terrace's checks
+  for the floor, `post-footing`, `beam-bearing` (roof and floor beams) and `open-bracing`
+  for the open sides only. Wind, uplift, racking, footing capacity, fire and flues are
+  **not** checked; say so, and say a stove or chimney needs a qualified person.
+
 ## European (UK/EU) names and equivalents
 
 | In this workbench / US | UK and Europe | Note |

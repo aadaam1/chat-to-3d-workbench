@@ -10,10 +10,12 @@ workbench is a working prototype, and anything may still change.
 ## [Unreleased]
 
 ### Added
+- A summer kitchen (`"type": "summer-kitchen"`): posts and beams under a mono or gable roof, with an optional floor and walls.
 - An open pergola (`"type": "pergola"`) with knee braces.
 - A terrace (`"type": "terrace"`) on ground screws, pier blocks or concrete footings.
 
 ### Changed
+- A structure's description file is `structure.json` (`shed.json` still works).
 - The preview's verdict says "Looks good" instead of "Ready to build" or "Ready to order", with the disclaimer right under it.
 
 ## [0.6.0] - 2026-11-12

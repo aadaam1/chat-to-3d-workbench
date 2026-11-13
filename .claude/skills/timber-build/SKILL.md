@@ -106,7 +106,20 @@ centres, 300 mm), `slats` (`"none"`, or `{"item": "25x50", "spacing": 150}`), `b
 (true), `post_spacing` (a cap, otherwise worked out), `loads.snow_kn_m2`. It builds
 footings, posts, two beams, rafters, slats and 45 degree knee braces (see `framing.md`) and
 checks the spans and `open-bracing`; `braces: false` is allowed but the check then says to
-add them. Bracing across the beams, wind and uplift are not covered: say so. A new shed goes in
+add them. Wind and uplift are not covered: say so. A summer kitchen is
+`"type": "summer-kitchen"` with `width` and `depth` (the posts' outer faces; the roof
+reaches past them) and `roof` (`gable`, the default, or `mono`); `height_eaves` (the
+underside of the lower beam, 2200 mm), and for the slope `pitch_deg` (25 gable, 10 mono) or
+`height_ridge` (gable) or `height_front` (mono); `floor` (`none` or `terrace`, with
+`floor_height`, at least about 600 mm); `walls`, a list of up to three sides (`back`,
+`left`, `right`, the front stays open), each a name or `{"side": "back", "openings": [{"kind":
+"window", "x": 400, "sill": 900, "width": 900, "height": 700}]}` (an opening lies wholly in one
+bay between two posts); and the usual `foundation`, `post_item`, `beam_item`, `beam_plies`,
+`rafter_item`, `rafter_spacing`, `overhang`, `overhang_side`, `braces`, `post_spacing`, items
+and `loads`. It builds footings, posts, two beams, the roof on them, the floor and the walls
+you list (framed panels between the posts, `framing.md`) and knee braces on every open side.
+Say that the walls are infill (the posts carry the roof) and that a stove or flue is
+not covered. A new shed goes in
 `projects/<name>/`, which git ignores: do not create a branch, commit, pull
 request or changelog entry for a design.
 
@@ -198,7 +211,8 @@ roofing beyond the felt area, paint or stain. Say which lines have no price.
 
 ## What it cannot do yet
 
-Four building types: a mono-pitch shed, a gable-roof shed (both on a timber
-floor, optionally on footings), a terrace and an open pergola. No hip roofs,
+Five building types: a mono-pitch shed, a gable-roof shed (both on a timber
+floor, optionally on footings), a terrace, an open pergola and a summer kitchen (a roof on
+posts and beams, with a floor and walls if wanted). No hip roofs,
 no lean-to against a house, no railings or steps, no doors or windows drawn as objects. If someone needs one of these, say so; don't bend the shed
 description into something it isn't.
