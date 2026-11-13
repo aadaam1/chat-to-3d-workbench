@@ -77,11 +77,11 @@ def spacing_note(allowed, cap, limiter, what):
 
 def spacing_why(note, units):
     n = note
-    t = (f"{n['what']} is good for {length_text(n['allowed'], units)}; the generator keeps spans under "
-         f"{sp.SPACING_SHARE:.0%} of that")
+    good = f"{n['what']}: good for {length_text(n['allowed'], units)}"
     if n["limiter"] == "cap":
-        t += f", and no further apart than the library's {length_text(n['cap'], units)}"
-    return t
+        return (f"{good}; the library's usual maximum of {length_text(n['cap'], units)} is within "
+                f"{sp.SPACING_SHARE:.0%} of that, so it applies")
+    return f"{good}; spans are kept under {sp.SPACING_SHARE:.0%} of that, in steps of {STEP:g} mm"
 
 
 def decide_grid(spec, what, noun, positions, note):
