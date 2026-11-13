@@ -10,6 +10,7 @@ workbench is a working prototype, and anything may still change.
 ## [Unreleased]
 
 ### Added
+- An open pergola (`"type": "pergola"`) with knee braces.
 - A terrace (`"type": "terrace"`) on ground screws, pier blocks or concrete footings.
 
 ### Changed
