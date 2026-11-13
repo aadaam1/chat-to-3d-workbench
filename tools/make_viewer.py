@@ -127,12 +127,17 @@ def build_version(frame_path, bom_path, checks_path, n, meta):
     checks = read_json(checks_path)
     if isinstance(checks, dict):
         checks = checks.get("findings", checks.get("checks"))
-    return {"n": n, "note": meta.get("note", ""), "created": meta.get("created", ""),
+    ground = next((sp["ground_mm"] for a in frame.get("assemblies", []) if a.get("type") == "foundations"
+                   for sp in a["spans"] if "ground_mm" in sp), None)      # footings reach below it
+    out = {"n": n, "note": meta.get("note", ""), "created": meta.get("created", ""),
             "parts": [{"label": frame.get("name", "structure"), "report": None}],
             "build": {"name": frame.get("name", "structure"), "region": frame.get("region", "eu"),
                       "units": frame.get("units", "metric"), "items": items,
                       "members": [{k: m.get(k) for k in MEMBER_FIELDS} for m in frame["members"]],
                       "bought": frame.get("bought", []), "checks": checks, "bom": read_json(bom_path)}}
+    if ground is not None:
+        out["build"]["ground"] = ground
+    return out
 
 
 def main_build(a):

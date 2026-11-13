@@ -98,4 +98,5 @@ class Footings:
     def assembly(self):
         self.fr.assembly("foundations", "foundations", [
             {"role": "footings", "kind": "footing", "count": len(self.records), "item": self.it["key"],
-             "foundation": self.f["kind"]}])
+             "foundation": self.f["kind"],
+             "ground_mm": self.records[0]["ground"] if self.records else 0.0}])
