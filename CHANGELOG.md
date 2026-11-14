@@ -9,6 +9,10 @@ workbench is a working prototype, and anything may still change.
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-14
+
+A planner that sizes the frame and says why, low terraces, long sheds, and a tidier preview
+
 ### Added
 - `tools/frame.py --types` and `--fields <type>` list what can be built and every setting.
 - Preview: a "How it was planned" section listing the sizes the planner chose and why.
@@ -139,6 +143,7 @@ The first version.
 - The tap aerator example.
 - Setup for macOS and Linux, a copy-paste setup prompt, and a self-test.
 
-[Unreleased]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/aadaam1/chat-to-3d-workbench/releases/tag/v0.6.0
