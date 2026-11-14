@@ -201,8 +201,11 @@ def kitchen(c):
         F("fascia_item", "fascia and bargeboards", "the rafter section", c.sections(), None),
         F("ridge_item", "gable roof: the ridge board", "the smallest deep-enough section", c.sections(), None),
         F("tie_item", "gable roof: the ties (a deeper section than the rafters is fine)", "the rafter section", c.sections(), None),
-        F("ties", "gable roof: where the ties go: beside every rafter pair, or only over each post line "
-          "(the eave beams then bend sideways between them; see the rafter-thrust check)", "pair", "pair or posts", "pair"),
+        F("ties", "gable roof: where the ties go: beside every rafter pair, only over each post line, or only over the two "
+          "end post lines (the eave beams then bend sideways between them; see the rafter-thrust check)", "pair",
+          "pair, posts or ends", "pair"),
+        F("eave_blocking", "with roof_deck none: false leaves out the blocks between the rafters over the eave beams "
+          "(the gaps stay open)", "true", "true or false (false only with roof_deck none)", True),
         F("roof_deck", "roof deck sheets, or none: bare rafters that carry tile battens (gable roof; the roofing felt "
           "stays on the list, battens and tiles do not)", d["items"]["roof_deck"], c.sheets() + "; or none", d["items"]["roof_deck"]),
         F("roofing", "the roof covering", "roofing-felt", "a roofing sold by area: " + c.keys("bought", lambda v: v.get("unit") == "m2"), "roofing-felt"),

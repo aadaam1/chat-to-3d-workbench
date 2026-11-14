@@ -445,6 +445,12 @@ shed. The front is always open.
   go from each post's inner face up to the tie's underside (level, at the beams' top), so they
   reach it at any pitch; the sloping-rafter brace of the default fails to reach the post's
   top above about 30 degrees.
+- **End ties only** (`ties: ends`) keeps the ties over the two end post lines; the posts between
+  them get no cross brace (nothing to brace up to; the along-beam braces stay). The eave beam then
+  spans the whole building sideways: the `rafter-thrust` check passes for a short one (about 2.4 m
+  wide with the default beams) and flags a 4 m one, where the answer is `ties: posts` or a stiffer
+  eave beam. `eave_blocking: false` (with `roof_deck: none` only) leaves out the blocks between the
+  rafters over the eave beams; the gaps stay open, and `roof-bay-blocking` says so.
 - **Walls are infill between the posts.** `walls` lists 0 to 3 sides (`back`, `left`,
   `right`), each optionally with `openings` (windows, doors; `x` along the wall from
   the front-left corner of the footprint, as for a shed). A wall is built as one framed

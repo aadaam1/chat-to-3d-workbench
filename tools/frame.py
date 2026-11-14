@@ -489,12 +489,20 @@ def _kitchen_spec(raw):
     else:
         s["roof_deck"] = _pick_item(raw, lib, "roof_deck", items["roof_deck"], ("sheets",), "a sheet")
     if "ties" in raw:
-        if raw["ties"] not in ("pair", "posts"):
-            raise SpecError("ties: use pair (a tie beside every rafter pair) or posts (a tie over each post line only)")
-        if raw["ties"] == "posts":
+        if raw["ties"] not in ("pair", "posts", "ends"):
+            raise SpecError("ties: use pair (a tie beside every rafter pair), posts (a tie over each post line only) "
+                            "or ends (a tie over the two end post lines only)")
+        if raw["ties"] != "pair":
             if not gable:
                 raise SpecError("ties: only for a gable roof (a mono roof has no rafter pairs to tie)")
-            s["ties"] = "posts"                           # left out of the spec when it is the default
+            s["ties"] = raw["ties"]                       # left out of the spec when it is the default
+    if "eave_blocking" in raw:
+        if not isinstance(raw["eave_blocking"], bool):
+            raise SpecError("eave_blocking: use true or false")
+        if not raw["eave_blocking"]:
+            if s["roof_deck"] != "none":
+                raise SpecError("eave_blocking: false only with roof_deck: none (a deck's edge needs the block under it)")
+            s["eave_blocking"] = False                    # left out of the spec when it is the default
     s["cladding"] = _pick_item(raw, lib, "cladding", items["cladding"], ("cladding",), "cladding")
     s["post_item"] = _pick_item(raw, lib, "post_item", pg["post_item"])
     s["beam_item"] = _pick_item(raw, lib, "beam_item", pg["beam_item"])
