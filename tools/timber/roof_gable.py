@@ -115,8 +115,8 @@ class GableRoof(SlopeRoof):
             {"role": "rafters", "kind": "rafter", "spacing_mm": _norm(s["rafter_spacing"]),
              "deck": s["roof_deck"], "deck_role": "roof", "deck_group": "roof",
              "span_mm": run, "pitch_deg": _norm(s["pitch_deg"])},
-            {"role": "rafter ties", "kind": "tie", "spacing_mm": _norm(s["rafter_spacing"]),
-             "span_mm": r1(self.D)},
+            dict({"role": "rafter ties", "kind": "tie", "spacing_mm": _norm(s["rafter_spacing"]),
+                  "span_mm": r1(self.D)}, **({"ties": "posts"} if s.get("ties") == "posts" else {})),
             {"role": "ridge board", "kind": "ridge", "span_mm": r1(self.W + 2 * s["overhang_side"])}])
         return self
 
@@ -158,14 +158,18 @@ class GableRoof(SlopeRoof):
         lu_h = (D + oh - y_ref) / cs           # underside, ridge plumb line to eave plumb line
         u_e = lu_h - wr * tan_a                # the rafter tops' plumb line at the eave
         U_E = u_e + ext                        # the deck's outer edge, over the fascia
-        short, long_ = self.rdeck["size_mm"]
         # from the fascia's outer face up to 8 mm short of the apex: the two slopes' decks never touch, the ridge cap covers the gap
         self.deck_len = deck_len = lu_h + ext + tg / (2 * cs) - RIDGE_GAP
-        rows = deck_rows(deck_len, short)      # rows from the eave up to the ridge
+        if self.rdeck is None:                 # roof_deck: none, bare rafters under tile battens: no sheets, no seams
+            short = long_ = None
+            rows = []
+        else:
+            short, long_ = self.rdeck["size_mm"]
+            rows = deck_rows(deck_len, short)  # rows from the eave up to the ridge
         seams = [U_E - e for e in rows[1:-1]]
         eaves = [(D - self.eave_in - y_ref - wr * sn) / cs - tr / 2]               # block's outer face over the eave wall
         eaves = [u for u in eaves if all(abs(u - v) >= tr for v in seams)]
-        td = self.rdeck["thickness_mm"]
+        td = self.rdeck["thickness_mm"] if self.rdeck else 0.0
         barge_len = (D + oh - D / 2) / cs
         # the ties lie beside their rafters on the +X side; the blocking in that bay is shortened to fit
         tit = tl.item(lib, s["tie_item"])
@@ -180,12 +184,23 @@ class GableRoof(SlopeRoof):
         tie_x = {i: xs[i] + tr for i in tied}
         if tie_last:
             tie_x[last] = xs[last] - tt
+        tie_posts = getattr(self.lay, "tie_posts", None)    # ties: posts: only the tie nearest each post line, if it lies over the post
+        if tie_posts is not None:
+            keep = {}
+            for u, half in tie_posts:
+                best = min(tie_x, key=lambda i: abs(tie_x[i] + tt / 2 - u), default=None)
+                if best is not None and abs(tie_x[best] + tt / 2 - u) <= half + EPS:
+                    keep[best] = tie_x[best]
+            tie_x = keep
+            tied = [i for i in tied if i in keep]
+            tie_last = tie_last and last in keep
         self.rafters = {sl: [] for sl in SLOPES}
         self.flying = {sl: [] for sl in SLOPES}
         self.roof_blocks = {sl: [] for sl in SLOPES}
         self.roof_sheets = {sl: [] for sl in SLOPES}
         self.barges = []
         self.ties = []
+        self.tie_pos = {}                       # tie id -> (x0, x1)
         ztop_f = L.slope(-oh) + wr / cs - tf * tan_a     # fascia tops, dropped to clear the deck over them
         outer_x = [("left", -os_ - tf), ("right", W + os_)]
         for sl in SLOPES:
@@ -297,6 +312,7 @@ class GableRoof(SlopeRoof):
                            [D, wt, tt], [tie_x[i] + tt / 2, D / 2, he + wt / 2], (0, 1, 0), (0, 0, 1),
                            outline=poly)
             self.ties.append(tid)
+            self.tie_pos[tid] = (tie_x[i], tie_x[i] + tt)
             for sl in SLOPES:
                 self.joint("tie-rafter", tid, self.rafters[sl][i])
                 for b in ([self.bear[sl]] if isinstance(self.bear[sl], str) else self.bear[sl]):
@@ -316,6 +332,8 @@ class GableRoof(SlopeRoof):
         wide = self.W + 2 * (s["overhang_side"] + tf)
         area = 2 * (wide / 1000) * (self.deck_len / 1000)
         note = f"roof area (2 slopes of {wide / 1000:g} x {self.deck_len / 1000:.3f} m) plus 10% overlap"
+        if self.rdeck is None:
+            note += "; battens and the covering itself are not on this list"
         self.bought.append({"item": s["roofing"], "qty": round(area * 1.1, 2), "unit": "m2", "note": note})
         cap = (wide / 1000) * 1.1
         self.bought.append({"item": "ridge-cap", "qty": round(cap, 2), "unit": "m",

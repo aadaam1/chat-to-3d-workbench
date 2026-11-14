@@ -2,7 +2,7 @@
 (The two gable-shed cases were added with the gable roof, the two terrace cases with the
 terrace, the two pergola cases with the pergola and the two summer kitchen cases with the
 summer kitchen, the five "planned-" cases with the planner, the "low-" and "long-" cases with the flush frame
-and the joining of pieces longer than the timber on sale; the rest are the pent shed.)
+and the joining of pieces longer than the timber on sale, the "tiled-" cases with the open tiled roof; the rest are the pent shed.)
 
 Each case is a description; the sha256 of its frame file (without any
 "assemblies" or "decisions" key), of its check findings and of its shopping list are in
@@ -83,6 +83,13 @@ def cases():
     c["low-kitchen-default-floor"] = {"type": "summer-kitchen", "width": 4000, "depth": 3000, "roof": "gable", "floor": "terrace"}
     c["long-pent-6x3"] = {"type": "pent-shed", "width": 6000, "depth": 3000}
     c["long-gable-7x3"] = {"type": "gable-shed", "width": 7000, "depth": 3000}
+    # added with the open tiled roof (roof_deck: none, ties: posts)
+    tiled = {"type": "summer-kitchen", "width": 4000, "depth": 3000, "roof": "gable", "height_eaves": 2200,
+             "loads": {"snow_kn_m2": 1.6}}
+    c["tiled-open-30"] = dict(tiled, pitch_deg=30, roof_deck="none", ties="posts")
+    c["tiled-open-35"] = dict(tiled, pitch_deg=35, roof_deck="none", ties="posts")
+    c["tiled-deck-none-pair-ties"] = dict(tiled, pitch_deg=30, roof_deck="none")
+    c["tiled-sheets-posts-ties"] = dict(tiled, pitch_deg=35, ties="posts", tie_item="50x200")
     return c
 
 

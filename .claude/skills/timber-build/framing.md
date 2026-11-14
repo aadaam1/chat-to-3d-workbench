@@ -410,6 +410,24 @@ shed. The front is always open.
   fixed to both rafters, as the gable shed has; the end pair gets its tie on the
   inner side, and a pair over a walled end has none (that wall holds it). A rafter is
   centred over every post, so a cross brace can reach it.
+- **Bare rafters** (`roof_deck: none`, gable roof only). No deck sheets and no seam blocking:
+  the rafters carry the tile battens (not built, not on the list). Eave blocking, fascia, outriggers
+  and the ridge stay; the roofing (felt) area stays on the list with a note that battens and the
+  covering are not on it; the sheet-spacing check has nothing to check. The roof's dead load is the
+  `roofing` item's, so a clay-tile covering is not counted (it weighs roughly 10 times a felt).
+- **Ties over the posts only** (`ties: posts`, gable roof only; default `pair` is the paragraph
+  above). A tie (`tie_item`, may be deeper than the rafter) lies on top of both beams over each post
+  line, beside the rafter next to the post (that pair is centred on the post; the end pairs sit at
+  the ends), fixed to both rafters and both beams; a walled end has none. The `rafter-ties` check
+  is replaced by `rafter-thrust`: each pair pushes its eaves out by H = w a / (2 tan pitch) per
+  metre of beam (a pair as a three-hinged arch), the eave beam is checked in sideways bending
+  between tie lines (the plies as one section, simply supported) and each tie in tension for its
+  share of both beams. A simple estimate, not engineering; the fixings at the tie and rafter ends
+  and the beam's up-and-down and sideways bending together are not checked
+  (docs/research/timber-structures.md, "Open tiled roof"). The knee braces across the beams then
+  go from each post's inner face up to the tie's underside (level, at the beams' top), so they
+  reach it at any pitch; the sloping-rafter brace of the default fails to reach the post's
+  top above about 30 degrees.
 - **Walls are infill between the posts.** `walls` lists 0 to 3 sides (`back`, `left`,
   `right`), each optionally with `openings` (windows, doors; `x` along the wall from
   the front-left corner of the footprint, as for a shed). A wall is built as one framed
@@ -437,8 +455,8 @@ shed. The front is always open.
 - **Knee braces on every open side**, with the pergola's rules (45 degrees, 600 mm
   legs, 75 x 75 mm, 700 mm of beam room). Along the beams: on the front row always, on
   the back row only without a back wall. Across the beams, from each post up to the
-  rafter over it (it follows the sloping underside, cut along it): on every post except
-  the corner posts of a walled end. A side with a wall needs no brace.
+  rafter over it (it follows the sloping underside, cut along it; with `ties: posts`, up to
+  the tie over it): on every post except the corner posts of a walled end. A side with a wall needs no brace.
 - Checks: the sheds' rafter, ridge, tie, edge, pitch, sheet and opening checks on what
   is there, the roof beams' spans under snow and the roof's weight, the terrace's checks
   for the floor, `post-footing`, `beam-bearing` (roof and floor beams) and `open-bracing`

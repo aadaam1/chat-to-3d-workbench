@@ -9,6 +9,9 @@ workbench is a working prototype, and anything may still change.
 
 ## [Unreleased]
 
+### Added
+- Summer kitchen: `roof_deck: none` (bare rafters for tile battens) and `ties: posts` (ties over the post lines only, braces up to them), with a `rafter-thrust` check.
+
 ## [0.7.1] - 2026-11-14
 
 A planner that sizes the frame and says why, low terraces, long sheds, and a tidier preview
