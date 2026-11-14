@@ -1120,8 +1120,9 @@ def check_open_bracing(f):
     fr = f.frame
     recs = [sp for a in fr.get("assemblies", []) if a["type"] == "beams" for sp in a["spans"] if sp["kind"] == "beam"]
     posts, braces, rafters = _members(f, "post"), _members(f, "brace"), _members(f, "rafter")
-    if fr["spec"].get("ties") == "posts":       # the braces across the beams go up to the tie over the post
+    if fr["spec"].get("ties") in ("posts", "ends"):       # the braces across the beams go up to the tie over the post
         rafters = rafters + _members(f, "tie")
+    tie_x = [sum(box_corners(t)[:, 0].tolist()) / 8.0 for t in _members(f, "tie")] if fr["spec"].get("ties") == "ends" else None
     if not (recs and posts):
         f.add("open-bracing", "ok", "Open bracing", "There are no posts under beams in this frame.")
         return
@@ -1154,6 +1155,8 @@ def check_open_bracing(f):
                 if not ok:
                     missing.append((p["id"], "along the beam"))
             other = [x for x in lines if abs(x - r["line"]) > 1.0]
+            if tie_x is not None and not any(abs(x - c[ax]) <= half + 1.0 for x in tie_x):
+                other = []                      # ties: ends: a post between the end ties has no tie to brace up to
             if other and not end_wall:
                 inward = 1 if other[0] > r["line"] else -1
                 pc = box_corners(p)[:, 1 - ax]
@@ -1167,7 +1170,7 @@ def check_open_bracing(f):
                         missing.append((p["id"], "across the beams"))
     if missing:
         names = ", ".join(sorted({f"{m[0]} ({m[1]})" for m in missing}))
-        head = "tie" if fr["spec"].get("ties") == "posts" else "rafter"
+        head = "tie" if fr["spec"].get("ties") in ("posts", "ends") else "rafter"
         f.add("open-bracing", "fix", "Post corner with no knee brace",
               f"{len(missing)} post corner(s) have no knee brace touching both the post and what it braces against "
               f"(posts: {names}). An open side has no wall to stop it racking, so every post needs a 45 degree brace up "
@@ -1280,10 +1283,12 @@ def check_kitchen_thrust(f):
         ok = ok and all(frozenset((t["id"], m["id"])) in joined for m in pair if m)
         if not ok:
             loose.append(t["id"])
-    posts = [m for m in _members(f, "post") if centre(m)[1] < D / 2.0]
+    posts = sorted((m for m in _members(f, "post") if centre(m)[1] < D / 2.0), key=lambda m: centre(m)[0])
+    if spec.get("ties") == "ends":
+        posts = [posts[0], posts[-1]] if len(posts) > 1 else posts      # only the two end post lines are tied
     tie_x = [sum(_extent([t], 0)) / 2.0 for t in ties]
     need, lacking = [], []
-    for p in sorted(posts, key=lambda m: centre(m)[0]):
+    for p in posts:
         lo, hi = _extent([p], 0)
         if (lo < 1.0 and "left" in walled) or (hi > W - 1.0 and "right" in walled):
             continue                                        # a walled end is held by its wall
@@ -1346,7 +1351,7 @@ def run_kitchen(f):
     check_kitchen_beams(f)
     if is_gable(fr):
         check_ridge(f)
-        (check_kitchen_thrust if spec.get("ties") == "posts" else check_kitchen_ties)(f)
+        (check_kitchen_thrust if spec.get("ties") in ("posts", "ends") else check_kitchen_ties)(f)
     check_fascia(f)
     check_pitch(f)
     check_sheet_spacing(f)
@@ -1355,7 +1360,12 @@ def run_kitchen(f):
     check_openings(f)
     check_wall_bracing(f)
     check_kitchen_walls(f)
-    check_bay_blocking(f)
+    if spec.get("eave_blocking") is False:
+        f.add("roof-bay-blocking", "ok", "Gaps between rafters left open",
+              "The gaps between the rafters over the eave beams are left open on purpose (`eave_blocking: false`): wind, rain "
+              "and insects get in under the tiles there unless a bird and insect comb or a screen closes them (not modelled).")
+    else:
+        check_bay_blocking(f)
     check_ground(f)
     if spec["floor"] == "terrace":
         check_terrace_joists(f)

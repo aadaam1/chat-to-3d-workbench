@@ -395,12 +395,12 @@ def summer_kitchen(spec, lib):
     lay = KitchenLayout(spec, lib, ptx, pty)
     lay.hf, lay.hb = zu[0] + hbm, zu[1] + hbm
     lay.eave_inset = e
-    tie_posts = spec.get("ties") == "posts" and gable
+    tie_posts = spec.get("ties") in ("posts", "ends") and gable
     over = us
     if tie_posts:       # a tie beside the rafter next to each inner post, the pair centred on the post (the end pairs sit at the ends)
         ttie = tl.item(lib, spec["tie_item"])["thickness_mm"]
         trf = tl.item(lib, spec["rafter_item"])["thickness_mm"]
-        over = [u - ttie / 2.0 if 0 < i < n - 1 else trf / 2.0 for i, u in enumerate(us)]   # the end rafters are flush with the ends anyway
+        over = [(u - ttie / 2.0 if spec["ties"] == "posts" else u) if 0 < i < n - 1 else trf / 2.0 for i, u in enumerate(us)]   # the end rafters are flush with the ends anyway
     lay.rafter_xs = Rafters(fr, lib, Axes(0), spec["rafter_item"], spec["rafter_spacing"]).positions(W, over)
     if gable:
         rit = tl.item(lib, spec["ridge_item"])
@@ -408,7 +408,7 @@ def summer_kitchen(spec, lib):
         lay.tie_range = (ptx if "left" in walled else 0.0, W - ptx if "right" in walled else W)
         lay.tie_last = "right" not in walled
         if tie_posts:
-            lay.tie_posts = [(u, ptx / 2.0) for u in us]
+            lay.tie_posts = [(u, ptx / 2.0) for i, u in enumerate(us) if spec["ties"] == "posts" or i in (0, n - 1)]
     else:
         line = BeamRoofLine(e + bw, zu[0] + hbm, D - e, zu[1] + hbm)
         lay.rafter_span = D - pty
@@ -549,7 +549,7 @@ def _kitchen_braces(fr, spec, lib, foot, braces, posts, beam, line, roof, pid, u
                                     f"{zu[k]:g} mm is too low for 45 degree knee braces on these posts; use at least "
                                     f"{foot.seat + braces.lowest(leg):g} mm, a shorter brace_leg, or braces: false")
                 braces.add(lines[k], u + side * ptx / 2, side, zu[k], leg, pid[k * n + i]["id"], beam.records[k]["plies"])
-    if gable and spec.get("ties") == "posts":
+    if gable and spec.get("ties") in ("posts", "ends"):
         _tie_braces(fr, spec, lib, foot, braces, posts, line, roof, pid, us, zu, hbm, walled)
         return
     tr = tl.item(lib, spec["rafter_item"])["thickness_mm"]
@@ -610,6 +610,8 @@ def _tie_braces(fr, spec, lib, foot, braces, posts, line, roof, pid, us, zu, hbm
             if (i == 0 and "left" in walled) or (i == n - 1 and "right" in walled):
                 continue
             over = [(tid, x0, x1) for tid, (x0, x1) in roof.tie_pos.items() if u - ptx / 2 - EPS <= (x0 + x1) / 2 <= u + ptx / 2 + EPS]
+            if not over and spec["ties"] == "ends":
+                continue                                    # a post between the end ties has no tie to brace up to
             if not over:
                 raise SpecError("braces: no tie lies over a post; use a thicker post_item, ties: pair or braces: false")
             tid, x0, x1 = min(over, key=lambda o: abs((o[1] + o[2]) / 2 - u))

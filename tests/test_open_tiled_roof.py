@@ -128,6 +128,8 @@ def test_the_thrust_estimate_is_about_what_the_hand_calculation_gives():
     (dict(BASE, roof="mono", roof_deck="none"), "roof_deck"),
     (dict(BASE, ties="every"), "ties"),
     (dict(BASE, roof_deck="paper"), "roof_deck"),
+    (dict(BASE, eave_blocking=False), "eave_blocking"),
+    (dict(TILED, eave_blocking="no"), "eave_blocking"),
 ])
 def test_bad_descriptions_name_the_field(raw, field):
     with pytest.raises(Exception) as e:
@@ -139,3 +141,27 @@ def test_us_region_builds_and_the_checks_run():
     f = build(pitch_deg=35, region="us")
     assert len(kind(f, "tie")) == 3 and "rafter-thrust" in findings(f)
     assert findings(f)["open-bracing"]["level"] == "ok"
+
+
+def test_eave_blocking_can_be_left_out_of_bare_rafters():
+    f = build(pitch_deg=35, eave_blocking=False)
+    assert not kind(f, "blocking")
+    t = findings(f)
+    assert t["roof-bay-blocking"]["level"] == "ok" and "open on purpose" in t["roof-bay-blocking"]["text"]
+    assert all(x["level"] == "ok" for x in t.values())
+    assert kind(build(pitch_deg=35), "blocking")         # on by default
+
+
+def test_end_ties_only_a_short_building_is_held_by_them():
+    f = build(width=2400, pitch_deg=35, ties="ends", eave_blocking=False)
+    assert len(kind(f, "tie")) == 2 and len(kind(f, "post")) == 4
+    assert all(x["level"] == "ok" for x in findings(f).values())
+
+
+def test_end_ties_only_a_long_eave_beam_is_flagged_and_the_middle_posts_have_no_cross_brace():
+    f = build(pitch_deg=35, ties="ends", eave_blocking=False)
+    assert len(kind(f, "tie")) == 2 and len(kind(f, "post")) == 6
+    assert len([b for b in kind(f, "brace") if "/cross-" in b["id"]]) == 4        # the four end posts
+    t = findings(f)
+    assert t["rafter-thrust"]["level"] == "fix" and "open-bracing" in t and t["open-bracing"]["level"] == "ok"
+    assert [i for i, x in t.items() if x["level"] != "ok"] == ["rafter-thrust"]
