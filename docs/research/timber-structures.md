@@ -551,6 +551,14 @@ because the tie lies level on the beams' top and so the brace reaches it at any
 pitch; the sloping-rafter brace of the default does not reach the post top
 above about 30 degrees. `open-bracing` takes the tie as the head in this mode.
 
+**Variants, 2026-11-14.** `ties: ends` keeps the two end ties only (the tie lines
+are then the end post lines, so the eave beam spans nearly the whole building
+sideways): a 2.4 m wide building with the default beams passes, a 4 m one does not
+(3.85 m span against about 2.8 m allowed, deflection governs), so "can the ties
+go?" is answered by the check, not by feel. The posts between the ends get no cross
+brace. `eave_blocking: false` (only with `roof_deck: none`) drops the blocks over the
+eave beams; `roof-bay-blocking` then reports the gaps as open on purpose.
+
 **Open.** Tile and slate weights and the battens on the shopping list (roadmap:
 roof coverings); a mono roof with bare rafters (not built: its blocks are in
 `roof.py`); a check of the beam's combined bending; fixings of the ties.

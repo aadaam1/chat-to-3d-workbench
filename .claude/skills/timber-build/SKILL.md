@@ -133,6 +133,8 @@ Rules that matter:
   their seam blocking (the rafters carry the battens) and `ties: "posts"` puts a tie over each post
   line only, with the cross braces going up to it. **Battens and tiles are not on the shopping list,
   and the roof's weight is the felt's (a tile roof is about ten times heavier, unchecked): say so.**
+  `ties: "ends"` keeps only the two end ties (a short building, or the check says the eave beams
+  would spread); `eave_blocking: false` also drops the blocks over the eave beams (the gaps stay open).
   The `rafter-thrust` check that replaces `rafter-ties` is a hand estimate, not engineering.
 - `examples/garden-shed/` is a worked example (read-only).
 

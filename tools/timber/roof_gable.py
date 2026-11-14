@@ -169,6 +169,8 @@ class GableRoof(SlopeRoof):
         seams = [U_E - e for e in rows[1:-1]]
         eaves = [(D - self.eave_in - y_ref - wr * sn) / cs - tr / 2]               # block's outer face over the eave wall
         eaves = [u for u in eaves if all(abs(u - v) >= tr for v in seams)]
+        if s.get("eave_blocking") is False:      # bare rafters, the gaps over the beams left open
+            eaves = []
         td = self.rdeck["thickness_mm"] if self.rdeck else 0.0
         barge_len = (D + oh - D / 2) / cs
         # the ties lie beside their rafters on the +X side; the blocking in that bay is shortened to fit

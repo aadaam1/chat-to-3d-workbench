@@ -10,7 +10,7 @@ workbench is a working prototype, and anything may still change.
 ## [Unreleased]
 
 ### Added
-- Summer kitchen: `roof_deck: none` (bare rafters for tile battens) and `ties: posts` (ties over the post lines only, braces up to them), with a `rafter-thrust` check.
+- Summer kitchen: `roof_deck: none` (bare rafters for tile battens), `ties: posts` or `ends` (ties over the post lines or the two end lines only, braces up to them) with a `rafter-thrust` check, and `eave_blocking: false`.
 
 ## [0.7.1] - 2026-11-14
 

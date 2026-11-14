@@ -90,6 +90,9 @@ def cases():
     c["tiled-open-35"] = dict(tiled, pitch_deg=35, roof_deck="none", ties="posts")
     c["tiled-deck-none-pair-ties"] = dict(tiled, pitch_deg=30, roof_deck="none")
     c["tiled-sheets-posts-ties"] = dict(tiled, pitch_deg=35, ties="posts", tie_item="50x200")
+    c["tiled-open-no-eave-blocks"] = dict(tiled, pitch_deg=35, roof_deck="none", ties="posts", eave_blocking=False)
+    c["tiled-ends-2400"] = dict(tiled, width=2400, pitch_deg=35, roof_deck="none", ties="ends", eave_blocking=False)
+    c["tiled-ends-4000"] = dict(tiled, pitch_deg=35, roof_deck="none", ties="ends", eave_blocking=False)
     return c
 
 
