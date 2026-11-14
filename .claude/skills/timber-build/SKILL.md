@@ -63,7 +63,8 @@ you building**, then the questions for that recipe, then the common ones.
   across the top or open rafters, free standing (it always is: it has no walls).
 - **Summer kitchen:** width and depth, the roof shape (mono: one slope; gable: a
   ridge), which sides are closed (back, left, right; the front stays open), a
-  deck floor or existing paving, and anything **heavy or hot** (a stove, a flue, a
+  deck floor or existing paving, **what covers the roof** (sheets under a felt or metal
+  roof, or bare rafters under tile battens: `roof_deck: none`, see framing.md), and anything **heavy or hot** (a stove, a flue, a
   wood oven): that is not covered; say so, and that it needs a qualified person.
 - **Everyone:** the country (this picks European or US sizes and units), the
   space available and the distance to the boundary, snow (ask how much or look up
@@ -128,6 +129,11 @@ Rules that matter:
 - A terrace above about 600 mm needs a railing in most places (rails and steps
   are not built yet): the check says so.
 - A summer kitchen's walls are infill (the posts carry the roof).
+- **Tiled roof on an open summer kitchen** (gable): `roof_deck: "none"` leaves out the sheets and
+  their seam blocking (the rafters carry the battens) and `ties: "posts"` puts a tie over each post
+  line only, with the cross braces going up to it. **Battens and tiles are not on the shopping list,
+  and the roof's weight is the felt's (a tile roof is about ten times heavier, unchecked): say so.**
+  The `rafter-thrust` check that replaces `rafter-ties` is a hand estimate, not engineering.
 - `examples/garden-shed/` is a worked example (read-only).
 
 ## 3. Build, check, look

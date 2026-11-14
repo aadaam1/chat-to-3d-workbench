@@ -200,8 +200,11 @@ def kitchen(c):
         F("overhang_side", "roof overhang at the sides", c.L(d["overhang_side_mm"]), "0, or one rafter thickness + 50 mm up to 300 mm", 150),
         F("fascia_item", "fascia and bargeboards", "the rafter section", c.sections(), None),
         F("ridge_item", "gable roof: the ridge board", "the smallest deep-enough section", c.sections(), None),
-        F("tie_item", "gable roof: the ties", "the rafter section", c.sections(), None),
-        F("roof_deck", "roof deck sheets", d["items"]["roof_deck"], c.sheets(), d["items"]["roof_deck"]),
+        F("tie_item", "gable roof: the ties (a deeper section than the rafters is fine)", "the rafter section", c.sections(), None),
+        F("ties", "gable roof: where the ties go: beside every rafter pair, or only over each post line "
+          "(the eave beams then bend sideways between them; see the rafter-thrust check)", "pair", "pair or posts", "pair"),
+        F("roof_deck", "roof deck sheets, or none: bare rafters that carry tile battens (gable roof; the roofing felt "
+          "stays on the list, battens and tiles do not)", d["items"]["roof_deck"], c.sheets() + "; or none", d["items"]["roof_deck"]),
         F("roofing", "the roof covering", "roofing-felt", "a roofing sold by area: " + c.keys("bought", lambda v: v.get("unit") == "m2"), "roofing-felt"),
         F("braces", "45 degree knee braces on open sides", "true", "true or false", True),
         F("brace_item", "the knee braces", p["brace_item"], c.sections(), p["brace_item"]),

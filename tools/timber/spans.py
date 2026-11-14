@@ -216,10 +216,15 @@ def pergola_beam_allowed(lib, spec, detail=False):
 
 # ----- summer kitchen
 
+def roof_deck_mm(lib, spec):
+    """Thickness of the roof deck sheets in mm; 0 when the roof has none (`roof_deck: "none"`)."""
+    return 0.0 if spec["roof_deck"] == "none" else lib["sheets"][spec["roof_deck"]]["thickness_mm"]
+
+
 def kitchen_roof_dead_kn_m2(lib, spec):
     """Permanent roof load of a summer kitchen in kN per m2 of plan: deck, covering, rafters."""
     cos_a = math.cos(math.radians(spec["pitch_deg"]))
-    deck = lib["sheets"][spec["roof_deck"]]["thickness_mm"]
+    deck = roof_deck_mm(lib, spec)
     deck_kn = deck / 1000.0 * _f("common", "sheet_density_kg_m3") * _f("common", "g") / 1000.0
     cov = _f("common", "covering_kn_m2").get(spec.get("roofing"), 0.10)
     r = lib["sections"][spec["rafter_item"]]
@@ -243,11 +248,65 @@ def kitchen_beam_allowed(lib, spec, detail=False):
     return res if detail else res["span_mm"]
 
 
+NET_SECTION = 0.7        # share of a tie's section counted in tension (holes, notches and the trimmed top)
+
+
+def kitchen_thrust(lib, spec, run_mm, ties_x, held_x, beam_ends, tie_item):
+    """The sideways push of a gable roof on its two eave beams when the ties are only over the post lines
+    (`ties: posts`), as a hand estimate. HAND CALCULATION, NOT ENGINEERING (docs/research/timber-structures.md, T9).
+
+    A rafter pair with a ridge board and no tie on that pair is a three-hinged arch: each eave pushes out with
+    H = w a / (2 tan(pitch)) per metre of beam, where w is the roof's load per m2 of plan (the roof's own weight
+    and snow, kept apart for the load factors) and a the horizontal run from the eave to the ridge. That line load
+    bends each eave beam sideways between the tie lines (simply supported, the beam's two plies as one section,
+    its depth for this direction the plies' total width), and each tie carries the push of its share of both
+    beams as a tension T = p x (half the gap to either neighbouring line).
+
+    ties_x: x of every tie line; held_x: x of anything else that holds a beam sideways (a walled end);
+    beam_ends: (x0, x1) of the beam. Returns a dict: `p_g`, `p_q` (kN/m), the longest beam span between lines
+    `span_mm` and what the beam allows `allowed_mm` (with `governs`), the worst tie's tension `T_kn`, what it
+    resists `T_cap_kn` and the load per rafter pair `pair_kn` (at the rafters' spacing)."""
+    a = run_mm / 1000.0
+    tan_a = math.tan(math.radians(spec["pitch_deg"]))
+    g = kitchen_roof_dead_kn_m2(lib, spec) * a / (2.0 * tan_a)
+    q = spec["loads"]["snow_kn_m2"] * a / (2.0 * tan_a)
+    sup = sorted(set(round(x, 1) for x in list(ties_x) + list(held_x)))
+    x0, x1 = beam_ends
+    gaps = [b - a_ for a_, b in zip(sup, sup[1:])] + [2.0 * (sup[0] - x0), 2.0 * (x1 - sup[-1])]
+    span = max(gaps)
+    b = lib["sections"][spec["beam_item"]]
+    res = allowable_span(lib, b["width_mm"], spec["beam_plies"] * b["thickness_mm"], g, q, "snow", repetitive=False,
+                         add_own_weight=False)
+    # each line's share: from the middle of the gap on one side to the middle of the gap on the other
+    mids = [x0] + [(u + v) / 2.0 for u, v in zip(sup, sup[1:])] + [x1]
+    trib = {u: (mids[i + 1] - mids[i]) / 1000.0 for i, u in enumerate(sup)}
+    tie_trib = max((trib[round(u, 1)] for u in ties_x), default=0.0)
+    t = lib["sections"][tie_item]
+    area = t["thickness_mm"] * t["width_mm"] * NET_SECTION
+    grade = lib["grades"][lib["defaults"]["grade"]]
+    ft = grade["tension_mpa"]
+    if lib["region"] == "eu":
+        kh = min((150.0 / t["width_mm"]) ** 0.2, 1.3) if t["width_mm"] < 150 else 1.0
+        gG, gQ, gM = _f("eu", "gamma_G"), _f("eu", "gamma_Q"), _f("eu", "gamma_M")
+        combos = [(gG * g, _f("eu", "k_mod_permanent")), (gG * g + gQ * q, _f("eu", "k_mod_snow"))]
+        use = max(w * tie_trib / (km * kh * ft / gM * area / 1000.0) for w, km in combos)
+        cap = (_f("eu", "k_mod_snow") * kh * ft / gM) * area / 1000.0
+        load = (gG * g + gQ * q) * tie_trib
+    else:
+        combos = [(g, _f("us", "C_D_permanent")), (g + q, _f("us", "C_D_snow"))]
+        use = max(w * tie_trib / (ft * cd * area / 1000.0) for w, cd in combos)
+        cap = ft * _f("us", "C_D_snow") * area / 1000.0
+        load = (g + q) * tie_trib
+    s_m = spec["rafter_spacing"] / 1000.0
+    return {"p_g": g, "p_q": q, "span_mm": span, "allowed_mm": res["span_mm"], "governs": res["governs"],
+            "T_kn": load, "T_cap_kn": cap, "T_use": use, "tie_trib_m": tie_trib, "pair_kn": (g + q) * s_m}
+
+
 # ----- sheds (and any roof on walls or beams): joists, rafters, headers
 
 def roof_dead_plan(lib, spec, cos_a, rafter_b, rafter_d, spacing_mm):
     """Permanent roof load in kN per m2 of plan: deck, covering and the rafters."""
-    deck = lib["sheets"][spec["roof_deck"]]["thickness_mm"]
+    deck = roof_deck_mm(lib, spec)
     dens = _f("common", "sheet_density_kg_m3")
     deck_kn = deck / 1000.0 * dens * _f("common", "g") / 1000.0
     cov = _f("common", "covering_kn_m2").get(spec.get("roofing"), 0.10)

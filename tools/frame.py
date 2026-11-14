@@ -482,7 +482,19 @@ def _kitchen_spec(raw):
     s["header_item"] = _pick_item(raw, lib, "header_item", s["frame_item"])
     s["fascia_item"] = _pick_item(raw, lib, "fascia_item", d.get("details", {}).get("fascia_item", s["rafter_item"]))
     s["sheathing"] = _pick_item(raw, lib, "sheathing", items["sheathing"], ("sheets",), "a sheet")
-    s["roof_deck"] = _pick_item(raw, lib, "roof_deck", items["roof_deck"], ("sheets",), "a sheet")
+    if raw.get("roof_deck") == "none":                    # tiles or other covering on battens over bare rafters
+        if not gable:
+            raise SpecError("roof_deck: none is for a gable roof (a mono roof keeps its sheets)")
+        s["roof_deck"] = "none"
+    else:
+        s["roof_deck"] = _pick_item(raw, lib, "roof_deck", items["roof_deck"], ("sheets",), "a sheet")
+    if "ties" in raw:
+        if raw["ties"] not in ("pair", "posts"):
+            raise SpecError("ties: use pair (a tie beside every rafter pair) or posts (a tie over each post line only)")
+        if raw["ties"] == "posts":
+            if not gable:
+                raise SpecError("ties: only for a gable roof (a mono roof has no rafter pairs to tie)")
+            s["ties"] = "posts"                           # left out of the spec when it is the default
     s["cladding"] = _pick_item(raw, lib, "cladding", items["cladding"], ("cladding",), "cladding")
     s["post_item"] = _pick_item(raw, lib, "post_item", pg["post_item"])
     s["beam_item"] = _pick_item(raw, lib, "beam_item", pg["beam_item"])

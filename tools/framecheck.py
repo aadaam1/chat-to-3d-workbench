@@ -30,7 +30,7 @@ from frame_edits import contact  # noqa: E402   (separating-axis touch test shar
 from timber.spans import (FACTORS, WARN_FRACTION, MAX_FRACTION, SPACING_SHARE, _f, own_weight_kn_m,  # noqa: E402,F401
                          us_size_factor, allowable_span, level_for, terrace_loads, joist_allowed, beam_allowed,
                          _slat_dead_kn_m2, pergola_rafter_span, pergola_rafter_allowed, pergola_beam_allowed,
-                         kitchen_roof_dead_kn_m2, kitchen_beam_trib_mm, kitchen_beam_allowed,
+                         kitchen_roof_dead_kn_m2, kitchen_beam_trib_mm, kitchen_beam_allowed, kitchen_thrust,
                          length_text, floor_joist_allowed, shed_rafter_allowed, header_allowed, header_trib_mm)
 
 # ============================================================== GEOMETRY
@@ -308,6 +308,8 @@ def check_sheet_spacing(f):
     fr = f.frame
     if is_kitchen(fr):                  # a floor of boards has no sheet limit; the walls are there only when listed
         jobs = [("roof", deck_of(fr, "rafter", "roof_deck"), spacing_of(fr, "rafter", "rafter_spacing"), "rafters", "roof")]
+        if jobs[0][1] == "none":        # bare rafters under tile battens: no roof sheets to check
+            jobs = []
         if span_of(fr, "stud"):
             jobs.append(("wall", deck_of(fr, "stud", "sheathing"), spacing_of(fr, "stud", "stud_spacing"), "studs", None))
     else:
@@ -315,6 +317,10 @@ def check_sheet_spacing(f):
                 ("roof", deck_of(fr, "rafter", "roof_deck"), spacing_of(fr, "rafter", "rafter_spacing"), "rafters", "roof"),
                 ("wall", deck_of(fr, "stud", "sheathing"), spacing_of(fr, "stud", "stud_spacing"), "studs", None)]
     bad, lines, unv = [], [], False
+    if not jobs:
+        f.add("sheet-spacing", "ok", "Sheet support spacing",
+              "There are no sheets to check: the roof has no deck (the rafters carry tile battens) and no walls are sheathed.")
+        return
     for role, key, spacing, what, group in jobs:
         rec = limits.get(key, {})
         lim = rec.get(role + "_mm")
@@ -1114,6 +1120,8 @@ def check_open_bracing(f):
     fr = f.frame
     recs = [sp for a in fr.get("assemblies", []) if a["type"] == "beams" for sp in a["spans"] if sp["kind"] == "beam"]
     posts, braces, rafters = _members(f, "post"), _members(f, "brace"), _members(f, "rafter")
+    if fr["spec"].get("ties") == "posts":       # the braces across the beams go up to the tie over the post
+        rafters = rafters + _members(f, "tie")
     if not (recs and posts):
         f.add("open-bracing", "ok", "Open bracing", "There are no posts under beams in this frame.")
         return
@@ -1159,10 +1167,11 @@ def check_open_bracing(f):
                         missing.append((p["id"], "across the beams"))
     if missing:
         names = ", ".join(sorted({f"{m[0]} ({m[1]})" for m in missing}))
+        head = "tie" if fr["spec"].get("ties") == "posts" else "rafter"
         f.add("open-bracing", "fix", "Post corner with no knee brace",
               f"{len(missing)} post corner(s) have no knee brace touching both the post and what it braces against "
               f"(posts: {names}). An open side has no wall to stop it racking, so every post needs a 45 degree brace up "
-              "to the beam on each side where the beam runs on, and one across the beams up to the rafter over the "
+              f"to the beam on each side where the beam runs on, and one across the beams up to the {head} over the "
               "post. Add the brace, or turn `braces` back on.", [missing[0][0]])
     else:
         f.add("open-bracing", "ok", "Open bracing",
@@ -1244,6 +1253,80 @@ def check_kitchen_ties(f):
               + (f"; the {over} pair(s) over a walled end are held by that wall." if over else "."))
 
 
+def check_kitchen_thrust(f):
+    """`ties: posts`: the ties are only over the post lines, so the rafters between them push the eave beams out
+    sideways. Each post line has a tie (level on both beams, fixed to both rafters and both beams), the eave beam
+    holds the push between the tie lines in sideways bending, and each tie holds its share in tension. A hand
+    estimate from the rafter pair's thrust (see kitchen_thrust in timber/spans.py): not engineering."""
+    fr, by, spec, lib = f.frame, f.by_id, f.frame["spec"], f.lib
+    walled = {w["side"] for w in spec["walls"]}
+    W, D = spec["width"], spec["depth"]
+    beams = {k: [m for m in fr["members"] if m["id"].startswith(f"beams/beam-{k}")] for k in ("01", "02")}
+    ties = [m for m in fr["members"] if m["kind"] == "tie"]
+    if not all(beams.values()) or not ties:
+        f.add("rafter-thrust", "fix", "No ties over the post lines",
+              "With `ties: posts` a tie across the building over each post line holds the eave beams from spreading; "
+              "there is none here. Put the ties back, or use `ties: pair`.", [])
+        return
+    top = max(_extent([m], 2)[1] for ms in beams.values() for m in ms)
+    joined = {frozenset((j["a"], j["b"])) for j in fr["joints"] if j["type"] in ("tie-rafter", "tie-plate")}
+    loose = []
+    for t in ties:
+        i = t["id"].rsplit("-", 1)[1]
+        pair = [by.get(f"roof/rafter-{sl}-{i}") for sl in ("front", "back")]
+        ys, zs = _extent([t], 1), _extent([t], 2)
+        ok = abs(zs[0] - top) <= 1.0 and abs(ys[0]) <= 1.0 and abs(ys[1] - D) <= 1.0 and all(pair)
+        ok = ok and all(any(frozenset((t["id"], m["id"])) in joined for m in ms) for ms in beams.values())
+        ok = ok and all(frozenset((t["id"], m["id"])) in joined for m in pair if m)
+        if not ok:
+            loose.append(t["id"])
+    posts = [m for m in _members(f, "post") if centre(m)[1] < D / 2.0]
+    tie_x = [sum(_extent([t], 0)) / 2.0 for t in ties]
+    need, lacking = [], []
+    for p in sorted(posts, key=lambda m: centre(m)[0]):
+        lo, hi = _extent([p], 0)
+        if (lo < 1.0 and "left" in walled) or (hi > W - 1.0 and "right" in walled):
+            continue                                        # a walled end is held by its wall
+        need.append(p["id"])
+        if not any(lo - 1.0 <= x <= hi + 1.0 for x in tie_x):
+            lacking.append(p["id"])
+    if loose or lacking:
+        text = []
+        if lacking:
+            text.append(f"{len(lacking)} post line(s) have no tie over them (first: {lacking[0]})")
+        if loose:
+            text.append(f"{len(loose)} tie(s) do not run level on both beams from outer face to outer face, fixed to both "
+                        f"rafters and both beams (first: {loose[0]})")
+        f.add("rafter-thrust", "fix", "Post line without a tie",
+              "; ".join(text).capitalize() + ". With the ties only over the post lines, each one holds the eave beams "
+              "from spreading there, so every post line (not a walled end) needs one.", (lacking + loose)[:10])
+        return
+    held = [x for x, side in ((0.0, "left"), (float(W), "right")) if side in walled]
+    run = rafter_run(fr)
+    beam_ends = (min(_extent([m], 0)[0] for m in beams["01"]), max(_extent([m], 0)[1] for m in beams["01"]))
+    item = ties[0]["item"]
+    r = kitchen_thrust(lib, spec, run, tie_x, held, beam_ends, item)
+    lv = max((level_for(r["span_mm"], r["allowed_mm"]), level_for(r["T_use"], 1.0)), key=("ok", "check", "fix").index)
+    unv = lib["grades"][lib["defaults"]["grade"]].get("tension_unverified")
+    where = f"{f.length(r['span_mm'])} between the tie lines"
+    ties_txt = ", ".join(f.length(x) for x in sorted(tie_x))
+    f.add("rafter-thrust", lv, f"Rafter thrust: eave beams and ties ({len(ties)} tie lines)",
+          f"Without a tie on every rafter pair, each pair pushes its eave out; at {f.load(spec['loads']['snow_kn_m2'])} of snow "
+          f"and the roof's weight that is about {r['pair_kn']:.1f} kN sideways per rafter pair, {r['p_g'] + r['p_q']:.1f} kN per "
+          f"metre of eave beam. The ties are at {ties_txt} along the building. The eave beam, bending sideways, spans "
+          f"{where} and is good for about {f.length(r['allowed_mm'])} (limited by {r['governs']}). Each tie holds the push of "
+          f"{f.length(r['tie_trib_m'] * 1000.0)} of the front and back beams: about {r['T_kn']:.1f} kN in tension, and the "
+          f"{spec['tie_item']} tie (allowing for holes and notches) is good for about {r['T_cap_kn']:.0f} kN. "
+          + {"ok": "That is comfortable.", "check": "That is close to the limit: put a tie line in sooner, use a deeper beam or a "
+             "bigger tie_item.", "fix": "That is too much: put a tie line in sooner (more posts, or `ties: pair`), use a deeper "
+             "beam or a bigger tie_item."}[lv]
+          + " This is a simple estimate (a rafter pair acting as a three-hinged arch, the beam loaded sideways on its own, "
+          "not together with its up-and-down bending); the nails, screws or straps at the tie and rafter ends, and the "
+          "rafters' hold on the beam, are not checked."
+          + (" The tension strength used is marked unverified in the library." if unv else ""),
+          [m["id"] for m in ties][:10])
+
+
 def check_kitchen_walls(f):
     spec = f.frame["spec"]
     if not spec["walls"]:
@@ -1263,7 +1346,7 @@ def run_kitchen(f):
     check_kitchen_beams(f)
     if is_gable(fr):
         check_ridge(f)
-        check_kitchen_ties(f)
+        (check_kitchen_thrust if spec.get("ties") == "posts" else check_kitchen_ties)(f)
     check_fascia(f)
     check_pitch(f)
     check_sheet_spacing(f)

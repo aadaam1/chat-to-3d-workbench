@@ -60,7 +60,7 @@ class KitchenLayout:
         self.t, self.w = self.frame["thickness_mm"], self.frame["width_mm"]
         self.raf = tl.item(lib, s["rafter_item"])
         self.tr, self.wr = self.raf["thickness_mm"], self.raf["width_mm"]
-        self.rdeck = tl.item(lib, s["roof_deck"])
+        self.rdeck = None if s["roof_deck"] == "none" else tl.item(lib, s["roof_deck"])
         self.sheath = tl.item(lib, s["sheathing"])
         self.clad = tl.item(lib, s["cladding"])
         self.ts, self.tc = self.sheath["thickness_mm"], self.clad["thickness_mm"]

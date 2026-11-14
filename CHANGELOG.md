@@ -11,6 +11,7 @@ workbench is a working prototype, and anything may still change.
 
 ### Added
 - A printable site pack: the shopping list and each side of the structure drawn with dimensions, as a PDF (`tools/site_pack.sh`).
+- Summer kitchen: `roof_deck: none` (bare rafters for tile battens) and `ties: posts` (ties over the post lines only, braces up to them), with a `rafter-thrust` check.
 
 ### Changed
 - Shopping list: less offcut: each piece's stock length is chosen with its cuts, and the total offcut is shown, with ways to waste less.
