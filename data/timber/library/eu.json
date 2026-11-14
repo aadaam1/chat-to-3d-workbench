@@ -728,6 +728,8 @@
       "standard": "EN 338:2016",
       "basis": "characteristic",
       "bending_mpa": 24,
+      "tension_mpa": 14,
+      "tension_unverified": true,
       "e_mean_mpa": 11000,
       "density_kg_m3": 350,
       "density_mean_kg_m3": 420,
