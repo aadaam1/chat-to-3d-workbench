@@ -130,6 +130,23 @@ mid-span if a joist would run more than 1.5 m unblocked (unverified: the
 1.5 m limit is the workbench's own choice, not found in a source). Joists
 over a nominal 2x12 need bridging or blocking at 2.4 m (8 ft) or less.
 
+**Straight or staggered.** Blocking under a sheet seam is kept in one
+straight line: the seam lands on the centre of the row, so each sheet edge
+gets half the block's thickness to be nailed into. Blocking that only
+stiffens the joists (the mid-span row, any row with no seam over it) has no
+sheet edge to serve, so its blocks are staggered: neighbouring blocks sit one
+timber thickness apart in the row. That lets every block be end-nailed through
+the joist it meets instead of toe-nailed, which is what builders do on site
+("slightly off, around the thickness of the wood"). The eave blocking in a
+roof closes the bay over the wall and stays in line. This rule is the
+workbench's own choice, from builders' practice: no code section read says
+it (not found in the IRC chapters read). Today's sheets are 1250 mm wide, so
+the seams are never more than 1250 mm apart and no stiffening-only row is
+made; the rule is there for wider sheets and longer joists.
+
+**Tip.** In a straight row, end-nail one end of each block through the joist
+and toe-nail or screw the other end; in a staggered row, end-nail both ends.
+
 **Source.**
 - IRC R502.7 Lateral restraint at supports and R502.7.1 Bridging, read
   2026-11-12 on UpCodes:

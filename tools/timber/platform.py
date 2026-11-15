@@ -47,20 +47,27 @@ class Platform:
             self.joint("joist-rim", jid, rf)
             self.joint("joist-rim", jid, rb)
         # deck: sheets across the joists in rows symmetric about mid-span, staggered;
-        # blocking under every seam across the joists (and at mid-span if needed)
+        # blocking under every seam across the joists (and at mid-span if needed).
+        # A seam row stays in one straight line: the seam lands on its centre, so each
+        # sheet edge gets half the block. A row that only stiffens the joists has no
+        # sheet edge over it, so its blocks alternate by one timber thickness, which
+        # lets each block be end-nailed through the joist instead of toe-nailed.
         short, long_ = self.fdeck["size_mm"]
         rows = [r1(y) for y in fr.deck_rows(D, short)]
         self.floor_blocks = []
+        seams = [y for y in rows[1:-1] if tj < y < D - tj]
         bl = 0
         for y in fr.blocking_rows(rows, tj, D - tj):
-            for a, b in zip(self.joist_x, self.joist_x[1:]):
+            stiffening = len(self.joist_x) > 2 and fr.stagger_row(y, seams, tj)
+            for k, (a, b) in enumerate(zip(self.joist_x, self.joist_x[1:])):
                 x0, x1 = a + tj, b
                 if x1 - x0 < EPS:
                     continue
                 bl += 1
+                yc = y + (tj / 2 if k % 2 else -tj / 2) if stiffening else y
                 bid = self.box(f"floor/blocking-{bl:02d}", "blocking", "floor", "floor", fi,
-                               (x0, y - tj / 2, 0), (x1, y + tj / 2, hj), 0, 2, **kw)
-                self.floor_blocks.append((bid, y))
+                               (x0, yc - tj / 2, 0), (x1, yc + tj / 2, hj), 0, 2, **kw)
+                self.floor_blocks.append((bid, yc))
                 self.joint("joist-rim", bid, self.joist_ids[self.joist_x.index(a)])
                 self.joint("joist-rim", bid, self.joist_ids[self.joist_x.index(b)])
         cand = [x0 + tj / 2 for x0 in self.joist_x]
