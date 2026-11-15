@@ -51,7 +51,7 @@ def test_one_drawing_page_per_part_in_site_order(shed):
     doc, frame = shed
     titles = [t for t in sections(doc) if "(continued)" not in t]
     assert titles == ["Floor frame", "Front wall", "Back wall", "Left wall", "Right wall", "Roof"]
-    assert doc.index("Shopping list") < doc.index("Floor frame") < doc.index("Cut list")
+    assert doc.index("<h2>Shopping list") < doc.index("<h2>Floor frame") < doc.index("<h2>Cut list")
 
 
 def test_terrace_has_foundations_deck_and_posts(terrace):
@@ -174,3 +174,34 @@ def test_pdf_smoke(tmp_path):
                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=240)
     assert r.returncode == 0, r.stdout
     assert pdf.read_bytes()[:5] == b"%PDF-" and pdf.stat().st_size > 10_000
+
+
+def test_cover_has_both_3d_views(shed):
+    doc, frame = shed
+    cover = doc[:doc.index("Shopping list")]
+    assert "How it looks" in cover and "The frame, by part" in cover
+    assert cover.count('<g class="iso">') >= 2
+    assert cover.count("<polygon") > 100
+    secs = sp.make_sections(frame)
+    for i in range(len(secs)):                              # a numbered callout for every part
+        assert f">{i + 1}</text>" in cover
+
+
+def test_each_part_page_has_a_key_view_with_that_parts_members(shed):
+    doc, frame = shed
+    iso = sp.Iso(frame)
+    secs = sp.make_sections(frame)
+    pages_ = re.split(r'(?=<section class="page)', doc)
+    for n, sec in enumerate(secs, 1):
+        page = [p for p in pages_ if f'<span class="lt pno">{n}</span>' in p and "(continued)" not in p][0]
+        assert '<div class="key">' in page
+        svg = page[page.index('<div class="key">'):]
+        svg = svg[:svg.index("</svg>")]
+        dark = svg.count('class="hi')
+        assert dark > 0
+        mine = [m for m in frame["members"] if m["group"] == sec["group"] and m["kind"] not in sp.HIDE]
+        others = [m for m in frame["members"] if m["group"] != sec["group"] and m["kind"] not in sp.HIDE]
+        # exactly this part's members are drawn dark: the dark polygons come from its members' faces only
+        want = sum(len(iso.members[frame["members"].index(m)]["faces"]) for m in mine)
+        assert 0 < dark <= want
+        assert svg.count('class="fa') > 0 and others
