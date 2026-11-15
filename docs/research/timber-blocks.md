@@ -297,13 +297,15 @@ footer) is the only layout engine needed and needs no new Python packages. Not d
 (the box is drawn, not the mitre), joints and fixings. Open: the order of assembly.
 
 The cover has two axonometric views (an orthographic camera from the front-left, 26 degrees above the
-horizon), drawn from real faces: each member's faces, back faces dropped, members painted far to near
-by their nearest point, flat shading by face direction. "How it looks" shows everything; "The frame,
-by part" shows the frame only, one tone per part with a numbered callout that is the badge on that
-part's page. Each part page has a small key view of the same frame with the part dark and an arrow for
-where the main drawing is seen from. Colours are CSS classes, faces under 1 mm2 on paper are dropped
-and coordinates are rounded to 0.1 mm, which keeps the PDF near 1 to 1.6 MB. Not done: page numbers
-in the callouts (the layout engine owns the page count).
+horizon). They are rasterised with a small numpy z-buffer (every face triangulated, a per-pixel depth,
+flat shading by face direction, dark lines where the face changes) and embedded as PNG data URIs: a
+painter's sort failed on long members (rafters, roof sheets, wall cladding over sheathing). Without
+numpy or Pillow they fall back to sorted SVG polygons. "How it looks" shows everything; "The frame, by
+part" shows the frame only, one tone per part with a numbered callout (SVG on top of the image) that
+is the badge on that part's page. Each part page has a small key view of the same frame with the part
+dark, drawn over the rest, and an arrow for where the main drawing is seen from. The PNGs carry no
+metadata, so the HTML is byte-identical between runs. Not done: page numbers in the callouts (the
+layout engine owns the page count).
 
 ## Open questions
 
