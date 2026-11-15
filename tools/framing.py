@@ -25,8 +25,10 @@ timber frame practice; see .claude/skills/timber-build/framing.md):
 - Floor: deck sheets are laid in rows across the joists, symmetric about
   the middle of the span (a seam on the centre line, or a whole sheet
   centred on it), so no row is narrower than half a sheet. A row of blocking
-  sits under every seam across the joists, and one at mid-span if a joist
-  would still run more than 1.5 m without one.
+  sits under every seam across the joists, straight so the seam lands on its
+  centre, and one at mid-span if a joist would still run more than 1.5 m
+  without one; that stiffening row has no seam over it, so its blocks
+  alternate by one timber thickness (each end-nailed through its joist).
 - Roof edges: blocking between the rafters over the front and back walls
   closes the bays; a fascia board on the plumb-cut rafter ends front and
   back; at the sides a ladder (outriggers from the end rafter to a flying
@@ -124,6 +126,13 @@ def blocking_rows(rows, lo, hi):
         if all(abs(mid - y) > 1.0 for y in ys):
             ys = sorted(ys + [mid])
     return ys
+
+
+def stagger_row(y, seams, t):
+    """True when the row of blocking at y only stiffens the joists, so its blocks may be
+    staggered by a timber thickness `t`: no deck seam is under it, and none is near enough
+    for a staggered block to reach the seam row's blocks. A row under a seam stays straight."""
+    return all(abs(y - s) >= 2 * t + 1.0 for s in seams)
 
 
 # ------------------------------------------------------------------ roof
