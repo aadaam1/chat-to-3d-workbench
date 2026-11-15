@@ -178,10 +178,9 @@ def test_pdf_smoke(tmp_path):
 
 def test_cover_has_both_3d_views(shed):
     doc, frame = shed
-    cover = doc[:doc.index("Shopping list")]
+    cover = doc[:doc.index("<h2>Shopping list")]
     assert "How it looks" in cover and "The frame, by part" in cover
-    assert cover.count('<g class="iso">') >= 2
-    assert cover.count("<polygon") > 100
+    assert cover.count('<image ') == 2 and cover.count("data:image/png;base64,") == 2
     secs = sp.make_sections(frame)
     for i in range(len(secs)):                              # a numbered callout for every part
         assert f">{i + 1}</text>" in cover
@@ -189,19 +188,25 @@ def test_cover_has_both_3d_views(shed):
 
 def test_each_part_page_has_a_key_view_with_that_parts_members(shed):
     doc, frame = shed
-    iso = sp.Iso(frame)
     secs = sp.make_sections(frame)
     pages_ = re.split(r'(?=<section class="page)', doc)
     for n, sec in enumerate(secs, 1):
         page = [p for p in pages_ if f'<span class="lt pno">{n}</span>' in p and "(continued)" not in p][0]
-        assert '<div class="key">' in page
-        svg = page[page.index('<div class="key">'):]
-        svg = svg[:svg.index("</svg>")]
-        dark = svg.count('class="hi')
-        assert dark > 0
-        mine = [m for m in frame["members"] if m["group"] == sec["group"] and m["kind"] not in sp.HIDE]
-        others = [m for m in frame["members"] if m["group"] != sec["group"] and m["kind"] not in sp.HIDE]
-        # exactly this part's members are drawn dark: the dark polygons come from its members' faces only
-        want = sum(len(iso.members[frame["members"].index(m)]["faces"]) for m in mine)
-        assert 0 < dark <= want
-        assert svg.count('class="fa') > 0 and others
+        key = page[page.index('<div class="key">'):]
+        assert "<image " in key[:key.index("</svg>")]
+        picks = sp.key_picks(frame, sec)
+        dark = {frame["members"][i]["id"] for i, cat, _l, _t in picks if cat == "hi"}
+        want = {m["id"] for m in sec["members"] if m["kind"] not in sp.HIDE}
+        assert dark == want and dark
+        assert all(cat == "fa" for i, cat, _l, _t in picks if frame["members"][i]["group"] != sec["group"])
+
+
+def test_3d_view_is_a_zbuffer_image_and_repeatable():
+    """Depth is per pixel (no sort to defeat), and the same picks give the same bytes."""
+    frame, _, _ = build(fixture("gable-eu"))
+    iso = sp.Iso(frame)
+    sheet = next(i for i, m in enumerate(frame["members"]) if m["kind"] == "sheet" and m["layer"] == "roof")
+    rafters = [i for i, m in enumerate(frame["members"]) if m["kind"] == "rafter"]
+    svg = iso.draw([(i, "tim", 0, None) for i in rafters] + [(sheet, "rof", 0, None)], 80, 80)
+    assert svg.startswith("<svg") and "<image " in svg
+    assert svg == iso.draw([(i, "tim", 0, None) for i in rafters] + [(sheet, "rof", 0, None)], 80, 80)

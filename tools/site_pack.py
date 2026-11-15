@@ -19,9 +19,15 @@ dimensioned from one corner. Each distinct piece (kind, section, length, cut ang
 per part; the table says what each letter is and how many there are. Sheathing, cladding and deck
 boards are not drawn (they would cover the frame) but are in the table. Same input, same files.
 """
-import argparse, html, json, math, os, subprocess, sys
+import argparse, base64, html, io, json, math, os, subprocess, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:                                         # the 3D views are rasterised with a z-buffer when these are there
+    import numpy as np
+    from PIL import Image
+    HAVE_RASTER = True
+except ImportError:                          # else they are drawn as sorted SVG polygons
+    HAVE_RASTER = False
 import bom as bomlib
 import timberlib as tl
 import versions as vers
@@ -901,6 +907,94 @@ def iso_css():
     return "\n".join(rules)
 
 
+def triangulate(p3):
+    """A face (3 or more (x, y, depth) points, convex or not) as triangles: ear clipping on the screen points."""
+    n = len(p3)
+    if n == 3:
+        return [tuple(p3)]
+    area = sum(p3[i][0] * p3[(i + 1) % n][1] - p3[(i + 1) % n][0] * p3[i][1] for i in range(n))
+    if abs(area) < 1e-9:
+        return []
+    idx = list(range(n))
+    if area < 0:
+        idx.reverse()
+    cr = lambda a, b, c: (p3[b][0] - p3[a][0]) * (p3[c][1] - p3[a][1]) - (p3[b][1] - p3[a][1]) * (p3[c][0] - p3[a][0])
+    out, guard = [], 0
+    while len(idx) > 3 and guard < 4 * n * n:
+        guard += 1
+        for k in range(len(idx)):
+            a, b, c = idx[k - 1], idx[k], idx[(k + 1) % len(idx)]
+            if cr(a, b, c) <= 1e-9:
+                continue
+            if any(j not in (a, b, c) and cr(a, b, j) >= 0 and cr(b, c, j) >= 0 and cr(c, a, j) >= 0 for j in idx):
+                continue
+            out.append((p3[a], p3[b], p3[c]))
+            idx.pop(k)
+            break
+        else:
+            break
+    if len(idx) == 3:
+        out.append(tuple(p3[i] for i in idx))
+    return out
+
+
+def raster_tri(t, zfixed, face, zbuf, fid, ground):
+    """One triangle (three (px, py, depth)) into the depth and face buffers; the nearer depth wins."""
+    (x0, y0, z0), (x1, y1, z1), (x2, y2, z2) = t
+    if zfixed is not None:
+        z0 = z1 = z2 = zfixed
+    d = (y1 - y2) * (x0 - x2) + (x2 - x1) * (y0 - y2)
+    if abs(d) < 1e-9:
+        return
+    H, W = zbuf.shape
+    xa, xb = max(0, int(math.floor(min(x0, x1, x2)))), min(W - 1, int(math.ceil(max(x0, x1, x2))))
+    ya, yb = max(0, int(math.floor(min(y0, y1, y2)))), min(H - 1, int(math.ceil(max(y0, y1, y2))))
+    if xa > xb or ya > yb:
+        return
+    xs = np.arange(xa, xb + 1, dtype=np.float64) + 0.5
+    ys = (np.arange(ya, yb + 1, dtype=np.float64) + 0.5)[:, None]
+    l0 = ((y1 - y2) * (xs - x2) + (x2 - x1) * (ys - y2)) / d
+    l1 = ((y2 - y0) * (xs - x2) + (x0 - x2) * (ys - y2)) / d
+    l2 = 1.0 - l0 - l1
+    eps = -1e-7
+    inside = (l0 >= eps) & (l1 >= eps) & (l2 >= eps)
+    z = (l0 * z0 + l1 * z1 + l2 * z2).astype(np.float32)
+    zs = zbuf[ya:yb + 1, xa:xb + 1]
+    win = inside & (z < zs)
+    zs[win] = z[win]
+    fid[ya:yb + 1, xa:xb + 1][win] = face
+
+
+def bubbles_svg(spots, r=2.5):
+    """Numbered bubbles at (x, y) paper mm; those that would overlap are pushed apart and joined to their spot."""
+    pos = [list(p) for _, p in spots]
+    home = [list(p) for p in pos]
+    for _ in range(60):
+        moved = False
+        for i in range(len(pos)):
+            for j in range(i + 1, len(pos)):
+                dx, dy = pos[j][0] - pos[i][0], pos[j][1] - pos[i][1]
+                d = math.hypot(dx, dy)
+                if d < 2 * r + 0.8:
+                    if d < 1e-6:
+                        dx, dy, d = 0.0, 1.0, 1.0
+                    k = (2 * r + 0.8 - d) / 2 / d
+                    pos[i][0] -= dx * k; pos[i][1] -= dy * k
+                    pos[j][0] += dx * k; pos[j][1] += dy * k
+                    moved = True
+        if not moved:
+            break
+    out = []
+    for p, h0 in zip(pos, home):
+        if math.hypot(p[0] - h0[0], p[1] - h0[1]) > 1.0:
+            out.append(f'<line class="dl" x1="{h0[0]:.1f}" y1="{h0[1]:.1f}" x2="{p[0]:.1f}" y2="{p[1]:.1f}"/>')
+        out.append(f'<circle class="cdot" cx="{h0[0]:.1f}" cy="{h0[1]:.1f}" r="0.7"/>')
+    for (lab, _), p in zip(spots, pos):
+        out.append(f'<circle class="bub" cx="{p[0]:.1f}" cy="{p[1]:.1f}" r="{r}"/>'
+                   f'<text class="dt n" font-size="3" text-anchor="middle" x="{p[0]:.1f}" y="{p[1] + 1.05:.1f}">{esc(lab)}</text>')
+    return "".join(out)
+
+
 class Iso:
     """The camera and every member's visible faces, worked out once."""
 
@@ -942,7 +1036,7 @@ class Iso:
             p3 = [self.pt(p) for p in pts]
             lit = max(0.0, dot(nrm, self.light))
             lv = max(10, min(20, round((0.5 + 0.62 * lit) * 20)))
-            out.append(([(q[0], q[1]) for q in p3], lv, sum(q[2] for q in p3) / len(p3)))
+            out.append((p3, lv, sum(q[2] for q in p3) / len(p3)))
         out.sort(key=lambda t: -t[2])
         near = min(self.pt(p)[2] for p in base + top)
         return {"id": m["id"], "group": m["group"], "kind": m["kind"], "faces": out, "key": near, "m": m}
@@ -952,8 +1046,8 @@ class Iso:
         order = sorted(picks, key=lambda p: (p[2], -self.members[p[0]]["key"], self.members[p[0]]["id"]))
         items = []
         for mi, cat, layer, tag in order:
-            for poly, lv, _ in self.members[mi]["faces"]:
-                items.append((poly, f"{cat}{lv}", tag))
+            for p3, lv, _ in self.members[mi]["faces"]:
+                items.append(([(q[0], q[1]) for q in p3], f"{cat}{lv}", tag))
         return items
 
     def anchors(self, items):
@@ -982,7 +1076,7 @@ class Iso:
             res[tag] = min((c for _, c in vis), key=lambda c: (c[0] - wc[0]) ** 2 + (c[1] - wc[1]) ** 2)
         return res
 
-    def draw(self, items, max_w, max_h, lite=None, top=None, bubbles=None, arrow=None, ground=True):
+    def draw_items(self, items, max_w, max_h, lite=None, top=None, bubbles=None, arrow=None, ground=True):
         """The scene as an SVG (paper mm). lite: items painted as a faint layer first (indexes < lite);
         bubbles: [(label, (x, y) in model screen units)]; arrow: (from, to) in model 3D."""
         g0, g1 = self.ground
@@ -1050,30 +1144,121 @@ class Iso:
         return svg
 
 
+    # -- the z-buffer path: every face is rasterised with a per-pixel depth, so no sort can go wrong
+
+    def triangles(self, mi):
+        """Each visible face of member mi as triangles of (x, y, depth) points, with a face number."""
+        out = []
+        for fi, (p3, lv, _) in enumerate(self.members[mi]["faces"]):
+            for t in triangulate(p3):
+                out.append((fi, t))
+        return out
+
+    def draw(self, picks, max_w, max_h, bubbles=False, arrow=None, ground=True, ppm=8.0):
+        """picks: [(member index, cat, layer, tag)]. Layer 1 is drawn over layer 0 whatever the depth.
+        bubbles: number the tagged parts. arrow: (from, to) in model 3D. Returns an SVG in paper mm."""
+        if not HAVE_RASTER:
+            items = self.scene(picks)
+            return self.draw_items(items, max_w, max_h, lite=any(p[1] == "fa" for p in picks),
+                                   bubbles=[(str(t + 1), a) for t, a in sorted(self.anchors(items).items())] if bubbles else None,
+                                   arrow=arrow, ground=ground)
+        g0, g1 = self.ground
+        gq = [self.pt((x, y, 0)) for x, y in ((g0[0], g0[1]), (g1[0], g0[1]), (g1[0], g1[1]), (g0[0], g1[1]))] if ground else []
+        pts = [q[:2] for q in gq]
+        for mi, *_ in picks:
+            for p3, _, _ in self.members[mi]["faces"]:
+                pts += [(q[0], q[1]) for q in p3]
+        ar = [self.pt(p)[:2] for p in arrow] if arrow else []
+        x0, y0, x1, y1 = bbox2([pts + ar])
+        s = min(max_w / (x1 - x0), max_h / (y1 - y0), 0.2)                # paper mm per model mm
+        pad = 3.0
+        W, H = int(math.ceil((x1 - x0) * s * ppm + 2 * pad * ppm)), int(math.ceil((y1 - y0) * s * ppm + 2 * pad * ppm))
+        k = s * ppm
+        to_px = lambda q: ((q[0] - x0) * k + pad * ppm, (y1 - q[1]) * k + pad * ppm, q[2])
+        zbuf = np.full((H, W), np.inf, dtype=np.float32)
+        fid = np.zeros((H, W), dtype=np.int32)
+        face_rgb, face_line, face_tag = [(255, 255, 255)], [(255, 255, 255)], [-1]
+        if gq:
+            face_rgb.append((246, 246, 243)); face_line.append((200, 200, 200)); face_tag.append(-1)
+            for t in triangulate(gq):
+                raster_tri([to_px(q) for q in t], 1e12, len(face_rgb) - 1, zbuf, fid, True)
+        for layer in sorted(set(p[2] for p in picks)):
+            if layer:
+                zbuf[:] = np.inf
+            for mi, cat, ly, tag in sorted((p for p in picks if p[2] == layer), key=lambda p: self.members[p[0]]["id"]):
+                for p3, lv, _ in self.members[mi]["faces"]:
+                    c = CATS[cat]
+                    face_rgb.append(tuple(min(255, round(v * lv / 20.0)) for v in c))
+                    face_line.append((196, 196, 196) if cat == "fa" else (58, 58, 58))
+                    face_tag.append(-1 if tag is None or tag == "lite" else tag)
+                    for t in triangulate(p3):
+                        raster_tri([to_px(q) for q in t], None, len(face_rgb) - 1, zbuf, fid, False)
+        rgb = np.array(face_rgb, dtype=np.uint8)[fid]
+        # outlines: where the face changes between neighbouring pixels, the nearer pixel gets the line colour
+        z = np.where(fid > 0, zbuf, np.inf)
+        edge = np.zeros((H, W), dtype=bool)
+        for sl_a, sl_b in (((slice(None), slice(0, -1)), (slice(None), slice(1, None))),
+                           ((slice(0, -1), slice(None)), (slice(1, None), slice(None)))):
+            diff = fid[sl_a] != fid[sl_b]
+            first = (z[sl_a] <= z[sl_b]) & diff
+            second = (z[sl_b] < z[sl_a]) & diff
+            edge[sl_a] |= first
+            edge[sl_b] |= second
+        lines = np.array(face_line, dtype=np.uint8)[fid]
+        rgb = np.where(edge[:, :, None] & (fid[:, :, None] > 1), lines, rgb)
+        rgb = np.where(edge[:, :, None] & (fid[:, :, None] == 1), lines, rgb)
+        buf = io.BytesIO()
+        Image.fromarray(rgb, "RGB").save(buf, format="PNG", compress_level=9, optimize=False)
+        data = base64.b64encode(buf.getvalue()).decode("ascii")
+        parts = [f'<image x="0" y="0" width="{W / ppm:.2f}" height="{H / ppm:.2f}" href="data:image/png;base64,{data}"/>']
+        mm = lambda v: v / ppm
+        if ar:
+            (ax, ay), (bx, by) = [(mm(to_px(p + (0,))[0]), mm(to_px(p + (0,))[1])) for p in ar]
+            L = math.hypot(bx - ax, by - ay) or 1
+            dx, dy = (bx - ax) / L, (by - ay) / L
+            parts.append(f'<line class="ar" x1="{ax:.1f}" y1="{ay:.1f}" x2="{bx - dx * 2:.1f}" y2="{by - dy * 2:.1f}"/>'
+                         f'<polygon class="ar" points="{bx:.1f},{by:.1f} {bx - dx * 3 - dy * 1.4:.1f},{by - dy * 3 + dx * 1.4:.1f} '
+                         f'{bx - dx * 3 + dy * 1.4:.1f},{by - dy * 3 - dx * 1.4:.1f}"/>')
+        if bubbles:
+            tags = np.array(face_tag)[fid]
+            spots = []
+            for tag in sorted(set(int(t) for t in np.unique(tags)) - {-1}):
+                ys, xs = np.nonzero(tags == tag)
+                cx, cy = xs.mean(), ys.mean()
+                j = int(np.argmin((xs - cx) ** 2 + (ys - cy) ** 2))
+                spots.append((str(tag + 1), (mm(xs[j] + 0.5), mm(ys[j] + 0.5))))
+            parts.append(bubbles_svg(spots))
+        w, h = W / ppm, H / ppm
+        return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{w:.2f}mm" height="{h:.2f}mm" viewBox="0 0 {w:.2f} {h:.2f}">'
+                + "".join(parts) + "</svg>")
+
+
 def looks_svg(iso, frame, max_w, max_h):
     picks = [(i, mat_cat(m), 0, None) for i, m in enumerate(frame["members"])]
-    return iso.draw(iso.scene(picks), max_w, max_h)
+    return iso.draw(picks, max_w, max_h)
 
 
 def frame_svg(iso, frame, secs, max_w, max_h):
     part_of = {s["group"]: i for i, s in enumerate(secs)}
     picks = [(i, f"p{part_of[m['group']] % PART_TONES}", 0, part_of[m["group"]])
              for i, m in enumerate(frame["members"]) if m["kind"] not in HIDE]
-    items = iso.scene(picks)
-    anc = iso.anchors(items)
-    bub = [(str(t + 1), anc[t]) for t in sorted(anc)]
-    return iso.draw(items, max_w, max_h, bubbles=bub)
+    return iso.draw(picks, max_w, max_h, bubbles=True)
 
 
-def key_svg(iso, frame, secs, sec, max_w, max_h):
-    """The frame in very light grey with this part dark, and an arrow for where its main drawing is seen from."""
+def key_picks(frame, sec):
+    """The frame in very light grey (layer 0) with this part dark and drawn over it (layer 1)."""
     picks = []
     for i, m in enumerate(frame["members"]):
         if m["kind"] in HIDE:
             continue
         mine = m["group"] == sec["group"]
         picks.append((i, "hi" if mine else "fa", 1 if mine else 0, None if mine else "lite"))
-    items = iso.scene(picks)
+    return picks
+
+
+def key_svg(iso, frame, secs, sec, max_w, max_h):
+    """The key view: the frame with this part dark, and an arrow for where its main drawing is seen from."""
+    picks = key_picks(frame, sec)
     mem = [m for m in sec["members"] if m["kind"] not in HIDE] or sec["members"]
     boxes = [aabb(m) for m in mem]
     lo = [min(b[0][k] for b in boxes) for k in range(3)]
@@ -1090,7 +1275,7 @@ def key_svg(iso, frame, secs, sec, max_w, max_h):
         k = 0 if d[0] else 1
         end[k] = (lo[k] - 40) if d[k] > 0 else (hi[k] + 40)
         arrow = (tuple(end[j] - d[j] * L for j in range(3)), tuple(end))
-    return iso.draw(items, max_w, max_h, lite=True, arrow=arrow)
+    return iso.draw(picks, max_w, max_h, arrow=arrow, ppm=6.0)
 
 
 # ------------------------------------------------------------------------------------------ html page
