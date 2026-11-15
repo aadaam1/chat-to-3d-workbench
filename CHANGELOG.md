@@ -12,6 +12,10 @@ workbench is a working prototype, and anything may still change.
 ### Added
 - A printable site pack: the shopping list and each side of the structure drawn with dimensions, as a PDF (`tools/site_pack.sh`).
 
+### Changed
+- Shopping list: less offcut: each piece's stock length is chosen with its cuts, and the total offcut is shown, with ways to waste less.
+- Blocking that only stiffens the joists is staggered so each block can be nailed through the joist; blocking under a sheet seam stays in line.
+
 ## [0.7.1] - 2026-11-14
 
 A planner that sizes the frame and says why, low terraces, long sheds, and a tidier preview
