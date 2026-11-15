@@ -59,3 +59,4 @@ name = name if isinstance(name, str) and name.strip() else os.path.basename(os.p
 print(name.replace('-', ' ').capitalize())" "$spec" "$dir")}
 echo "done. Shopping list: $out/bom.md"
 echo "Preview: $PY tools/make_viewer.py --title '$title' --build $out/versions --out $out/viewer"
+echo "Site pack (shopping list and each side drawn, as a PDF; needs Chrome): tools/site_pack.sh $proj"

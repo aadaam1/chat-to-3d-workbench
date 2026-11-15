@@ -223,6 +223,20 @@ stock length, sheet, nails by weight and structural screws by pack, with the cut
 fixings for the base, the door and window themselves beyond a line item,
 roofing beyond the felt area, paint or stain. Say which lines have no price.
 
+Then make the **site pack**, a PDF to take to the site: the shopping list, each side
+drawn on its own page with dimensions and lettered pieces (foundations first: every
+footing measured from one corner), and the cut list:
+
+```
+tools/site_pack.sh <name>
+```
+
+It needs Google Chrome or Chromium (it says so if it is missing). Send the person
+`out/<name>-site-pack-v<N>.pdf` and remind them it is guidance, not structural
+engineering, that they should check local rules, and that print at 100% gives the
+scale shown. Look at a page or two yourself before sending. It is not an assembly
+guide: the order of work is still theirs to know.
+
 ## What it cannot do yet
 
 Five building types: a mono-pitch shed, a gable-roof shed (both on a timber
