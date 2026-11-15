@@ -9,6 +9,10 @@ workbench is a working prototype, and anything may still change.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-15
+
+A site pack to print for the building site, less offcut in the shopping list, and an open tiled roof for the summer kitchen
+
 ### Added
 - A printable site pack: the shopping list and each side of the structure drawn with dimensions, as a PDF (`tools/site_pack.sh`).
 - Summer kitchen: `roof_deck: none` (bare rafters for tile battens), `ties: posts` or `ends` (ties over the post lines or the two end lines only, braces up to them) with a `rafter-thrust` check, and `eave_blocking: false`.
@@ -151,7 +155,8 @@ The first version.
 - The tap aerator example.
 - Setup for macOS and Linux, a copy-paste setup prompt, and a self-test.
 
-[Unreleased]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/aadaam1/chat-to-3d-workbench/releases/tag/v0.6.0
