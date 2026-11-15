@@ -137,6 +137,91 @@ def bin_used(b, kerf):
     return sum(c[1] for c in b) + kerf * (len(b) - 1)
 
 
+def _units(mm):
+    """Tenths of a millimetre, rounded up: the knapsack works in whole units and
+    never believes a set of cuts fits when it does not."""
+    return int(math.ceil(mm * 10 - 1e-6))
+
+
+def best_fills(rem, rooms, kerf):
+    """For each room (mm left on a piece beside a cut already on it): the set of
+    the remaining cuts that fills it as fully as possible, a kerf with each cut.
+    `rem` is {length: count}; returns one {length: count} per room, in order.
+    A bounded subset-sum over the distinct lengths, on a bitset."""
+    items = []
+    for ln in sorted(rem, reverse=True):
+        n, k = rem[ln], 1
+        while n > 0:
+            take = min(k, n)
+            items.append((ln, take, _units(ln + kerf) * take))
+            n -= take
+            k *= 2
+    tops = [max(0, int(r * 10 + 1e-6)) for r in rooms]
+    top = max(tops, default=0)
+    full = (1 << (top + 1)) - 1
+    mask, before = 1, []
+    for _, _, w in items:
+        before.append(mask)
+        mask |= (mask << w) & full
+    out = []
+    for t in tops:
+        s = (mask & ((1 << (t + 1)) - 1)).bit_length() - 1
+        used = {}
+        for i in range(len(items) - 1, -1, -1):
+            if s and not (before[i] >> s) & 1:
+                ln, take, w = items[i]
+                used[ln] = used.get(ln, 0) + take
+                s -= w
+        out.append(used)
+    return out
+
+
+def pack_fitted(cuts, usable, prices, kerf, trim, by_price=True):
+    """Choose each piece's stock length together with its cuts. Repeatedly take
+    the longest cut left; for every stock length that holds it, fill that length
+    as fully as possible from the cuts left (best_fills); keep the piece with the
+    lowest price per millimetre used (the least offcut when a length has no price,
+    or when by_price is off). Every piece then shrinks to the cheapest length
+    that still holds its cuts. Returns [(stock_length, [cuts])]."""
+    queues = {}
+    for c in sorted(cuts, key=lambda c: (c[1], c[0])):
+        queues.setdefault(c[1], []).append(c)
+    rem = {ln: len(q) for ln, q in queues.items()}
+    priced = by_price and all(prices.get(L) is not None for L in usable)
+    bins = []
+    while rem:
+        first = max(rem)
+        rem[first] -= 1
+        if not rem[first]:
+            del rem[first]
+        opts = [L for L in usable if L - trim >= first - EPS]
+        fills = best_fills(rem, [L - trim - first for L in opts], kerf)
+        best = None
+        for L, fill in zip(opts, fills):
+            used = first + sum(ln * n + kerf * n for ln, n in fill.items())
+            off = L - trim - used
+            key = ((prices[L] / used, off, L) if priced else (off, L))
+            if best is None or key < best[0]:
+                best = (key, L, fill)
+        _, L, fill = best
+        b = [queues[first].pop()]
+        for ln in sorted(fill, reverse=True):
+            for _ in range(fill[ln]):
+                b.append(queues[ln].pop())
+            rem[ln] -= fill[ln]
+            if not rem[ln]:
+                del rem[ln]
+        b.sort(key=lambda c: (-c[1], c[0]))
+        bins.append((L, b))
+    out = []
+    for L, b in bins:
+        need = bin_used(b, kerf)
+        fits = [x for x in usable if x - trim >= need - EPS]
+        pr = [x for x in fits if prices.get(x) is not None]
+        out.append((min(pr, key=lambda x: (prices[x], x)) if pr and len(pr) == len(fits) else fits[0], b))
+    return out
+
+
 def timber_plans(cuts, lengths, prices, kerf, trim=0):
     """Every candidate plan: one per single stock length that holds the longest
     cut, plus the mix. A plan is a list of (stock_length, [cuts]). `prices`
@@ -159,10 +244,19 @@ def timber_plans(cuts, lengths, prices, kerf, trim=0):
                 L = fits[0]
             mixed.append((L, b))
         plans.append(("mix", mixed))
+    # a stock length chosen with the cuts that go on it: short cuts fill the end of a long piece
+    plans.append(("fitted", pack_fitted(cuts, usable, prices, kerf, trim)))
+    if all(prices.get(L) is not None for L in usable):
+        plans.append(("fitted", pack_fitted(cuts, usable, prices, kerf, trim, by_price=False)))
+    if len(usable) > 1:
+        for L in usable:
+            plans.append(("fitted", pack_fitted(cuts, [L], prices, kerf, trim)))
     return plans
 
 
 def plan_key(plan, prices, kerf):
+    """Sort key of a plan, the smallest wins: priced plans by what they cost, else by waste; then fewer
+    pieces, then less waste, a simpler plan, the same lengths in the same order."""
     kind, bins = plan
     stock = sum(L for L, _ in bins)
     cuts = sum(c[1] for _, b in bins for c in b)
@@ -170,7 +264,7 @@ def plan_key(plan, prices, kerf):
     full = all(prices.get(L) is not None for L, _ in bins)
     cost = sum(prices[L] for L, _ in bins) if full else None
     primary = (0, cost, waste) if full else (1, waste, 0)
-    return (primary[0], primary[1], primary[2], len(bins), 0 if kind == "single" else 1,
+    return (primary[0], primary[1], primary[2], len(bins), {"single": 0, "mix": 1}.get(kind, 2),
             sorted((-L for L, _ in bins)))
 
 
@@ -218,6 +312,60 @@ def build_timber_line(key, members, it, lengths, prices, kerf, waste_pct, curren
         "total": round(sum(r["line_total"] for r in buy), 2) if priced else None,
         "priced": priced,
     }
+
+
+HINT_WASTE_PCT = 12.0      # a line with more offcut than this (% of its stock) is looked at for a way to waste less
+JUST_OVER_MM = 50.0        # a cut this close to a stock length (or less) that needs the next one up is worth a hint
+
+
+def offcut_summary(lines):
+    """Everything left over on the timber and cladding lines, before the spare pieces:
+    {"mm", "bought_mm", "pct"}."""
+    bought = sum(l["stock_mm"] for ln in lines for l in ln["layouts"])
+    off = sum(ln["waste_mm"] for ln in lines)
+    return {"mm": round(off, 1), "bought_mm": round(bought, 1), "pct": round(100 * off / bought, 1) if bought else 0.0}
+
+
+def ways_to_waste_less(line, members, it, lengths, prices, kerf, waste_pct, currency, trim, units, limit=3):
+    """For a line with a lot of offcut: the cuts that are just over a stock length (by
+    `trim` or a few millimetres) and so need the next length up, each re-packed shorter to
+    say what it would save. Advice only: nothing in the design changes. Sorted by saving."""
+    if line["waste_pct"] <= HINT_WASTE_PCT:
+        return []
+    fmt = lambda mm: tl.fmt_length(mm, units)
+    fmt_total = (lambda mm: f"{mm / 1000:.1f} m".replace(".0 m", " m")) if units == "metric" else fmt
+    hints = []
+    for c in sorted({m["size"][0] for m in members}):
+        near = [L for L in sorted(lengths) if 0 < c - (L - trim) <= JUST_OVER_MM + EPS]
+        if not near:
+            continue
+        L = near[0]
+        short = L - trim
+        d = c - short
+        trial = [dict(m, size=[short] + list(m["size"][1:])) if m["size"][0] == c else m for m in members]
+        alt = build_timber_line((line["item"], line["variant"]), trial, it, lengths, prices, kerf, waste_pct, currency, trim)
+        stock_was = sum(l["stock_mm"] for l in line["layouts"])
+        stock_now = sum(l["stock_mm"] for l in alt["layouts"])
+        saved_pieces = line["pieces_to_buy"] - alt["pieces_to_buy"]
+        saved = round(line["total"] - alt["total"], 2) if line["priced"] and alt["priced"] else None
+        if stock_now >= stock_was - EPS or (saved is not None and saved <= 0):
+            continue
+        mine = [m for m in members if m["size"][0] == c]
+        kinds = sorted({kind_key(m["kind"], m["id"]) for m in mine})
+        what = " and ".join(KIND_NAMES[k][1] if k in KIND_NAMES else k for k in kinds)
+        old_len = sorted({l["stock_mm"] for l in line["layouts"] if any(x["length_mm"] == c for x in l["cuts"])})
+        new_len = sorted({l["stock_mm"] for l in alt["layouts"] if any(x["length_mm"] == short for x in l["cuts"])})
+        text = (f"{what[0].upper() + what[1:]} ({line['name']}, {line['variant']}): the {fmt(c)} cuts need "
+                f"{' or '.join(fmt(x) for x in old_len)} pieces because {fmt(trim)} of every piece is kept to square the ends. "
+                f"Made {fmt(d)} shorter ({fmt(short)}) they would come from {' or '.join(fmt(x) for x in new_len)} pieces, "
+                f"so {fmt_total(stock_was - stock_now)} less timber to buy"
+                + (f" (about {money(saved, currency)})" if saved else "") + ".")
+        hints.append({"item": line["item"], "variant": line["variant"], "cut_mm": c, "shorten_mm": round(d, 1),
+                      "stock_mm_now": old_len, "stock_mm_then": new_len, "saves_pieces": saved_pieces,
+                      "saves_stock_mm": round(stock_was - stock_now, 1), "saves_amount": saved,
+                      "currency": currency if saved is not None else None, "text": text})
+    hints.sort(key=lambda h: (-(h["saves_amount"] or 0), -h["saves_stock_mm"], h["cut_mm"]))
+    return hints[:limit]
 
 
 def stock_for(it, variant, snapshot):
@@ -430,7 +578,7 @@ def make_bom(frame, snapshot=None, waste_pct=None, kerf=None, sheet_spare_pct=0,
         else:
             problems.append(f"{m['id']}: item {m['item']!r} is a {it['category']} item, not timber or a sheet")
 
-    timber, special = [], []
+    timber, special, hints = [], [], []
     for key in sorted(groups):
         it = tl.item(lib, key[0])
         lengths, prices = stock_for(it, key[1], snapshot)
@@ -451,6 +599,7 @@ def make_bom(frame, snapshot=None, waste_pct=None, kerf=None, sheet_spare_pct=0,
         line = build_timber_line(key, groups[key], it, lengths, prices, kerf, waste_pct, currency, trim)
         line["kind"] = "cladding" if it["category"] == "cladding" else "timber"
         timber.append(line)
+        hints += ways_to_waste_less(line, groups[key], it, lengths, prices, kerf, waste_pct, currency, trim, frame["units"])
 
     sheets = []
     for key in sorted(sheet_groups):
@@ -482,13 +631,16 @@ def make_bom(frame, snapshot=None, waste_pct=None, kerf=None, sheet_spare_pct=0,
     return {
         "schema": SCHEMA, "name": frame.get("name", ""), "region": frame["region"], "units": frame["units"],
         "waste_pct": waste_pct, "sheet_spare_pct": sheet_spare_pct, "trim_mm": trim, "kerf_mm": kerf, "snapshot": snap,
-        "timber": timber, "sheets": sheets, "fasteners": fasteners, "bought": bought,
+        "timber": timber, "offcuts": offcut_summary(timber), "ways_to_waste_less": hints, "sheets": sheets, "fasteners": fasteners, "bought": bought,
         "totals": totals, "problems": problems,
         "notes": [
             "Nails and screws are counted from the recorded joints only: bottom plates to the floor "
             "and the fixings of bought items are not counted. Nail counts to weight are computed or from "
             "distributor lists and vary 5-10% with coating and maker.",
             "Spare pieces are of the longest stock length bought (timber), or whole sheets or packs.",
+            "Each piece's stock length is chosen together with its cuts, so a short cut is taken from the end of a "
+            "long piece instead of a new one: that is how offcuts are reused. The offcut total counts what is left "
+            "over, before the spare pieces.",
             "Sheet parts are laid out by their bounding rectangle; parts with a cut-out outline use "
             "more sheet than they need.",
         ] + special,
@@ -544,6 +696,13 @@ def render_md(bom):
             each, tot = price_cells(r["unit_price"], r["line_total"])
             out.append(f"| {ln['name'] if i == 0 else ''} | {ln['variant'] if i == 0 else ''} | {qty} | {each} | {tot} |")
     out.append("")
+    oc = bom["offcuts"]
+    out += [f"Offcuts: {oc['mm'] / 1000:.1f} m of {oc['bought_mm'] / 1000:.0f} m bought ({oc['pct']:g}%), before the spare pieces. "
+            "Short cuts are taken from the end of long pieces, so the offcuts left are the ones too short to use.", ""]
+    if bom["ways_to_waste_less"]:
+        out += ["### Ways to waste less", "",
+                "Advice only: the design is not changed. Each figure comes from packing the list again with that change.", ""]
+        out += [f"- {h['text']}" for h in bom["ways_to_waste_less"]] + [""]
     for ln in bom["timber"]:
         out += [f"### {ln['name']}, {ln['variant']}: {ln['cuts']} cuts on "
                 f"{len(ln['layouts'])} pieces ({ln['plan']}, {ln['waste_pct']:g}% waste)", ""]
