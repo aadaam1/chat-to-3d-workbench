@@ -45,9 +45,9 @@ RULES = [
     {"groups": ["frame"], "role": "posts", "order": 2, "title": "Posts and beams", "views": [
         PLAN_POSTS,
         {"view": "front", "title": "Front, seen from the front", "hide": HIDE, "hmarks": {"kinds": ["post"], "mode": "gap"},
-         "overall": "wh", "ground": True},
+         "overall": "wh", "ground": True, "ghost": ["deck", "floor"]},
         {"view": "left", "title": "Left side, seen from the left", "hide": HIDE, "hmarks": {"kinds": ["post"], "mode": "gap"},
-         "overall": "wh", "ground": True}]},
+         "overall": "wh", "ground": True, "ghost": ["deck", "floor"]}]},
     {"types": ["wall"], "prefixes": ["wall-"], "role": "wall", "order": 3, "title": "{G}", "views": [
         {"view": "outside", "title": "Seen from outside", "hide": HIDE, "hmarks": {"kinds": ["stud", "king", "jack"],
          "mode": "cum", "tall": 0.4}, "overall": "w", "heights": "ends", "openings": True}]},
@@ -349,24 +349,30 @@ class Svg:
 
 
 def stagger(items, vertical=False):
-    """Rows for dimension labels so none overlaps another label or crosses another leader.
+    """Rows for dimension labels so none overlaps another label, and where it can, no leader crosses a label.
     items: [(centre, half_extent)] in paper mm, left to right. Returns a row number for each."""
     rows, placed = [], []                                  # placed: (row, lo, hi, centre)
     for c, h in items:
         lo, hi = c - h - 0.6, c + h + 0.6
-        for r in range(6):
-            ok = True
-            for (r2, lo2, hi2, c2) in placed:
-                if r2 == r and not (hi < lo2 or lo > hi2):
-                    ok = False
-                if r2 < r and lo2 <= c <= hi2:             # this leader crosses a nearer label
-                    ok = False
-                if r2 > r and lo <= c2 <= hi:              # a farther leader crosses this label
-                    ok = False
-                if not ok:
+        chosen = None
+        for strict in (True, False):
+            for r in range(8):
+                ok = True
+                for (r2, lo2, hi2, c2) in placed:
+                    if r2 == r and not (hi < lo2 or lo > hi2):
+                        ok = False
+                    elif strict and r2 < r and lo2 <= c <= hi2:         # this leader crosses a nearer label
+                        ok = False
+                    elif strict and r2 > r and lo <= c2 <= hi:          # a farther leader crosses this label
+                        ok = False
+                    if not ok:
+                        break
+                if ok:
+                    chosen = r
                     break
-            if ok:
+            if chosen is not None:
                 break
+        r = chosen if chosen is not None else 7
         rows.append(r)
         placed.append((r, lo, hi, c))
     return rows
@@ -499,7 +505,9 @@ class View:
             x0 = self.outline[0]
             lo, hi = structure_box(self.frame)
             sv.poly([(X(lo[0]), Y(lo[1])), (X(hi[0]), Y(lo[1])), (X(hi[0]), Y(hi[1])), (X(lo[0]), Y(hi[1]))], "outl")
-        placed = []                                           # bubble centres
+        placed, small = [], 0                                 # bubble centres
+        n_small = sum(1 for m, ss, _ in self.shapes if self.letters.get(m["id"]) and
+                      max((bbox2(ss)[2] - bbox2(ss)[0]), (bbox2(ss)[3] - bbox2(ss)[1])) / N < 7.5)
         for m, ss, d in self.shapes:
             for s in ss:
                 pts = [(X(p[0]), Y(p[1])) for p in s]
@@ -513,7 +521,18 @@ class View:
                 continue
             b = bbox2(ss)
             bw, bh = (b[2] - b[0]) / N, (b[3] - b[1]) / N
-            if max(bw, bh) < 7.5:
+            if max(bw, bh) < 7.5:                              # too small for a bubble on it: one beside it, on a leader
+                if n_small > 12:                               # a crowd of small pieces: the table counts them
+                    continue
+                cx, cy = (X(b[0]) + X(b[2])) / 2, (Y(b[1]) + Y(b[3])) / 2
+                for dx, dy in ((4.6, -4.6), (-4.6, -4.6), (4.6, 4.6), (-4.6, 4.6)):
+                    if all((cx + dx - qx) ** 2 + (cy + dy - qy) ** 2 >= 4.7 ** 2 for qx, qy in placed):
+                        placed.append((cx + dx, cy + dy))
+                        small += 1
+                        sv.line(cx, cy, cx + dx * 0.55, cy + dy * 0.55, "ld")
+                        sv.circle(cx + dx, cy + dy, 2.1)
+                        sv.text(cx + dx, cy + dy + 1.0, lt, "middle", "dt b")
+                        break
                 continue
             cx, cy = (X(b[0]) + X(b[2])) / 2, (Y(b[1]) + Y(b[3])) / 2
             along = [0] if bw >= bh else [1]
@@ -647,7 +666,7 @@ class View:
         else:
             edges = [r0] + list(marks) + [r1]
             pos = [X(e) for e in edges]
-            labels = [((X(a) + X(b)) / 2, fmt(b - a, U)) for a, b in zip(edges, edges[1:])]
+            labels = [(X(c), t) for c, t in runs(edges, U)]
         sv.line(pos[0], y, pos[-1], y, "dl")
         for p in pos:
             sv.line(p, y - 1.2, p, y + 1.2, "dl")
@@ -670,7 +689,7 @@ class View:
         else:
             edges = [u0] + list(marks) + [u1]
             pos = [Y(e) for e in edges]
-            labels = [((Y(a) + Y(b)) / 2, fmt(b - a, U)) for a, b in zip(edges, edges[1:])]
+            labels = [(Y(c), t) for c, t in runs(edges, U)]
         sv.line(x, min(pos), x, max(pos), "dl")
         for p in pos:
             sv.line(x - 1.2, p, x + 1.2, p, "dl")
@@ -700,6 +719,23 @@ class View:
             sv.line(x - 1.5, y, x + 1.5, y, "dl")
             sv.tick(x, y)
         sv.text(x - 1.0 if not right else x + 3.2, (ya + yb) / 2, s, "middle", "dt b", rot=-90)
+
+
+def runs(edges, units):
+    """Labels (centre in model mm, text) for the gaps between edges; four or more equal gaps in a row become one '7 x 567'."""
+    gaps = [(a, b) for a, b in zip(edges, edges[1:])]
+    out, i = [], 0
+    while i < len(gaps):
+        j = i
+        while j + 1 < len(gaps) and abs((gaps[j + 1][1] - gaps[j + 1][0]) - (gaps[i][1] - gaps[i][0])) < 1.5:
+            j += 1
+        n = j - i + 1
+        if n >= 4:
+            out.append(((gaps[i][0] + gaps[j][1]) / 2, f"{n} x {fmt(gaps[i][1] - gaps[i][0], units)}"))
+        else:
+            out += [((a + b) / 2, fmt(b - a, units)) for a, b in gaps[i:j + 1]]
+        i = j + 1
+    return out
 
 
 def fit(make, max_w, max_h):
@@ -820,7 +856,7 @@ td.n,th.n{text-align:right;white-space:nowrap}
 tr{break-inside:avoid}
 .tot{font-weight:700;border-top:0.4mm solid var(--ink)}
 .lt{display:inline-block;min-width:5.5mm;text-align:center;border:0.3mm solid var(--ink);border-radius:50%%;font-weight:700;font-size:8.5pt;line-height:4.6mm}
-.drawing{display:grid;grid-template-columns:1fr %(tw)smm;gap:6mm;align-items:start;height:%(panel_h)smm}
+.drawing{display:grid;grid-template-columns:1fr %(tw)smm;gap:6mm;align-items:start}
 .drawing.full{grid-template-columns:1fr}
 .panel{display:flex;flex-direction:column;align-items:center;justify-content:flex-start}
 .panel .cap{font-size:9pt;color:var(--grey);margin:0 0 1mm;align-self:flex-start}
@@ -1091,15 +1127,15 @@ def section_html(frame, sec, views, rows, units, left_w, panel_w, panel_h, tw, f
     sub = ""
     if sec["role"] == "wall":
         a, b = WALL_SIDES.get(first.spec["view"], ("", ""))
-        sub = f"Seen from outside: the {a} is at the left of the drawing, the {b} at the right. Dimensions from the left end of the bottom plate."
+        sub = f"At the left of the drawing: the {a}. At the right: the {b}. Dimensions run from the left end of the bottom plate."
     elif first.spec["view"] == "plan":
-        sub = "Seen from above, front at the bottom, left wall at the left."
+        sub = "The left wall is at the left."
     heads = lambda t, N: f'<div class="head"><h2>{esc(t)}</h2><span class="sc">scale 1:{num(N)} at 100%</span></div>'
     def draw_one(v, w, h):
         svg, N, sw, sh = fit(lambda n: v.draw(n), w, h)
         return svg, N
     # page 1: the first view and the table
-    avail_h = panel_h - 24.0
+    avail_h = panel_h - 36.0
     svg, N = draw_one(first, left_w, avail_h)
     out.append('<section class="page draw">' + heads(title, N) + f'<p class="note" style="margin:-1mm 0 2mm">{esc(sub)}</p>'
                f'<div class="drawing"><div class="panel"><p class="cap">{esc(first.spec["title"])}</p>{svg}</div>'
