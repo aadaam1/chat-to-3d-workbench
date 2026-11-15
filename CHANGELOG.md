@@ -9,6 +9,9 @@ workbench is a working prototype, and anything may still change.
 
 ## [Unreleased]
 
+### Added
+- A printable site pack: the shopping list and each side of the structure drawn with dimensions, as a PDF (`tools/site_pack.sh`).
+
 ## [0.7.1] - 2026-11-14
 
 A planner that sizes the frame and says why, low terraces, long sheds, and a tidier preview

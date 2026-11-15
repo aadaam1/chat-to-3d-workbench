@@ -555,13 +555,25 @@ class View:
         return sv
 
     def draw_footings(self, sv, X, Y):
-        for i, (fx, fy, name) in enumerate(self.footings, 1):
-            x, y = X(fx), Y(fy)
+        pts = [(X(fx), Y(fy)) for fx, fy, _ in self.footings]
+        taken = []
+        for i, (x, y) in enumerate(pts, 1):
             sv.line(x - 4, y, x + 4, y, "ct")
             sv.line(x, y - 4, x, y + 4, "ct")
             sv.circle(x, y, 1.0, "cdot")
-            sv.circle(x + 5.0, y - 4.8, 2.3, "bub")
-            sv.text(x + 5.0, y - 3.8, str(i), "middle", "dt b")
+        for i, (x, y) in enumerate(pts, 1):
+            best = None
+            for dx, dy in ((5, -5), (-5, -5), (5, 5), (-5, 5), (0, -7.5), (7.5, 0), (-7.5, 0), (0, 7.5)):
+                bx, by = x + dx, y + dy
+                clear = all((bx - qx) ** 2 + (by - qy) ** 2 >= 4.8 ** 2 for qx, qy in taken)
+                clear = clear and all((bx - qx) ** 2 + (by - qy) ** 2 >= 3.6 ** 2 for qx, qy in pts)
+                if clear:
+                    best = (bx, by)
+                    break
+            bx, by = best or (x + 5, y - 5)
+            taken.append((bx, by))
+            sv.circle(bx, by, 2.3, "bub")
+            sv.text(bx, by + 1.0, str(i), "middle", "dt b")
 
     def draw_openings(self, sv, X, Y):
         U = self.units
@@ -853,6 +865,7 @@ table{border-collapse:collapse;width:100%%}
 th,td{text-align:left;padding:1mm 2mm;border-bottom:0.2mm solid var(--line);vertical-align:top}
 th{font-size:8.5pt;color:var(--grey);font-weight:600;border-bottom:0.4mm solid var(--ink)}
 td.n,th.n{text-align:right;white-space:nowrap}
+td.nw{white-space:nowrap}
 tr{break-inside:avoid}
 .tot{font-weight:700;border-top:0.4mm solid var(--ink)}
 .lt{display:inline-block;min-width:5.5mm;text-align:center;border:0.3mm solid var(--ink);border-radius:50%%;font-weight:700;font-size:8.5pt;line-height:4.6mm}
@@ -920,7 +933,7 @@ def cover_html(frame, checks, name, version, date, units, structure_size, bom):
     open_f = [f for f in checks.get("findings", []) if f["level"] in ("fix", "check")]
     ver = f"v{version}" if version else "no saved version"
     rows = [("Type", typ), ("Overall size", f"{fmt(w, units, True)} wide x {fmt(d, units, True)} deep x {fmt(h, units, True)} high"
-                                              + ("" if units == "imperial" else " (including the roof overhang)")),
+                                              + " (including the roof overhang)"),
             ("Version", ver + (f", {date}" if date else "")),
             ("Region", ("Europe" if frame["region"] == "eu" else "United States") + (", metric (mm)" if units == "metric" else ", feet and inches"))]
     facts = "".join(f"<tr><td>{esc(a)}</td><td>{esc(b)}</td></tr>" for a, b in rows)
@@ -1035,7 +1048,7 @@ def appendix_html(bom, units, group_titles):
                 g[k] = g.get(k, 0) + 1
             cuts = "; ".join(f"{n} x {w} {L(l)}" + (f" ({a:g}/{b:g} deg)" if a or b else "") + f" <span class=nd>{esc(gt)}</span>"
                              for (w, l, (a, b), gt), n in g.items())
-            out.append(f"<tr><td>{esc(p['piece'])}</td><td>{esc(L(p['stock_mm']))}</td><td>{cuts}</td><td class=n>{esc(L(p['offcut_mm']))}</td></tr>")
+            out.append(f"<tr><td class=nw>{esc(p['piece'])}</td><td class=nw>{esc(L(p['stock_mm']))}</td><td>{cuts}</td><td class=n>{esc(L(p['offcut_mm']))}</td></tr>")
         out.append("</table>")
     for ln in bom["sheets"]:
         a, b = ln["sheet_size_mm"]
