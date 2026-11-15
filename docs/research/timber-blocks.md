@@ -280,6 +280,33 @@ The upper top plate's joint is 600 mm from the lower plate's (IRC R602.3.2, 24 i
 carry no engineering check, and a floor joist longer than the longest stock needs a beam under
 it (not built).
 
+## The site pack, 2026-11-15
+
+`tools/site_pack.py` makes a PDF to take to the site: cover with the verdict and the disclaimer, the
+shopping list, one page per part (foundations, floor or deck, posts and beams, the four walls, the
+roof) and the cut list. It is not an assembly guide. Decisions: the drawings are plain orthographic
+projections of the members in `frame.json` (hull of the projected prism, painted far to near), so
+they can never disagree with the frame; walls are seen from outside (back and side walls are
+mirrored accordingly), floors and roofs from above, foundations from above with every footing
+dimensioned from the front-left corner. Sheathing, cladding and deck boards are left out of the
+drawings and listed in the table. A piece (same kind, section, length and cut angles) has one
+letter per part, with no I or O. What is drawn per part is a small rule table in the script, so a
+new recipe falls back to a plan and a front view. Printing goes through headless Chrome: one
+self-contained HTML (inline SVG and CSS, named `@page` for landscape drawings, margin boxes for the
+footer) is the only layout engine needed and needs no new Python packages. Not drawn: cut angles
+(the box is drawn, not the mitre), joints and fixings. Open: the order of assembly.
+
+The cover has two axonometric views (an orthographic camera from the front-left, 26 degrees above the
+horizon). They are rasterised with a small numpy z-buffer (every face triangulated, a per-pixel depth,
+flat shading by face direction, dark lines where the face changes) and embedded as PNG data URIs: a
+painter's sort failed on long members (rafters, roof sheets, wall cladding over sheathing). Without
+numpy or Pillow they fall back to sorted SVG polygons. "How it looks" shows everything; "The frame, by
+part" shows the frame only, one tone per part with a numbered callout (SVG on top of the image) that
+is the badge on that part's page. Each part page has a small key view of the same frame with the part
+dark, drawn over the rest, and an arrow for where the main drawing is seen from. The PNGs carry no
+metadata, so the HTML is byte-identical between runs. Not done: page numbers in the callouts (the
+layout engine owns the page count).
+
 ## Open questions
 
 - Load capacity of ground screws and footings (needs a manufacturer's

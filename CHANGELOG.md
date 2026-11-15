@@ -11,6 +11,7 @@ workbench is a working prototype, and anything may still change.
 
 ### Added
 - Summer kitchen: `roof_deck: none` (bare rafters for tile battens), `ties: posts` or `ends` (ties over the post lines or the two end lines only, braces up to them) with a `rafter-thrust` check, and `eave_blocking: false`.
+- A printable site pack: the shopping list and each side of the structure drawn with dimensions, as a PDF (`tools/site_pack.sh`).
 
 ## [0.7.1] - 2026-11-14
 
