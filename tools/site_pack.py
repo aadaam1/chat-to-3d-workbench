@@ -834,6 +834,265 @@ def piece_rows(frame, sec, letters, lib, units):
     return rows
 
 
+# ------------------------------------------------------------------------------------------ 3D views
+# An axonometric view (an orthographic projection from a raised front-left corner) drawn from real faces:
+# each member's six faces (or its outline prism's), back faces dropped, painted far to near, shaded by the
+# way each face points. Colours are CSS classes: material or part (cat) + brightness (lvl), so the
+# file stays small and prints in greyscale.
+
+ISO_AZ, ISO_EL = 34.0, 26.0            # degrees: round from the front towards the right, and down from the horizon
+LIGHT = (-0.5, -0.35, 0.8)             # towards the light: from the left, front and above
+MIN_FACE_MM2 = 1.0                     # faces smaller than this on paper are left out
+# (cat: base colour). Materials for "how it looks", tones for the parts of "the frame, by page".
+CATS = {"tim": (232, 214, 184), "cla": (205, 172, 124), "shs": (226, 214, 188), "rof": (128, 134, 140),
+        "dck": (200, 164, 118), "fnd": (176, 176, 176), "fa": (236, 236, 236), "hi": (176, 84, 14),
+        "p0": (208, 224, 242), "p1": (242, 220, 190), "p2": (206, 236, 208), "p3": (242, 208, 208),
+        "p4": (228, 214, 244), "p5": (246, 238, 184), "p6": (200, 232, 232), "p7": (222, 222, 222)}
+PART_TONES = 8
+
+
+def unit(a):
+    n = math.sqrt(dot(a, a)) or 1.0
+    return (a[0] / n, a[1] / n, a[2] / n)
+
+
+def sub3(a, b):
+    return (a[0] - b[0], a[1] - b[1], a[2] - b[2])
+
+
+def area2(poly):
+    return abs(sum(poly[i][0] * poly[(i + 1) % len(poly)][1] - poly[(i + 1) % len(poly)][0] * poly[i][1]
+                   for i in range(len(poly)))) / 2
+
+
+def in_poly(p, poly):
+    """Point in a polygon (even-odd)."""
+    x, y, c = p[0], p[1], False
+    for i in range(len(poly)):
+        a, b = poly[i], poly[(i + 1) % len(poly)]
+        if (a[1] > y) != (b[1] > y) and x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]:
+            c = not c
+    return c
+
+
+def mat_cat(m):
+    """The material class of a member for the "how it looks" view."""
+    k = m["kind"]
+    if k == "sheet":
+        return "rof" if m.get("layer") == "roof" else "shs"
+    if k == "board":
+        return "cla"
+    if k == "deckboard":
+        return "dck"
+    if m.get("layer") == "foundations":
+        return "fnd"
+    return "tim"
+
+
+def iso_css():
+    rules = ["svg .iso polygon{stroke:#3a3a3a;stroke-width:.09;stroke-linejoin:round}",
+             "svg .lite polygon{stroke:#c4c4c4;stroke-width:.07}",
+             "svg .gd{fill:#f6f6f3;stroke:#c8c8c8;stroke-width:.2;stroke-dasharray:1.6 1}",
+             "svg .ar{fill:var(--accent);stroke:var(--accent);stroke-width:.5;stroke-linejoin:round}"]
+    for cat, c in CATS.items():
+        for lv in range(10, 21):
+            f = lv / 20.0
+            rules.append(f"svg .{cat}{lv}{{fill:#{''.join('%02x' % min(255, round(v * f)) for v in c)}}}")
+    return "\n".join(rules)
+
+
+class Iso:
+    """The camera and every member's visible faces, worked out once."""
+
+    def __init__(self, frame):
+        az, el = math.radians(ISO_AZ), math.radians(ISO_EL)
+        self.f = (math.sin(az) * math.cos(el), math.cos(az) * math.cos(el), -math.sin(el))
+        self.r = unit(cross(self.f, (0, 0, 1)))
+        self.u = cross(self.r, self.f)
+        self.light = unit(LIGHT)
+        self.members = [self.build(m) for m in frame["members"]]
+        allp = [p for m in frame["members"] for p in prism(m)]
+        self.ground = [(min(p[0] for p in allp) - 150, min(p[1] for p in allp) - 150),
+                       (max(p[0] for p in allp) + 150, max(p[1] for p in allp) + 150)]
+
+    def pt(self, p):
+        return (dot(p, self.r), dot(p, self.u), dot(p, self.f))
+
+    def build(self, m):
+        poly, T = local_points(m)
+        x, y = unit(tuple(m["x"])), unit(tuple(m["y"]))
+        z = cross(x, y)
+        base = [world(m, u, v, 0) for u, v in poly]
+        top = [world(m, u, v, T) for u, v in poly]
+        n = len(poly)
+        sgn = 1 if sum(poly[i][0] * poly[(i + 1) % n][1] - poly[(i + 1) % n][0] * poly[i][1] for i in range(n)) > 0 else -1
+        faces = [(base, (-z[0], -z[1], -z[2])), (top, z)]
+        for i in range(n):
+            a, b = poly[i], poly[(i + 1) % n]
+            du, dv = b[0] - a[0], b[1] - a[1]
+            if abs(du) + abs(dv) < 1e-9:
+                continue
+            nu, nv = sgn * dv, -sgn * du
+            nrm = unit(tuple(nu * x[k] + nv * y[k] for k in range(3)))
+            faces.append(([base[i], base[(i + 1) % n], top[(i + 1) % n], top[i]], nrm))
+        out = []
+        for pts, nrm in faces:
+            if dot(nrm, self.f) >= -1e-6:
+                continue
+            p3 = [self.pt(p) for p in pts]
+            lit = max(0.0, dot(nrm, self.light))
+            lv = max(10, min(20, round((0.5 + 0.62 * lit) * 20)))
+            out.append(([(q[0], q[1]) for q in p3], lv, sum(q[2] for q in p3) / len(p3)))
+        out.sort(key=lambda t: -t[2])
+        near = min(self.pt(p)[2] for p in base + top)
+        return {"id": m["id"], "group": m["group"], "kind": m["kind"], "faces": out, "key": near, "m": m}
+
+    def scene(self, picks):
+        """picks: [(member index, cat, layer, tag)] -> faces in paint order [(polygon, cat+level, tag)]."""
+        order = sorted(picks, key=lambda p: (p[2], -self.members[p[0]]["key"], self.members[p[0]]["id"]))
+        items = []
+        for mi, cat, layer, tag in order:
+            for poly, lv, _ in self.members[mi]["faces"]:
+                items.append((poly, f"{cat}{lv}", tag))
+        return items
+
+    def anchors(self, items):
+        """For each tag, a spot on a face of that part that nothing painted later covers."""
+        boxes = [bbox2([it[0]]) for it in items]
+        by = {}
+        for i, it in enumerate(items):
+            if it[2] is not None:
+                by.setdefault(it[2], []).append(i)
+        res = {}
+        for tag in sorted(by):
+            cands = sorted(by[tag], key=lambda i: -area2(items[i][0]))[:40]
+            vis = []
+            for i in cands:
+                poly = items[i][0]
+                c = (sum(p[0] for p in poly) / len(poly), sum(p[1] for p in poly) / len(poly))
+                hidden = any(b[0] <= c[0] <= b[2] and b[1] <= c[1] <= b[3] and in_poly(c, items[j][0])
+                             for j, b in ((j, boxes[j]) for j in range(i + 1, len(items))))
+                if not hidden:
+                    vis.append((area2(poly), c))
+            if not vis:
+                poly = items[cands[0]][0]
+                vis = [(1.0, (sum(p[0] for p in poly) / len(poly), sum(p[1] for p in poly) / len(poly)))]
+            tw = sum(a for a, _ in vis)
+            wc = (sum(a * c[0] for a, c in vis) / tw, sum(a * c[1] for a, c in vis) / tw)
+            res[tag] = min((c for _, c in vis), key=lambda c: (c[0] - wc[0]) ** 2 + (c[1] - wc[1]) ** 2)
+        return res
+
+    def draw(self, items, max_w, max_h, lite=None, top=None, bubbles=None, arrow=None, ground=True):
+        """The scene as an SVG (paper mm). lite: items painted as a faint layer first (indexes < lite);
+        bubbles: [(label, (x, y) in model screen units)]; arrow: (from, to) in model 3D."""
+        g0, g1 = self.ground
+        gpoly = [self.pt((x, y, 0))[:2] for x, y in ((g0[0], g0[1]), (g1[0], g0[1]), (g1[0], g1[1]), (g0[0], g1[1]))] if ground else []
+        shapes = [it[0] for it in items] + ([gpoly] if gpoly else [])
+        ar = [self.pt(p)[:2] for p in arrow] if arrow else []
+        x0, y0, x1, y1 = bbox2(shapes + ([ar] if ar else []))
+        s = min(max_w / (x1 - x0), max_h / (y1 - y0))
+        if s * 1.0 > 0.2:
+            s = 0.2
+        X = lambda v: (v - x0) * s
+        Y = lambda v: (y1 - v) * s
+        P = lambda poly: " ".join(f"{X(p[0]):.1f},{Y(p[1]):.1f}" for p in poly)
+        parts = []
+        if gpoly:
+            parts.append(f'<polygon class="gd" points="{P(gpoly)}"/>')
+        cur = None
+        for poly, cls, tag in items:
+            if area2(poly) * s * s < MIN_FACE_MM2:
+                continue
+            g = "iso lite" if (lite and tag == "lite") else "iso"
+            if g != cur:
+                parts.append(("</g>" if cur else "") + f'<g class="{g}">')
+                cur = g
+            parts.append(f'<polygon class="{cls}" points="{P(poly)}"/>')
+        if cur:
+            parts.append("</g>")
+        w, h = (x1 - x0) * s, (y1 - y0) * s
+        if ar:
+            (ax, ay), (bx, by) = ((X(ar[0][0]), Y(ar[0][1])), (X(ar[1][0]), Y(ar[1][1])))
+            L = math.hypot(bx - ax, by - ay) or 1
+            dx, dy = (bx - ax) / L, (by - ay) / L
+            parts.append(f'<line class="ar" x1="{ax:.1f}" y1="{ay:.1f}" x2="{bx - dx * 2:.1f}" y2="{by - dy * 2:.1f}"/>'
+                         f'<polygon class="ar" points="{bx:.1f},{by:.1f} {bx - dx * 3 - dy * 1.4:.1f},{by - dy * 3 + dx * 1.4:.1f} '
+                         f'{bx - dx * 3 + dy * 1.4:.1f},{by - dy * 3 - dx * 1.4:.1f}"/>')
+        if bubbles:
+            r = 2.5
+            pos = [[X(a[0]), Y(a[1])] for _, a in bubbles]
+            home = [list(p) for p in pos]
+            for _ in range(60):
+                moved = False
+                for i in range(len(pos)):
+                    for j in range(i + 1, len(pos)):
+                        dx, dy = pos[j][0] - pos[i][0], pos[j][1] - pos[i][1]
+                        d = math.hypot(dx, dy)
+                        if d < 2 * r + 0.8:
+                            if d < 1e-6:
+                                dx, dy, d = 0.0, 1.0, 1.0
+                            k = (2 * r + 0.8 - d) / 2 / d
+                            pos[i][0] -= dx * k; pos[i][1] -= dy * k
+                            pos[j][0] += dx * k; pos[j][1] += dy * k
+                            moved = True
+                if not moved:
+                    break
+            for (lab, _), p, h0 in zip(bubbles, pos, home):
+                if math.hypot(p[0] - h0[0], p[1] - h0[1]) > 1.0:
+                    parts.append(f'<line class="dl" x1="{h0[0]:.1f}" y1="{h0[1]:.1f}" x2="{p[0]:.1f}" y2="{p[1]:.1f}"/>')
+                parts.append(f'<circle class="cdot" cx="{h0[0]:.1f}" cy="{h0[1]:.1f}" r="0.7"/>')
+            for (lab, _), p in zip(bubbles, pos):
+                parts.append(f'<circle class="bub" cx="{p[0]:.1f}" cy="{p[1]:.1f}" r="{r}"/>'
+                             f'<text class="dt n" font-size="3" text-anchor="middle" x="{p[0]:.1f}" y="{p[1] + 1.05:.1f}">{esc(lab)}</text>')
+        pad = 3.0
+        svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{w + 2 * pad:.1f}mm" height="{h + 2 * pad:.1f}mm" '
+               f'viewBox="{-pad} {-pad} {w + 2 * pad:.1f} {h + 2 * pad:.1f}">' + "".join(parts) + "</svg>")
+        return svg
+
+
+def looks_svg(iso, frame, max_w, max_h):
+    picks = [(i, mat_cat(m), 0, None) for i, m in enumerate(frame["members"])]
+    return iso.draw(iso.scene(picks), max_w, max_h)
+
+
+def frame_svg(iso, frame, secs, max_w, max_h):
+    part_of = {s["group"]: i for i, s in enumerate(secs)}
+    picks = [(i, f"p{part_of[m['group']] % PART_TONES}", 0, part_of[m["group"]])
+             for i, m in enumerate(frame["members"]) if m["kind"] not in HIDE]
+    items = iso.scene(picks)
+    anc = iso.anchors(items)
+    bub = [(str(t + 1), anc[t]) for t in sorted(anc)]
+    return iso.draw(items, max_w, max_h, bubbles=bub)
+
+
+def key_svg(iso, frame, secs, sec, max_w, max_h):
+    """The frame in very light grey with this part dark, and an arrow for where its main drawing is seen from."""
+    picks = []
+    for i, m in enumerate(frame["members"]):
+        if m["kind"] in HIDE:
+            continue
+        mine = m["group"] == sec["group"]
+        picks.append((i, "hi" if mine else "fa", 1 if mine else 0, None if mine else "lite"))
+    items = iso.scene(picks)
+    mem = [m for m in sec["members"] if m["kind"] not in HIDE] or sec["members"]
+    boxes = [aabb(m) for m in mem]
+    lo = [min(b[0][k] for b in boxes) for k in range(3)]
+    hi = [max(b[1][k] for b in boxes) for k in range(3)]
+    mid = [(lo[k] + hi[k]) / 2 for k in range(3)]
+    v = sec["views"][0]["view"] if sec["views"] else "plan"
+    span = max(hi[k] - lo[k] for k in range(3))
+    L = max(450.0, min(900.0, span * 0.35))
+    if v == "plan":
+        arrow = ((mid[0], mid[1], hi[2] + L), (mid[0], mid[1], hi[2] + 40))
+    else:
+        d = {"front": (0, 1, 0), "back": (0, -1, 0), "left": (1, 0, 0), "right": (-1, 0, 0)}[v]
+        end = list(mid)
+        k = 0 if d[0] else 1
+        end[k] = (lo[k] - 40) if d[k] > 0 else (hi[k] + 40)
+        arrow = (tuple(end[j] - d[j] * L for j in range(3)), tuple(end))
+    return iso.draw(items, max_w, max_h, lite=True, arrow=arrow)
+
+
 # ------------------------------------------------------------------------------------------ html page
 
 CSS = """
@@ -844,7 +1103,7 @@ body{margin:0;background:#fff;color:var(--ink);font:9.5pt/1.35 system-ui,-apple-
 %(pages)s
 h1{font-size:26pt;margin:0 0 2mm;line-height:1.1}
 h2{font-size:15pt;margin:0 0 3mm}
-h3{font-size:11pt;margin:5mm 0 1.5mm}
+h3{font-size:11pt;margin:5mm 0 1.5mm;break-after:avoid}
 p{margin:0 0 2mm}
 .sub{color:var(--grey);margin:0 0 5mm}
 .page{break-before:page}
@@ -875,11 +1134,11 @@ tr{break-inside:avoid}
 .panel .cap{font-size:9pt;color:var(--grey);margin:0 0 1mm;align-self:flex-start}
 .cols{display:flex;gap:6mm}
 .cols .panel{flex:1}
-.head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:0.4mm solid var(--ink);margin:0 0 3mm}
+.head{display:flex;justify-content:flex-start;align-items:baseline;border-bottom:0.4mm solid var(--ink);margin:0 0 3mm}
 .head h2{margin:0}
-.head .sc{color:var(--grey);font-size:9pt}
+.head .sc{color:var(--grey);font-size:9pt;margin-left:auto}
 .pieces{font-size:8.5pt}
-.pieces td,.pieces th{padding:0.8mm 1.5mm}
+.pieces td,.pieces th{padding:0.55mm 1.5mm}
 .note{font-size:8.5pt;color:var(--grey);margin:2mm 0 0}
 .nd{color:var(--grey)}
 svg{display:block;max-width:100%%}
@@ -900,6 +1159,15 @@ svg .dt.a{fill:var(--accent)}
 svg .dt.g{fill:#666}
 svg .dt.b{font-weight:700}
 svg .bub+text.dt{fill:#1a1a1a;stroke:none}
+svg text.n{font-weight:700;fill:#1a1a1a;stroke:none}
+.views{display:flex;gap:6mm;margin:0 0 4mm;align-items:flex-start}
+.views>div{flex:1;min-width:0}
+.views .cap{font-size:9pt;font-weight:600;margin:0 0 1mm}
+.leg{list-style:none;margin:1mm 0 0;padding:0;columns:2;font-size:8.5pt}
+.leg li{break-inside:avoid;margin:0 0 .8mm}
+.key{margin:0 0 1.5mm}
+.key .cap{font-size:8.5pt;color:var(--grey);margin:0 0 .5mm}
+.head .pno{order:-1;margin-right:2mm;align-self:center}
 """
 
 
@@ -911,7 +1179,7 @@ def page_css(region, footer_left, panel_h, tw):
             f'@bottom-center{{content:"{SHORT_WARNING}";font:8pt system-ui,Arial,sans-serif;color:#666;vertical-align:top;padding-top:3mm}}')
     pages = (f"@page{{size:{size};margin:14mm 14mm 16mm 14mm;{foot}}}\n"
              f"@page drawing{{size:{size} landscape;margin:10mm 10mm 14mm 10mm;{foot}}}")
-    return CSS % {"accent": ACCENT, "pages": pages, "tw": num(tw), "panel_h": num(panel_h)}
+    return CSS % {"accent": ACCENT, "pages": pages, "tw": num(tw), "panel_h": num(panel_h)} + iso_css()
 
 
 def pretty_name(frame):
@@ -926,7 +1194,7 @@ def first_sentence(text, limit=260):
     return t if len(t) <= limit else t[:limit].rsplit(" ", 1)[0] + "..."
 
 
-def cover_html(frame, checks, name, version, date, units, structure_size, bom):
+def cover_html(frame, checks, name, version, date, units, structure_size, bom, views=""):
     spec = frame.get("spec", {})
     typ = TYPE_NAMES.get(spec.get("type"), (spec.get("type") or "Timber structure").replace("-", " ").capitalize())
     w, d, h = structure_size
@@ -956,12 +1224,13 @@ def cover_html(frame, checks, name, version, date, units, structure_size, bom):
         dec = ("<h3>How it was planned</h3><p class=\"small\">What the description left open, and what the planner chose.</p><ul class=\"dec\">"
                + "".join(f"<li><b>{esc(x['what'])}:</b> {esc(x['chose'])}. {esc(x['why'][:1].upper() + x['why'][1:])}.</li>" for x in decisions)
                + "</ul>")
-    how = ('<h3>How to read the drawings</h3><p class="small">Each side is drawn on its own page. Walls are seen from outside. '
+    how = ('<h3>How to read the drawings</h3><p class="small">The two 3D views are seen from the front-left, from above: the numbers on the right-hand one are the part numbers at the top of each drawing page. '
+           "Each side is drawn on its own page. Walls are seen from outside. "
            "Floors and roofs are seen from above, with the front at the bottom of the page. Left and right are as you face the front "
            "wall from outside. Letters match the table next to the drawing. Sheathing, cladding and deck boards are not drawn "
            "(they would hide the frame) but are in the table. Print at 100% (not &quot;fit to page&quot;) for the scale shown.</p>")
     return (f'<section class="page cover"><h1>{esc(name)}</h1><p class="sub">Site pack: shopping list and drawings</p>'
-            f'<table class="facts">{facts}</table>{verdict}{warn}{dec}{how}</section>')
+            f'<table class="facts">{facts}</table>{views}{verdict}{warn}{dec}{how}</section>')
 
 
 def shopping_html(bom, units):
@@ -1081,7 +1350,14 @@ def build_pages(frame, checks, bom, version, date):
             max(b[1][2] for b in allbox) - max(0, min(b[0][2] for b in allbox) if False else 0))
     secs = make_sections(frame)
     group_titles = {s["group"]: s["title"] for s in secs}
-    body = [cover_html(frame, checks, name, version, date, units, size, bom), shopping_html(bom, units)]
+    iso = Iso(frame)
+    vw = (ph - 28.0 - 6.0) / 2
+    secs_ = secs
+    legend = "".join(f'<li><span class="lt">{i + 1}</span> {esc(sc["title"])}</li>' for i, sc in enumerate(secs_))
+    views = ('<div class="views"><div><p class="cap">How it looks</p>' + looks_svg(iso, frame, vw, 72.0) + '</div>'
+             '<div><p class="cap">The frame, by part</p>' + frame_svg(iso, frame, secs_, vw, 72.0) + '</div></div>'
+             f'<ul class="leg">{legend}</ul>')
+    body = [cover_html(frame, checks, name, version, date, units, size, bom, views), shopping_html(bom, units)]
     summary = []
     for sec in secs:
         # which members are drawn in any view: their letters
@@ -1096,7 +1372,8 @@ def build_pages(frame, checks, bom, version, date):
         pages = []
         for i, v in enumerate(views):
             pages.append(v)
-        body.append(section_html(frame, sec, views, rows, units, left_w, panel_w, panel_h, tw, footings, lo, hi))
+        body.append(section_html(frame, sec, views, rows, units, left_w, panel_w, panel_h, tw, footings, lo, hi,
+                                 key=key_svg(iso, frame, secs, sec, 46.0, 30.0), no=secs.index(sec) + 1))
     body.append(appendix_html(bom, units, group_titles))
     css = page_css(region, f"{esc(name)}, {'version ' + str(version) if version else 'no saved version'}".replace('"', "'"), panel_h, tw)
     doc = (f'<!doctype html><html lang="en"><head><meta charset="utf-8"><title>{esc(name)}: site pack</title>'
@@ -1132,7 +1409,7 @@ def pieces_table(sec, rows, units, footings):
     return "".join(t)
 
 
-def section_html(frame, sec, views, rows, units, left_w, panel_w, panel_h, tw, footings, lo, hi):
+def section_html(frame, sec, views, rows, units, left_w, panel_w, panel_h, tw, footings, lo, hi, key="", no=None):
     sec["frame"] = frame
     title = sec["title"]
     out = []
@@ -1143,7 +1420,8 @@ def section_html(frame, sec, views, rows, units, left_w, panel_w, panel_h, tw, f
         sub = f"At the left of the drawing: the {a}. At the right: the {b}. Dimensions run from the left end of the bottom plate."
     elif first.spec["view"] == "plan":
         sub = "The left wall is at the left."
-    heads = lambda t, N: f'<div class="head"><h2>{esc(t)}</h2><span class="sc">scale 1:{num(N)} at 100%</span></div>'
+    pn = f'<span class="lt pno">{no}</span>' if no else ""
+    heads = lambda t, N: f'<div class="head"><h2>{esc(t)}</h2>{pn}<span class="sc">scale 1:{num(N)} at 100%</span></div>'
     def draw_one(v, w, h):
         svg, N, sw, sh = fit(lambda n: v.draw(n), w, h)
         return svg, N
@@ -1152,7 +1430,7 @@ def section_html(frame, sec, views, rows, units, left_w, panel_w, panel_h, tw, f
     svg, N = draw_one(first, left_w, avail_h)
     out.append('<section class="page draw">' + heads(title, N) + f'<p class="note" style="margin:-1mm 0 2mm">{esc(sub)}</p>'
                f'<div class="drawing"><div class="panel"><p class="cap">{esc(first.spec["title"])}</p>{svg}</div>'
-               f'<div>{pieces_table(sec, rows, units, footings)}</div></div></section>')
+               f'<div><div class="key"><p class="cap">Where this part is; arrow: viewing direction</p>{key}</div>{pieces_table(sec, rows, units, footings)}</div></div></section>')
     rest = views[1:]
     if rest:
         n = len(rest)
