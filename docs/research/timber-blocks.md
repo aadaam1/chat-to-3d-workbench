@@ -307,6 +307,12 @@ dark, drawn over the rest, and an arrow for where the main drawing is seen from.
 metadata, so the HTML is byte-identical between runs. Not done: page numbers in the callouts (the
 layout engine owns the page count).
 
+## Less offcut and staggered blocking, 2026-11-15
+
+Shopping list: the cuts of one item and variant are packed by choosing each piece's stock length together with its cuts (take the longest cut left, fill every length that holds it as fully as possible from the cuts left with a subset search, keep the piece with the lowest price per millimetre used, or the least offcut when a length has no price). It is tried beside the old single-length and mix plans and the best plan wins by the old rule (cheapest, else least waste), so a list is never worse than before. Offcuts are reused implicitly: short cuts fill the end of a long piece. The list shows the total offcut (mm and %, before the spare) and, for a line over 12% offcut whose cuts are a few millimetres over a stock length (usually the 20 mm kept for squaring the ends), a "ways to waste less" hint worked out by packing again with the shorter cut; it never changes the design. Spare pieces are not part of the choice (the old rule kept).
+
+Blocking: a row under a sheet seam stays straight (the seam lands on its centre); a row that only stiffens the joists alternates its blocks by one timber thickness so each can be end-nailed through its joist. Only the floor has such rows, and only when seams are more than 1.5 m apart, which 1250 mm sheets never do; wall noggins are not generated, and the roof has seam and eave rows only. Source: common builders' practice, marked as the workbench's choice in `framing.md`.
+
 ## Open questions
 
 - Load capacity of ground screws and footings (needs a manufacturer's

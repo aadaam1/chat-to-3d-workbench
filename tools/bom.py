@@ -12,11 +12,21 @@ Reads the frame file written by tools/frame.py and writes, into <dir>:
 What it works out:
   * Timber and cladding boards: the cuts of each item and variant are packed
     onto the stock lengths on offer (the price snapshot's lengths when it
-    sells that item, else the library's), first-fit decreasing with the saw
-    kerf between cuts. Every single stock length is tried, and a mix (pack on
-    the longest, then give each piece the cheapest length that still holds
-    its cuts). The cheapest plan wins when every piece has a price, else the
-    one with the least waste; ties go to fewer pieces, then a single length.
+    sells that item, else the library's) with the saw kerf between cuts and
+    `--trim` kept at each piece's ends. Plans tried: every single stock
+    length (first-fit decreasing), a mix (pack on the longest, then give each
+    piece the cheapest length that holds its cuts), and "fitted" plans that
+    choose each piece's length together with its cuts: take the longest cut
+    left, fill every length that holds it as fully as possible from the cuts
+    left (a subset search), keep the piece with the lowest price per mm used.
+    That is how offcuts get reused: a short cut goes on the end of a long
+    piece. The cheapest plan wins when every length has a price, else the one
+    with the least waste; ties go to fewer pieces, then a simpler plan.
+  * Offcuts: the total left over (mm and % of the timber bought, before the
+    spare) is in bom.json ("offcuts") and bom.md. A line with more than 12%
+    offcut whose cuts are a few mm over a stock length gets a "ways to waste
+    less" hint (bom.json "ways_to_waste_less"): the same list packed again with
+    the shorter cut. Advice only; nothing in the design changes.
   * Sheets: bounding rectangles on full sheets, shelf algorithm (first-fit
     decreasing height), kerf between parts, rotation only where the library
     says the sheet can rotate (OSB, plywood).
