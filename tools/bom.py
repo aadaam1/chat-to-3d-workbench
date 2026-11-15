@@ -260,7 +260,7 @@ def plan_key(plan, prices, kerf):
     kind, bins = plan
     stock = sum(L for L, _ in bins)
     cuts = sum(c[1] for _, b in bins for c in b)
-    waste = stock - cuts
+    waste = round(stock - cuts, 3)             # sums of fractional lengths: equal plans must compare equal
     full = all(prices.get(L) is not None for L, _ in bins)
     cost = sum(prices[L] for L, _ in bins) if full else None
     primary = (0, cost, waste) if full else (1, waste, 0)
