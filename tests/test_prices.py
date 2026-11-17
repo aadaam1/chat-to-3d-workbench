@@ -307,3 +307,19 @@ def test_cheapest_packs_exact_and_deterministic():
     assert pk(3.6, [(1, 10), (2.5, 22), (5, 35)])[:2] == (35.0, 5.0)   # one 5 kg box beats 2.5 + 1 + 1 (42.00)
     assert pk(10, [(5, 35), (5, 30)])[0] == 60.0                 # the cheaper of equal sizes
     assert pk(5, []) is None
+
+
+def test_importer_turns_prices_per_m2_and_per_m_into_piece_prices(tmp_path):
+    r, rows = rows_of(tmp_path, "zz-misc-2026-11-05")
+    by = {x["product"]: x for x in rows}
+    osb = by["OSB 12 per m2"]
+    assert (osb["unit"], osb["price_gross"], osb["gross_per_m2"]) == ("piece", "525.00", "168") and "per m2 x 3.125" in osb["notes"]
+    board = by["Board 14x121x4m per m2"]
+    assert board["price_gross"] == f"{4990 * 0.121 * 4:.2f}" and board["notes"].startswith("T&G; price per m2")
+    assert by["Trim per m"]["price_gross"] == "100.00"
+    # a header with no VAT rate: a gross price stands alone (net stays blank); a net price alone is refused
+    gs = by["Ground screw"]
+    assert gs["price_gross"] == "13500.00" and gs["price_net"] == ""
+    assert "Net only" not in by and "no VAT rate" in r.stderr
+    loaded = tl.load_snapshot(str(tmp_path / "zz-misc-2026-11-05.csv"))
+    assert next(x for x in loaded if x["item"] == "ground-screw-76x800")["price_net"] is None
