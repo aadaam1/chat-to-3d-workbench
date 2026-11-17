@@ -17,7 +17,7 @@ import csv, glob, json, math, os, re
 from fractions import Fraction
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PRICES = os.path.join(ROOT, "data", "timber", "prices")
+PRICES = os.environ.get("TIMBER_PRICES_DIR") or os.path.join(ROOT, "data", "timber", "prices")   # the env var is for tests
 LIBRARY = os.path.join(ROOT, "data", "timber", "library")
 
 CATEGORIES = ("sections", "sheets", "cladding", "fasteners", "bought")
@@ -237,29 +237,78 @@ def parse_section(s):
     return tuple(sorted((float(m.group(1)), float(m.group(2)))))
 
 
+def _stamp(p):
+    d = re.findall(r"\d{4}-\d{2}-\d{2}", os.path.basename(p))
+    return d[-1] if d else ""
+
+
+def snapshot_slug(path):
+    """The supplier slug in a snapshot's file name: hu-szekely-fatelep-2026-11-10.csv -> szekely-fatelep."""
+    name = os.path.basename(path)
+    name = re.sub(r"\.[a-z]+$", "", name)
+    name = re.sub(r"-\d{4}-\d{2}-\d{2}$", "", name)
+    return name.split("-", 1)[1] if "-" in name else name
+
+
 def newest_snapshot(region):
     """Path of the newest price snapshot for a region; ValueError when there is none."""
-    def stamp(p):
-        d = re.findall(r"\d{4}-\d{2}-\d{2}", p)
-        return d[-1] if d else ""
-    files = sorted(glob.glob(os.path.join(PRICES, f"{region}-*.csv")), key=stamp)
+    files = sorted(glob.glob(os.path.join(PRICES, f"{region}-*.csv")), key=_stamp)
     if not files:
         raise ValueError(f"no price snapshot for region {region!r} in {PRICES}")
     return files[-1]
 
 
+def snapshot_paths(spec):
+    """Paths of the snapshots a price spec names: 'hu' is the newest snapshot of each
+    supplier in that region, 'hu:<supplier-slug>' only that supplier's newest.
+    ValueError when there is none."""
+    region, _, slug = spec.partition(":")
+    newest = {}
+    for p in sorted(glob.glob(os.path.join(PRICES, f"{region}-*.csv")), key=_stamp):
+        newest[snapshot_slug(p)] = p          # sorted by date: the last one per supplier wins
+    if slug:
+        if slug not in newest:
+            raise ValueError(f"no price snapshot for supplier {slug!r} in region {region!r}; have: "
+                             f"{', '.join(sorted(newest)) or 'none'}")
+        return [newest[slug]]
+    if not newest:
+        raise ValueError(f"no price snapshot for region {region!r} in {PRICES}")
+    return [newest[k] for k in sorted(newest)]
+
+
+SNAPSHOT_NUMBERS = ("thickness_mm", "width_mm", "length_mm", "price_gross", "price_net", "pack_qty")
+SNAPSHOT_TEXT = ("item", "unit", "notes")
+
+
 def load_snapshot(path):
-    """Rows of a price snapshot CSV, numbers as floats."""
+    """Rows of a price snapshot CSV, numbers as floats. Columns added later (item, unit,
+    pack_qty) are None (numbers) or "" (text) in older snapshots; an empty number is None."""
     with open(path, encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
     for r in rows:
-        for k in ("thickness_mm", "width_mm", "length_mm", "price_gross", "price_net"):
-            r[k] = float(r[k])
+        for k in SNAPSHOT_NUMBERS:
+            v = r.get(k)
+            r[k] = float(v) if v not in (None, "") else None
+        for k in SNAPSHOT_TEXT:
+            r[k] = r.get(k) or ""
     return rows
 
 
+def load_snapshots(spec):
+    """[(path, rows)] for a price spec (see snapshot_paths). All must share one currency:
+    one region, one currency; ValueError otherwise."""
+    out = [(p, load_snapshot(p)) for p in snapshot_paths(spec)]
+    cur = {r["currency"] for _, rows in out for r in rows}
+    if len(cur) > 1:
+        raise ValueError(f"the snapshots for {spec!r} use more than one currency ({', '.join(sorted(cur))}): "
+                         "prices of different currencies are never added together")
+    return out
+
+
 def money(x, cur):
-    return f"{x:,.0f} {cur}".replace(",", " ")
+    if cur == "HUF" or not cur:
+        return f"{x:,.0f} {cur}".replace(",", " ")
+    return f"{x:,.2f} {cur}".replace(",", " ")
 
 
 def allowance(qty, waste_pct):

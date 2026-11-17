@@ -22,6 +22,15 @@ Each row gets: kind (lumber or sheet), variant (sawn, planed, impregnated),
 thickness, width and length in mm, species and grade where named, prices,
 and computed price per m³, per running metre (lumber) and per m² (sheets).
 Lines it can't read are listed on stderr and left out; it never guesses.
+
+The other format is a tab-separated file with "# key: value" header lines (supplier,
+region, read_date, currency, prices) and a header row, one row per product, for any
+kind of item: lumber, sheets, fasteners and bought items (nails by the box, screws by
+the pack, felt by the roll, trims, ground screws). It is detected by its header row
+(source_url, product, kind, item, ...); the columns are described in data/timber/README.md.
+--supplier, --region, --date and --currency then default to the header lines.
+EU files give gross or net prices (the other is computed from the VAT rate in the
+"# prices:" line); US files give the shelf price, before sales tax, as both.
 """
 import argparse, csv, re, sys
 
@@ -72,6 +81,156 @@ def sizes(name):
     return None
 
 
+UNITS = ("piece", "box", "pack", "roll", "m2", "m", "kg")
+KINDS = ("lumber", "sheet", "fastener", "bought")
+TSV_COLUMNS = ["source_url", "product", "kind", "item", "variant", "species", "grade", "thickness_mm",
+               "width_mm", "length_mm", "unit", "pack_qty", "price_net", "price_gross", "notes"]
+OUT_COLUMNS = ["region", "supplier", "read_date", "source_url", "product", "kind", "item", "variant",
+               "species", "grade", "notes", "thickness_mm", "width_mm", "length_mm", "unit", "pack_qty",
+               "price_net", "price_gross", "currency", "gross_per_m3", "gross_per_m", "gross_per_m2"]
+VARIANTS = ("sawn", "planed", "impregnated")
+
+
+def is_tsv(path):
+    """True for the tab-separated format: it has a header row starting with source_url."""
+    with open(path, encoding="utf-8") as f:
+        return any(line.startswith("source_url\t") for line in f)
+
+
+def plain_number(s):
+    """A number with a decimal point and no thousands separators; ValueError otherwise."""
+    s = s.strip()
+    if not re.fullmatch(r"\d+(?:\.\d+)?", s):
+        raise ValueError(s)
+    return float(s)
+
+
+def read_tsv(path):
+    """(header dict, rows as dicts, unreadable lines with the reason) of a raw TSV file."""
+    head, cols, rows, bad = {}, None, [], []
+    for line in open(path, encoding="utf-8"):
+        line = line.rstrip("\n").rstrip("\r")
+        if not line.strip():
+            continue
+        if line.startswith("#"):
+            k, _, v = line[1:].partition(":")
+            head[k.strip().lower()] = v.strip()
+            continue
+        parts = line.split("\t")
+        if cols is None:
+            if parts[0] != "source_url":
+                bad.append((line, "no header row before the first product")); continue
+            cols = [c.strip() for c in parts]
+            missing = [c for c in TSV_COLUMNS if c not in cols]
+            if missing:
+                raise SystemExit(f"{path}: header row lacks column(s) {', '.join(missing)}")
+            continue
+        if len(parts) > len(cols):
+            bad.append((line, f"{len(parts)} columns, the header has {len(cols)}")); continue
+        parts += [""] * (len(cols) - len(parts))
+        rows.append(dict(zip(cols, (p.strip() for p in parts))))
+    return head, rows, bad
+
+
+def vat_of(head):
+    """('gross' | 'net' | 'shelf', vat fraction or None) from the "# prices:" header line."""
+    txt = head.get("prices", "").lower()
+    if "sales tax" in txt:
+        return "shelf", None
+    m = re.search(r"(\d+(?:[.,]\d+)?)\s*%", txt)
+    vat = num(m.group(1)) / 100 if m else None
+    return ("net" if re.search(r"\bnet\b|excl", txt) else "gross"), vat
+
+
+def convert_tsv(path, region, supplier, date, currency):
+    """(snapshot rows, [(line, reason)]) from a raw TSV file."""
+    head, raw, skipped = read_tsv(path)
+    mode, vat = vat_of(head)
+    out = []
+    for r in raw:
+        line = "\t".join(r.values())
+
+        def bad(why):
+            skipped.append((line, why))
+        kind, unit = r["kind"].lower(), (r["unit"].lower() or "piece")
+        if not r["source_url"].startswith("http"):
+            bad("no source_url"); continue
+        if not r["product"]:
+            bad("no product name"); continue
+        if kind not in KINDS:
+            bad(f"kind {r['kind']!r} is not one of {', '.join(KINDS)}"); continue
+        if unit not in UNITS:
+            bad(f"unit {r['unit']!r} is not one of {', '.join(UNITS)}"); continue
+        try:
+            nums = {k: (plain_number(r[k]) if r[k] else None)
+                    for k in ("thickness_mm", "width_mm", "length_mm", "pack_qty", "price_net", "price_gross")}
+        except ValueError as e:
+            bad(f"{e.args[0]!r} is not a number (decimal point, no thousands separators)"); continue
+        pn, pg = nums["price_net"], nums["price_gross"]
+        if pn is None and pg is None:
+            bad("no price"); continue
+        if pn is not None and pn <= 0 or pg is not None and pg <= 0:
+            bad("price is zero or negative"); continue
+        if mode == "shelf":     # US: the shelf price, before sales tax, is the one price
+            if pn is not None and pg is not None and abs(pg - pn) > 0.005:
+                bad("US files give one shelf price, in price_net"); continue
+            pn = pg = pn if pn is not None else pg
+        else:
+            if vat is None and (pn is None or pg is None):
+                bad("only one of net and gross is given and the header has no VAT rate"); continue
+            if pn is None:
+                pn = pg / (1 + vat)
+            elif pg is None:
+                pg = pn * (1 + vat)
+            elif vat is not None and abs(pn * (1 + vat) - pg) > max(0.03 * pg, 0.5):
+                bad(f"net and gross don't match the {vat * 100:g}% VAT"); continue
+        if kind in ("fastener", "bought") and not r["item"]:
+            bad("a fastener or bought item needs an item key"); continue
+        if unit in ("box", "pack", "roll") and not nums["pack_qty"]:
+            bad(f"unit {unit} needs pack_qty"); continue
+        variant = r["variant"].lower()
+        t = w = l = None
+        if kind in ("lumber", "sheet"):
+            t, w, l = nums["thickness_mm"], nums["width_mm"], nums["length_mm"]
+            if not (t and w and l):
+                bad("lumber and sheets need thickness_mm, width_mm and length_mm"); continue
+            if unit != "piece":
+                bad(f"{kind} must be priced per piece, not per {unit}"); continue
+            if kind == "sheet":
+                variant = "sheet"
+                t, w, l = t, min(w, l), max(w, l)
+            elif variant not in VARIANTS:
+                bad(f"lumber variant {r['variant']!r} is not one of {', '.join(VARIANTS)}"); continue
+            else:
+                t, w = min(t, w), max(t, w)
+        else:
+            t, w, l = nums["thickness_mm"], nums["width_mm"], nums["length_mm"]
+        fmt = lambda x: f"{x:g}" if x is not None else ""
+        row = {"region": region, "supplier": supplier, "read_date": date, "source_url": r["source_url"],
+               "product": r["product"], "kind": kind, "item": r["item"], "variant": variant,
+               "species": r["species"], "grade": r["grade"], "notes": r["notes"],
+               "thickness_mm": fmt(t), "width_mm": fmt(w), "length_mm": fmt(l), "unit": unit,
+               "pack_qty": fmt(nums["pack_qty"]) if nums["pack_qty"] else ("1" if unit in ("piece", "m", "m2", "kg") else ""),
+               "price_net": f"{pn:.2f}", "price_gross": f"{pg:.2f}", "currency": currency,
+               "gross_per_m3": "", "gross_per_m": "", "gross_per_m2": ""}
+        if kind in ("lumber", "sheet"):
+            vol = t * w * l / 1e9
+            row["gross_per_m3"] = f"{pg / vol:.0f}"
+            if kind == "lumber":
+                row["gross_per_m"] = f"{pg / (l / 1000):.0f}"
+            else:
+                row["gross_per_m2"] = f"{pg / (w * l / 1e6):.0f}"
+        out.append(row)
+    return out, skipped
+
+
+def sort_key(r):
+    f = lambda k: float(r[k]) if r[k] != "" else 0.0
+    return (KINDS.index(r["kind"]), r["item"] if r["kind"] in ("fastener", "bought") else "",
+            f("thickness_mm"), f("width_mm"), r["variant"], r["species"], f("length_mm"),
+            r["product"], f("pack_qty"))
+
+
 def describe(name):
     low = name.lower()
     if "impregn" in low:
@@ -92,17 +251,41 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("raw")
     ap.add_argument("out")
-    ap.add_argument("--supplier", required=True)
-    ap.add_argument("--region", required=True)
-    ap.add_argument("--date", required=True, help="the day the prices were read, YYYY-MM-DD")
-    ap.add_argument("--currency", default="HUF")
+    ap.add_argument("--supplier", help="required for the text format; a TSV file has it in its header")
+    ap.add_argument("--region", help="required for the text format; a TSV file has it in its header")
+    ap.add_argument("--date", help="the day the prices were read, YYYY-MM-DD (required for the text format)")
+    ap.add_argument("--currency", help="default HUF for the text format; a TSV file has it in its header")
     a = ap.parse_args()
 
-    cols = ["region", "supplier", "read_date", "source_url", "product", "kind", "variant",
-            "species", "grade", "notes", "thickness_mm", "width_mm", "length_mm",
-            "price_net", "price_gross", "currency", "gross_per_m3", "gross_per_m", "gross_per_m2"]
+    if is_tsv(a.raw):
+        head = read_tsv(a.raw)[0]
+        supplier, region = a.supplier or head.get("supplier"), a.region or head.get("region")
+        date, currency = a.date or head.get("read_date"), a.currency or head.get("currency")
+        for name, v in (("supplier", supplier), ("region", region), ("read_date", date), ("currency", currency)):
+            if not v:
+                sys.exit(f"{a.raw}: no {name} (a '# {name}: ...' header line, or the command-line option)")
+        rows, skipped = convert_tsv(a.raw, region, supplier, date, currency)
+        skipped = [f"{line}   [{why}]" for line, why in skipped]
+    else:
+        for name in ("supplier", "region", "date"):
+            if not getattr(a, name):
+                sys.exit(f"the text format needs --{name}")
+        rows, skipped = convert_text(a.raw, a.region, a.supplier, a.date, a.currency or "HUF")
+    rows.sort(key=sort_key)
+    with open(a.out, "w", newline="", encoding="utf-8") as f:
+        wr = csv.DictWriter(f, fieldnames=OUT_COLUMNS)
+        wr.writeheader()
+        wr.writerows(rows)
+    print(f"{len(rows)} products -> {a.out}")
+    for s in skipped:
+        print(f"  not understood, left out: {s}", file=sys.stderr)
+    return 1 if skipped else 0
+
+
+def convert_text(path, region, supplier, date, currency):
+    """(snapshot rows, unreadable lines) from the Hungarian text format."""
     rows, skipped, url = [], [], ""
-    for line in open(a.raw, encoding="utf-8"):
+    for line in open(path, encoding="utf-8"):
         line = line.rstrip("\n")
         if line.startswith("## "):
             url = line[3:].strip()
@@ -126,24 +309,16 @@ def main():
             variant = "sheet"
         vol = t * w * l / 1e9
         rows.append({
-            "region": a.region, "supplier": a.supplier, "read_date": a.date, "source_url": url,
-            "product": name, "kind": kind, "variant": variant, "species": species, "grade": grade,
+            "region": region, "supplier": supplier, "read_date": date, "source_url": url,
+            "product": name, "kind": kind, "item": "", "variant": variant, "species": species, "grade": grade,
             "notes": notes, "thickness_mm": f"{t:g}", "width_mm": f"{w:g}", "length_mm": f"{l:g}",
-            "price_net": f"{pn:.2f}", "price_gross": f"{pg:.2f}", "currency": a.currency,
+            "unit": "piece", "pack_qty": "1",
+            "price_net": f"{pn:.2f}", "price_gross": f"{pg:.2f}", "currency": currency,
             "gross_per_m3": f"{pg / vol:.0f}",
             "gross_per_m": f"{pg / (l / 1000):.0f}" if kind == "lumber" else "",
             "gross_per_m2": f"{pg / (w * l / 1e6):.0f}" if kind == "sheet" else "",
         })
-    rows.sort(key=lambda r: (r["kind"], float(r["thickness_mm"]), float(r["width_mm"]),
-                             r["variant"], r["species"], float(r["length_mm"])))
-    with open(a.out, "w", newline="", encoding="utf-8") as f:
-        wr = csv.DictWriter(f, fieldnames=cols)
-        wr.writeheader()
-        wr.writerows(rows)
-    print(f"{len(rows)} products -> {a.out}")
-    for s in skipped:
-        print(f"  not understood, left out: {s}", file=sys.stderr)
-    return 1 if skipped else 0
+    return rows, skipped
 
 
 if __name__ == "__main__":
