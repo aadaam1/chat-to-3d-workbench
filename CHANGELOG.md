@@ -9,6 +9,10 @@ workbench is a working prototype, and anything may still change.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-17
+
+Prices from ten suppliers in Hungary, the Czech Republic and the US, now also for nails, screws, felt and fittings
+
 ### Changed
 - Prices from several suppliers per region, now also for nails, screws, felt, ground screws and fittings; Czech, US and more Hungarian price snapshots (10 suppliers); each priced line shows its supplier and product.
 
@@ -158,7 +162,8 @@ The first version.
 - The tap aerator example.
 - Setup for macOS and Linux, a copy-paste setup prompt, and a self-test.
 
-[Unreleased]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.6.0...v0.7.0
