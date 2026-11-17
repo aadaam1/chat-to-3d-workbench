@@ -378,3 +378,14 @@ def test_the_single_snapshot_default_is_the_most_complete_lumber_list(prices):
         w.writeheader()
         w.writerows([r for r in rows if r["kind"] == "lumber"] * 2)
     assert os.path.basename(tl.newest_snapshot("zz")) == "zz-gamma-2026-10-01.csv"
+
+
+def test_nails_sold_by_the_count_are_shown_as_a_count():
+    row = {"kind": "fastener", "item": "nail-toe", "unit": "pack", "pack_qty": 2000.0, "price_gross": 2395.0, "product": "Nails, 2000 pcs",
+           "supplier": "S", "read_date": "2026-11-01", "currency": "CZK", "variant": "", "thickness_mm": None, "width_mm": None,
+           "length_mm": None, "price_net": None, "notes": ""}
+    it = tl.item(tl.load("eu"), "nail-toe")
+    got = bm.price_need(3000 / 310, "nail-toe", it, "weight", bm.suppliers_of([row]))      # 3000 nails at 310 per kg
+    assert got["packs"][0]["count"] == 2000 and got["packs"][0]["qty"] == 2 and got["cost"] == 4790.0
+    assert bm.nail_packs_text({"weight_unit": "kg", "packs": got["packs"]}) == "2 x 2000 nails"
+    assert bm.nail_packs_text({"weight_unit": "kg", "packs": [{"size": 5.0, "qty": 1}, {"size": 1.0, "qty": 2}]}) == "1 x 5 kg + 2 x 1 kg"
