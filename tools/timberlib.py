@@ -20,6 +20,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PRICES = os.environ.get("TIMBER_PRICES_DIR") or os.path.join(ROOT, "data", "timber", "prices")   # the env var is for tests
 LIBRARY = os.path.join(ROOT, "data", "timber", "library")
 
+# which library a price region goes with: hu and cz prices are for descriptions of the eu library
+LIBRARY_OF = {"eu": "eu", "hu": "eu", "cz": "eu", "us": "us"}
 CATEGORIES = ("sections", "sheets", "cladding", "fasteners", "bought")
 RULE_KINDS = ("per_joint", "per_crossing", "every_mm")
 WEIGHT_UNITS = ("kg", "lb")   # nails are sold by weight; screws in packs

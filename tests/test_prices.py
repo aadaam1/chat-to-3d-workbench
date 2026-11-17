@@ -174,7 +174,7 @@ def test_each_line_goes_to_the_supplier_that_prices_all_of_it_cheapest(prices):
     names = {s["supplier"]: s for s in both["snapshot"]["suppliers"]}
     assert names["Alpha Timber"]["read_date"] == "2026-11-01" and names["Beta Yard"]["lines"] >= 1
     md = bm.render_md(both)
-    assert "Alpha Timber, read 2026-11-01" in md and "Beta Yard, read 2026-11-02" in md and "| Supplier |" in md
+    assert "Alpha Timber, read 2026-11-01" in md and "Beta Yard, read 2026-11-02" in md and "| Supplier and product |" in md
 
 
 def test_a_supplier_that_cannot_price_the_whole_line_is_skipped(prices):
@@ -287,8 +287,8 @@ def test_a_ground_screw_and_its_bracket_are_priced_from_their_own_rows(tmp_path)
               {"item": "latch", "name": "l", "qty": 1, "unit": "pcs", "note": "x", "unit_price": None, "total": None, "priced": False}]
     bm.price_bought(bought, tl.load("eu"), bm.suppliers_of([row("ground-screw-76x800", 20.0, "NO post bracket"), row("post-base-u", 8.0, "")]))
     assert (bought[0]["total"], bought[1]["total"]) == (180.0, 72.0) and not bought[2]["priced"]
-    assert "priced as ground-screw-76x800 product" in bm.bought_note(bought[0]) and "NO post bracket" not in bm.bought_note(bought[0])
-    assert "(NO post bracket)" in bm.bought_note(bought[0], True)            # the md list shows the supplier's note
+    assert bm.priced_as(bought[0]) == "S: ground-screw-76x800 product (NO post bracket)"     # supplier, product and its note
+    assert bm.priced_as(bought[1]) == "S: post-base-u product" and bm.priced_as(bought[2]) == ""
     assert bm.bought_note(bought[2]) == "x"
 
 
@@ -393,3 +393,35 @@ def test_nails_sold_by_the_count_are_shown_as_a_count():
     assert got["packs"][0]["count"] == 2000 and got["packs"][0]["qty"] == 2 and got["cost"] == 4790.0
     assert bm.nail_packs_text({"weight_unit": "kg", "packs": got["packs"]}) == "2 x 2000 nails"
     assert bm.nail_packs_text({"weight_unit": "kg", "packs": [{"size": 5.0, "qty": 1}, {"size": 1.0, "qty": 2}]}) == "1 x 5 kg + 2 x 1 kg"
+
+
+def test_every_priced_line_shows_its_supplier_and_product(prices):
+    b = bm.make_bom(small(), sups("zz"), 10, 4, 0, 20)
+    t = line(b, "timber", "50x100")
+    assert all(p["product"].startswith("Batten 50x100") for p in t["pieces"])
+    assert line(b, "sheets", "osb-12")["product"] == "OSB/3 12 mm 1250x2500"
+    assert line(b, "fasteners", "nail-framing")["packs"][0]["product"] == "Framing nails 3.1x90, 1 kg"
+    md = bm.render_md(b)
+    assert "| Supplier and product |" in md and "Beta Yard: Batten 50x100 5 m" in md and "Alpha Timber: OSB/3 12 mm 1250x2500" in md
+    assert "Alpha Timber: Framing nails 3.1x90, 1 kg" in md
+    assert "Alpha Timber: Bitumen roofing felt" in md or "Beta Yard: Roofing felt per m2" in md
+    unpriced = bm.render_md(bm.make_bom(small(), None, 10, 4))
+    assert "Supplier" not in unpriced
+
+
+def test_prices_of_another_library_are_refused_with_a_plain_message(prices, tmp_path):
+    assert tl.LIBRARY_OF == {"eu": "eu", "hu": "eu", "cz": "eu", "us": "us"}
+    row = dict(tl.load_snapshot(str(prices / "zz-alpha-2026-11-01.csv"))[0])
+    for region, frame_region in (("us", "eu"), ("hu", "us"), ("cz", "us")):
+        f = small()
+        f["region"] = frame_region
+        with pytest.raises(ValueError, match=rf"{region} prices .* {frame_region}: use PRICES=") as e:
+            bm.make_bom(f, [[dict(row, region=region)]])
+    # bom.py says so and stops, with no traceback
+    frame = tmp_path / "frame.json"
+    f = small()
+    f["region"] = "us"
+    frame.write_text(json.dumps(f))
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "bom.py"), str(frame), "--prices", "hu", "--out", str(tmp_path / "o")],
+                       capture_output=True, text=True)
+    assert r.returncode == 1 and "Traceback" not in r.stderr and "hu prices are for eu structures" in r.stderr
