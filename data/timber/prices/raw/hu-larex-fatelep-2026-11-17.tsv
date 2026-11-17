@@ -4,6 +4,7 @@
 # currency: HUF
 # prices: gross (incl. 27% VAT) - webshop "Bruttó ár" on each product page
 # note: lengths with decimals (4,1 m / 5,1 m / 6,1 m) are as listed; prices are per piece unless the notes say box
+# curated 2026-11-17: 1 row(s) untagged from a library item they do not match (see each row's notes)
 source_url	product	kind	item	variant	species	grade	thickness_mm	width_mm	length_mm	unit	pack_qty	price_net	price_gross	notes
 https://www.fatelep.hu/adatlap/osb-3-lemez--nagytablas--12x1250x2500-mm	OSB 3 lemez (nagytáblás) 12x1250x2500 mm	sheet	osb-12	sheet			12	1250	2500	piece	1		6885	OSB 3 sheet; Larex Fatelep webshop price
 https://www.fatelep.hu/adatlap/osb-3-lemez--nagytablas--15x1250x2500-mm	OSB 3 lemez (nagytáblás) 15x1250x2500 mm	sheet	osb-15	sheet			15	1250	2500	piece	1		9063	OSB 3 sheet; Larex Fatelep webshop price
@@ -71,7 +72,7 @@ https://www.fatelep.hu/adatlap/rothoblaas-csavar--sci-a2--5x60-mm--tx25-	Rothobl
 https://www.fatelep.hu/adatlap/reisser-forgacslap-csavar--a2--5x60-mm--felig-menetes--torx-	Reisser forgácslap csavar (A2) 5x60 mm (félig menetes, torx)	fastener	screw-deck							piece	1		36	stainless A2 chipboard screw, partly threaded, torx 5x60
 https://www.fatelep.hu/adatlap/reisser-facsavar--dns-plus--5x50-mm--duplamenetes--horganyzott-	Reisser facsavar (DNS Plus) 5x50 mm (duplamenetes, horganyzott)	fastener	screw-connector							piece	1		20	galvanised, double-threaded 5x50 wood screw (not a connector-specific screw)
 https://www.fatelep.hu/adatlap/holz-technic-gombfeju-csavar--lbs--5x50-mm--lencsefeju-	Holz Technic gömbfejű csavar (LBS) 5x50 mm (lencsefejű)	fastener	screw-connector							piece	1		71	pan head 5x50 connector-type screw; finish not stated
-https://www.fatelep.hu/adatlap/szeg-65-mm	Szeg 65 mm	fastener	nail-toe							box	5		4544	5 kg box; nail diameter not stated on the page; 65 mm length matches
+https://www.fatelep.hu/adatlap/szeg-65-mm	Szeg 65 mm	fastener								box	5		4544	5 kg box; nail diameter not stated on the page; 65 mm length matches; not used for nail-toe (curated 2026-11-17: nail diameter not stated)
 https://www.fatelep.hu/adatlap/gerendapapucs--a-tipus--kulso-ful--50x100x2-mm	Gerendapapucs (A típus, külső fül) 50x100x2 mm	bought	joist-hanger							piece	1		762	joist hanger for a 50x100 joist (outer flange)
 https://www.fatelep.hu/adatlap/gerendapapucs--a-tipus--kulso-ful--70x120x2-mm	Gerendapapucs (A típus, külső fül) 70x120x2 mm	bought	joist-hanger							piece	1		982	for a 70x120 joist (closest to 75-wide; no 50x150 size listed)
 https://www.fatelep.hu/adatlap/gerendapapucs--a-tipus--kulso-ful--100x140x2-mm	Gerendapapucs (A típus, külső fül) 100x140x2 mm	bought	joist-hanger							piece	1		1027	for a 100x140 joist

@@ -177,12 +177,14 @@ the yard before buying, and change any number you know better.
 | Region | Supplier | Read | What's in it |
 |---|---|---|---|
 | hu | [Székely Fatelep](https://szekelyfatelep.hu/), Budapest XVI | 2026-11-10 | planks, boards, planed boards, beams and rafters, battens, OSB: 295 products |
-| hu | [Larex Fatelep](https://www.fatelep.hu/), Budapest | 2026-11-17 | planed boards, deck and cladding boards, battens, beams (50 products), OSB (4), nails, screws and bolts (12), joist hangers, post bases, felt (9) |
-| hu | [Praktiker Hungary](https://www.praktiker.hu/) | 2026-11-17 | boards, battens, posts and deck boards (14), OSB (3), nails, screws and bolts (7), felt, trims, hinges, latch, joist hangers, post base (12) |
-| hu | [Székely Fatelep](https://szekelyfatelep.hu/), Budapest XVI (a second read: pages the 2026-11-10 read lacks) | 2026-11-17 | cladding and deck boards (7), screws and bolts (4), ground screws and post bases (9); one nail row left out as its unit is ambiguous; the 2026-11-10 timber stays in use |
-| hu | [Drevotta Talajcsavar](https://talajcsavar.hu/) | 2026-11-17 | ground screws and U post brackets (5); no sections |
-| cz (CZK, `eu` library) | [Hornbach Czech Republic](https://www.hornbach.cz/) | 2026-11-17 | sawn, impregnated and planed timber, deck boards (84), OSB (4), nails, screws and bolts (12), felt, trims, hinges, latch, joist hangers, post bases (15); online prices; sheets priced per m² on the page, turned into the price of a 1250 × 2500 sheet |
+| hu | [Larex Fatelep](https://www.fatelep.hu/), Budapest | 2026-11-17 | planed boards, deck and cladding boards, battens, beams (50 products), OSB (4), nails, screws and bolts (11), joist hangers, post bases, felt (9) |
+| hu | [Praktiker Hungary](https://www.praktiker.hu/) | 2026-11-17 | boards, battens, posts and deck boards (14), OSB (3), screws (5), felt, trims, hinges, latch, joist hangers, post base (12) |
+| hu | [Székely Fatelep](https://szekelyfatelep.hu/), Budapest XVI (a second read: pages the 2026-11-10 read lacks) | 2026-11-17 | cladding and deck boards (7), screws and bolts (4), ground screws and post bases (6); one nail row left out as its unit is ambiguous; the 2026-11-10 timber stays in use |
+| hu | [Drevotta Talajcsavar](https://talajcsavar.hu/) | 2026-11-17 | Ø76 ground screws (2); its U-series screws (a Ø68 screw with the bracket) are in the raw file but not used, as a separate post base is counted; no sections |
+| cz (CZK, `eu` library) | [Hornbach Czech Republic](https://www.hornbach.cz/) | 2026-11-17 | sawn, impregnated and planed timber, deck boards (84), OSB (4), nails, screws and bolts (9), felt, trims, hinges, latch, joist hangers, post bases (14); online prices; sheets priced per m² on the page, turned into the price of a 1250 × 2500 sheet |
 | cz (CZK) | [Marusik Holz](https://www.marusik.cz/), Ostrava | 2026-11-17 | timber, deck boards, cladding (58; boards sold in packs are left out), OSB (4), fasteners (8), felt, trims, fittings (18) |
 | cz (CZK) | [OBI Czech Republic](https://www.obi.cz/) | 2026-11-17 | boards, battens and deck boards (173), OSB (4); online prices, no store selected |
 | cz (CZK) | [Palubky Vencl](https://palubky-vencl.cz/) | 2026-11-17 | sawn and planed boards, battens, cladding (44), sheets (12) |
 | us (USD, before sales tax) | [Menards](https://www.menards.com/) | 2026-11-17 | dimension lumber 1×4 to 6×6, deck boards (72), OSB (4), nails, deck and structural screws, bolts (14), felt, trims, hinges, latch, hangers, post caps and bases, pier blocks (13); online prices, no store selected, rebates not deducted |
+
+A row whose product doesn't match the library item it was tagged with (another length, nail-gun nails, a bracket for another post size) has its `item` cleared in the raw file, with the reason in its notes, so it is never used for that item.
