@@ -563,6 +563,10 @@ eave beams; `roof-bay-blocking` then reports the gaps as open on purpose.
 roof coverings); a mono roof with bare rafters (not built: its blocks are in
 `roof.py`); a check of the beam's combined bending; fixings of the ties.
 
+## Prices from several suppliers (2026-11-17)
+
+A shopping list priced only timber and OSB from one snapshot. Now `PRICES=<region>` uses the newest snapshot of each supplier in the region (`hu`, `cz` on the `eu` library, `us`), and each line goes to the supplier that sells all of it cheapest (timber is packed on that supplier's own stock lengths). Nails are bought in the supplier's boxes, screws in its packs (cheapest combination covering the count), felt by the roll or the m², trims by the metre or the piece. Snapshots come from a TSV (`item`, `unit`, `pack_qty` columns, `docs` in `data/timber/README.md`); the Hungarian text format still works. Decisions: a ground screw's price includes its post bracket (the `post-base-u` line is then free); US shelf prices are before sales tax and shown as such; one region is one currency, never mixed; a line with no priced row stays "no price" and the total says partial. Open: whether a finish difference (galvanized vs bright nails) should be shown more prominently than in the note.
+
 ## Build plan
 
 Written 2026-11-11. The work is cut into packages that one session can

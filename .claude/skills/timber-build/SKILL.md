@@ -28,7 +28,7 @@ gives the same frame, checks and list. Background and decisions are in
   price yourself; run the tools and read the result back.
 - **Explain as you go.** Stud, plate, rafter, joist, sheathing, cladding:
   say what each is the first time. Most people have never framed a wall.
-- **Prices are a dated snapshot** from one supplier. Say the date and that
+- **Prices are a dated snapshot**, one per supplier. Say the dates and that
   the yard's current price wins.
 
 ## 1. Ask
@@ -145,8 +145,12 @@ PRICES=hu NOTE="what changed" tools/build_frame.sh <name>
 ```
 
 This writes the frame, the checks, the shopping list (`out/bom.md`) and a
-saved version. `PRICES` names the price snapshot's region; leave it out and
-the list has quantities only. Then make the preview and publish it the way
+saved version. `PRICES` names the price region (`hu`, `cz`, `us`): every line
+is priced by the supplier of that region that sells all of it cheapest (nails,
+screws, felt and fittings too, where a snapshot has them), and the list says which
+supplier each line is from. `PRICES=hu:<supplier-slug>` limits it to one supplier.
+Lines no supplier prices stay "no price" and the total says partial. Leave
+`PRICES` out and the list has quantities only. Then make the preview and publish it the way
 the print-part skill describes (one page, no extra files):
 
 ```
