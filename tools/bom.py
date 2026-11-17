@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Shopping list and cut list for a timber structure.
 
-    bom.py <frame.json> [--snapshot <csv>] [--waste 10] [--kerf 4] [--sheet-spare 0] [--trim 20] --out <dir>
+    bom.py <frame.json> [--snapshot <csv> | --prices <region>[:<supplier>]] [--waste 10] [--kerf 4] [--sheet-spare 0] [--trim 20] --out <dir>
 
 Reads the frame file written by tools/frame.py and writes, into <dir>:
   bom.json     everything below, for other tools
@@ -11,7 +11,7 @@ Reads the frame file written by tools/frame.py and writes, into <dir>:
 
 What it works out:
   * Timber and cladding boards: the cuts of each item and variant are packed
-    onto the stock lengths on offer (the price snapshot's lengths when it
+    onto the stock lengths on offer (the supplier's lengths when it
     sells that item, else the library's) with the saw kerf between cuts and
     `--trim` kept at each piece's ends. Plans tried: every single stock
     length (first-fit decreasing), a mix (pack on the longest, then give each
@@ -38,8 +38,13 @@ What it works out:
   * Spare: `--waste` percent of every piece count, rounded up (the rule of
     tools/timber.py). The spare pieces are of the longest stock length bought
     (timber, cladding) or full sheets, so any cut can be remade.
-  * Prices (gross) from the snapshot where it sells the item, else the line
-    says "no price" and the total is marked partial.
+  * Prices (gross; US: shelf price before sales tax) from the snapshots: `--prices hu` uses the
+    newest snapshot of every supplier in the region, `--snapshot` one file. Each line is priced
+    by the supplier that sells all of it cheapest (a timber line is packed on that supplier's own
+    stock lengths); a supplier that can't price the whole line is skipped for it, and the line
+    records its supplier. Nails are bought in the supplier's boxes (the cheapest combination
+    covering the weight), screws and bolts in its packs, felt by the roll or m2, trims by the
+    metre or the piece. A line no supplier prices says "no price" and the total is marked partial.
 
 Same frame and options give the same files.
 """
@@ -91,6 +96,12 @@ JOINT_NAMES = {
     "rafter-beam": "pergola rafter on a beam", "slat-rafter": "slat to rafter",
     "joist-hanger": "deck joist hung between two beams", "butt": "two pieces butted end to end over a support",
 }
+
+
+PRICE_NOTE = ("Prices are gross (US: the shelf price, before sales tax). Each line is priced by the supplier that "
+              "sells all of it cheapest: every stock length of a timber line is packed and priced from that supplier's "
+              "own lengths, nails and screws are bought in that supplier's boxes and packs. A line no supplier "
+              "sells in full has no price and is left out of the total.")
 
 
 def kind_key(kind, mid):
@@ -378,6 +389,17 @@ def ways_to_waste_less(line, members, it, lengths, prices, kerf, waste_pct, curr
     return hints[:limit]
 
 
+def with_order_lengths(it, lengths, longest, units):
+    """(lengths, note): when the longest cut is longer than any stocked length but a special-order
+    length holds it, the order lengths are added, with a note that they are not normally stocked."""
+    order = [x for x in it.get("order_lengths_mm", []) if x not in lengths]
+    if longest > max(lengths) + EPS and longest <= max(order, default=0) + EPS:
+        lengths = sorted(set(lengths) | set(order))
+        return lengths, (f"{it['name']}: {', '.join(tl.fmt_length(x, units) for x in order)} lengths are not "
+                         "normally stocked; ask the yard whether it can supply them, or join the boards over a stud")
+    return lengths, None
+
+
 def stock_for(it, variant, snapshot):
     """(stock lengths, {length: gross price}) for a timber or cladding item. The
     snapshot's lengths when it sells the item in this variant, else the library's
@@ -449,28 +471,35 @@ def shelf_pack(parts, sheet_long, sheet_short, kerf, can_rotate, turn_all):
     return [s["items"] for s in sheets], problems
 
 
-def build_sheet_line(item_key, members, it, snapshot, kerf, waste_pct):
+def build_sheet_line(item_key, members, it, sups, kerf, waste_pct):
+    """`sups`: the suppliers (see suppliers_of); the one selling the sheet cheapest prices the line."""
     long_, short_ = max(it["size_mm"]), min(it["size_mm"])
     can_rot = bool(it.get("can_rotate", it.get("material", "") in ("osb3", "osb", "plywood")))
     parts = [(m["id"], m["size"][0], m["size"][1]) for m in members]
     sheets, problems = pack_sheets(parts, long_, short_, kerf, can_rot)
     n = len(sheets)
     spare_n = tl.allowance(n, waste_pct) if n else 0
-    hit = tl.price_for(snapshot, it) if snapshot else None
+    hits = [(h["price_gross"], i, sup["supplier"], h) for i, sup in enumerate(sups)
+            for h in [tl.price_for(sup["rows"], it)] if h]
+    best = min(hits, key=lambda x: x[:2]) if hits else None
+    hit = best[3] if best else None
     unit = hit["price_gross"] if hit else None
     out_sheets = []
     for i, items in enumerate(sheets, 1):
         area = sum(p["w"] * p["h"] for p in items)
         out_sheets.append({"sheet": i, "parts": items,
                            "used_pct": round(100 * area / (long_ * short_), 1)})
-    return {
+    line = {
         "item": item_key, "name": it.get("name", item_key), "sheet_size_mm": [long_, short_],
         "thickness_mm": it["thickness_mm"], "can_rotate": can_rot, "parts": len(parts),
         "sheets_packed": n, "spare_sheets": spare_n, "sheets_to_buy": n + spare_n,
         "layouts": out_sheets, "unit_price": unit,
         "currency": hit["currency"] if hit else None,
         "total": round(unit * (n + spare_n), 2) if hit else None, "priced": bool(hit),
-    }, problems
+    }
+    if sups:
+        line["supplier"] = best[2] if best else None
+    return line, problems
 
 
 # --------------------------------------------------------------- fasteners
@@ -559,6 +588,174 @@ def count_fasteners(joints, lib, waste_pct):
     return lines, problems
 
 
+# ------------------------------------------- prices of fasteners and bought items
+
+LB_PER_KG = 2.2046226
+
+
+def cheapest_packs(need, options, scale=1000):
+    """The cheapest whole packs that add up to at least `need`. `options` are (size, price, tag);
+    returns (cost, total size, [(tag, qty)]) or None when there are no options. For each size only
+    the cheapest option counts. Worked in integers (sizes in thousandths) so box sizes like 2.5
+    combine exactly; ties go to the smaller total, then fewer packs."""
+    best = {}
+    for size, price, tag in options:
+        k = round(size * scale)
+        if k > 0 and (k not in best or price < best[k][0]):
+            best[k] = (price, tag)
+    if not best:
+        return None
+    sizes = sorted(best)
+    g = math.gcd(*sizes) if len(sizes) > 1 else sizes[0]
+    units = [k // g for k in sizes]
+    cents = [round(best[k][0] * 1000) for k in sizes]
+    n = max(1, math.ceil(round(need * scale) / g - 1e-9))
+    top = n + max(units) - 1
+    INF = float("inf")
+    cost, pick = [INF] * (top + 1), [None] * (top + 1)
+    cost[0] = 0
+    for t in range(1, top + 1):
+        for i, u in enumerate(units):
+            if u <= t and cost[t - u] + cents[i] < cost[t]:
+                cost[t], pick[t] = cost[t - u] + cents[i], i
+    cands = [t for t in range(n, top + 1) if cost[t] < INF]
+    if not cands:
+        return None
+    t = min(cands, key=lambda t: (cost[t], t))
+    qty, total = {}, t
+    while t:
+        i = pick[t]
+        qty[i] = qty.get(i, 0) + 1
+        t -= units[i]
+    packs = [(best[sizes[i]][1], q) for i, q in sorted(qty.items())]
+    return cost[total] / 1000, total * g / scale, packs
+
+
+def pack_size(row, ctx, it):
+    """How much one price buys, in the line's own unit, or None when the row doesn't fit it.
+    ctx: 'weight' (nails: kg or lb of the library item), 'count' (screws, bolts, pieces),
+    'm' (trim by the metre or in pieces of pack_qty m), 'm2' (felt by the m2 or the roll)."""
+    u, q = row["unit"] or "piece", row["pack_qty"]
+    if ctx == "weight":
+        wu = it["weight_unit"]
+        if u == "box":
+            return q
+        if u == "kg":
+            return 1.0 if wu == "kg" else LB_PER_KG
+        if u in ("pack", "piece"):
+            return (q or 1) / it[f"pcs_per_{wu}"]
+    elif ctx == "count":
+        if u in ("pack", "piece"):
+            return q or 1
+    elif ctx == "m":
+        if u == "m":
+            return 1.0
+        if u == "piece" and q:
+            return q
+    elif ctx == "m2":
+        if u == "m2":
+            return 1.0
+        if u == "roll":
+            return q
+    return None
+
+
+def price_need(need, key, it, ctx, sups):
+    """The cheapest supplier for `need` (in the unit of `ctx`) of the library item `key`:
+    {"supplier", "cost", "bought", "packs": [{size, qty, unit_price, product}]} or None. The rows
+    are those of kind fastener or bought whose item is `key`; where one supplier has several
+    (sizes, finishes), the cheapest combination of whole packs that covers the need is used."""
+    best = None
+    for i, sup in enumerate(sups):
+        opts = []
+        for r in sup["rows"]:
+            if r["kind"] in ("fastener", "bought") and r["item"] == key:
+                size = pack_size(r, ctx, it)
+                if size:
+                    opts.append((size, r["price_gross"], r))
+        got = cheapest_packs(need, opts)
+        if got and (best is None or (round(got[0], 6), i) < (round(best[0][0], 6), best[1])):
+            best = (got, i)
+    if not best:
+        return None
+    (cost, bought, packs), i = best
+    return {"supplier": sups[i]["supplier"], "currency": sups[i]["currency"], "cost": round(cost, 2),
+            "bought": round(bought, 4),
+            "packs": [{"size": round(pack_size(r, ctx, it), 4), "qty": q, "unit_price": r["price_gross"],
+                       "product": r["product"]} for r, q in packs]}
+
+
+def price_fasteners(lines, lib, sups):
+    """Prices the nail and screw lines from the suppliers' rows (by item key). A priced line's
+    packs, weight bought and count to buy are the supplier's own pack sizes."""
+    for line in lines:
+        it = tl.item(lib, line["item"])
+        need = line["counted"] + line["spare"]
+        if line["kind"] == "nail":
+            unit = it["weight_unit"]
+            got = price_need(need / it[f"pcs_per_{unit}"], line["item"], it, "weight", sups)
+        else:
+            got = price_need(need, line["item"], it, "count", sups)
+        if not got:
+            line["supplier"] = None
+            continue
+        line.update({"packs": got["packs"], "total": got["cost"], "priced": True, "supplier": got["supplier"],
+                     "currency": got["currency"],
+                     "unit_price": got["packs"][0]["unit_price"] if len(got["packs"]) == 1 else None})
+        if line["kind"] == "nail":
+            line.update({"buy_weight": got["bought"], "to_buy": int(got["bought"] * it[f"pcs_per_{unit}"])})
+        else:
+            line["to_buy"] = int(round(got["bought"]))
+
+
+UNIT_CTX = {"m2": "m2", "m": "m", "pcs": "count"}
+
+
+def price_bought(bought, lib, sups):
+    """Prices the bought items by item key: felt by the roll or the m2, trim by the metre or in
+    pieces, the rest by the piece. A ground screw's price includes its post bracket, so the
+    bracket line (the foundation's `base`) of a priced ground screw costs nothing extra."""
+    for b in bought:
+        b["supplier"] = None
+        try:
+            it = tl.item(lib, b["item"])
+        except KeyError:
+            continue
+        ctx = UNIT_CTX.get(b["unit"])
+        got = price_need(b["qty"], b["item"], it, ctx, sups) if ctx else None
+        if got:
+            b.update({"packs": got["packs"], "bought_qty": got["bought"], "total": got["cost"], "priced": True,
+                      "supplier": got["supplier"], "currency": got["currency"],
+                      "unit_price": got["packs"][0]["unit_price"] if len(got["packs"]) == 1 else None})
+    done = {b["item"]: b for b in bought if b["priced"]}
+    for b in bought:
+        for key, screw in done.items():
+            f = lib.get("bought", {}).get(key, {}).get("foundation", {})
+            if f.get("kind") == "ground_screw" and f.get("base") == b["item"] and b is not screw:
+                b.update({"total": 0.0, "priced": True, "supplier": screw["supplier"], "currency": screw["currency"],
+                          "unit_price": 0.0, "packs": [], "included_in": key})
+
+
+def pack_text(line, unit=""):
+    """'2 x 5 kg + 1 x 2.5 kg' for a priced fastener or bought line, or '' when it has no packs."""
+    return " + ".join(f"{p['qty']} x {p['size']:g}" + (f" {unit}" if unit else "") for p in line.get("packs") or [])
+
+
+def suppliers_of(snapshot):
+    """The snapshot given to make_bom, as a list of suppliers {supplier, read_date, currency, rows}:
+    [] for none, rows of one snapshot, or a list of such rows. One region is one currency."""
+    if not snapshot:
+        return []
+    lists = snapshot if isinstance(snapshot[0], list) else [snapshot]
+    sups = [{"supplier": rows[0]["supplier"], "read_date": rows[0]["read_date"],
+             "currency": rows[0]["currency"], "rows": rows} for rows in lists if rows]
+    cur = sorted({s["currency"] for s in sups})
+    if len(cur) > 1:
+        raise ValueError(f"the price snapshots use more than one currency ({', '.join(cur)}): "
+                         "prices of different currencies are never added together")
+    return sups
+
+
 # ------------------------------------------------------------------ the list
 
 def make_bom(frame, snapshot=None, waste_pct=None, kerf=None, sheet_spare_pct=0, trim=0):
@@ -570,7 +767,8 @@ def make_bom(frame, snapshot=None, waste_pct=None, kerf=None, sheet_spare_pct=0,
     waste_pct = df.get("spare_percent", 10) if waste_pct is None else waste_pct
     kerf = df.get("kerf_mm", 4) if kerf is None else kerf
     problems = []
-    currency = snapshot[0]["currency"] if snapshot else None
+    sups = suppliers_of(snapshot)
+    currency = sups[0]["currency"] if sups else None
 
     groups, sheet_groups = {}, {}
     for m in frame["members"]:
@@ -591,34 +789,53 @@ def make_bom(frame, snapshot=None, waste_pct=None, kerf=None, sheet_spare_pct=0,
     timber, special, hints = [], [], []
     for key in sorted(groups):
         it = tl.item(lib, key[0])
-        lengths, prices = stock_for(it, key[1], snapshot)
         longest = max(m["size"][0] for m in groups[key])
-        order = [x for x in it.get("order_lengths_mm", []) if x not in lengths]
-        if longest > max(lengths) + EPS and longest <= max(order, default=0) + EPS:
-            lengths = sorted(set(lengths) | set(order))         # longer than any stocked length: a special-order length
-            special.append(f"{it['name']}: {', '.join(tl.fmt_length(x, frame['units']) for x in order)} lengths are not "
-                           "normally stocked; ask the yard whether it can supply them, or join the boards over a stud")
-        if longest > max(lengths) + EPS:
-            for m in groups[key]:
-                if m["size"][0] > max(lengths) + EPS:
-                    problems.append(f"{m['id']}: {m['size'][0]:g} mm is longer than the longest stock length "
-                                    f"({max(lengths):g} mm) of {key[0]} {key[1]}")
-            groups[key] = [m for m in groups[key] if m["size"][0] <= max(lengths) + EPS]
-            if not groups[key]:
+        chosen = None
+        for sup in sups:                  # the supplier that prices the whole line cheapest
+            lengths, prices = stock_for(it, key[1], sup["rows"])
+            if not prices:
                 continue
-        line = build_timber_line(key, groups[key], it, lengths, prices, kerf, waste_pct, currency, trim)
+            lengths, spec_note = with_order_lengths(it, lengths, longest, frame["units"])
+            if longest > max(lengths) + EPS:
+                continue
+            line = build_timber_line(key, groups[key], it, lengths, prices, kerf, waste_pct, currency, trim)
+            if line["priced"] and (chosen is None or line["total"] < chosen[0]["total"] - 1e-9):
+                chosen = (line, lengths, prices, spec_note, sup["supplier"])
+        if chosen:
+            line, lengths, prices, spec_note, supplier = chosen
+            if spec_note:
+                special.append(spec_note)
+        else:                              # nothing prices it all: the first supplier's lengths, else the library's
+            lengths, prices = stock_for(it, key[1], sups[0]["rows"] if sups else None)
+            lengths, spec_note = with_order_lengths(it, lengths, longest, frame["units"])
+            if spec_note:
+                special.append(spec_note)
+            supplier = None
+            if longest > max(lengths) + EPS:
+                for m in groups[key]:
+                    if m["size"][0] > max(lengths) + EPS:
+                        problems.append(f"{m['id']}: {m['size'][0]:g} mm is longer than the longest stock length "
+                                        f"({max(lengths):g} mm) of {key[0]} {key[1]}")
+                groups[key] = [m for m in groups[key] if m["size"][0] <= max(lengths) + EPS]
+                if not groups[key]:
+                    continue
+            line = build_timber_line(key, groups[key], it, lengths, prices, kerf, waste_pct, currency, trim)
         line["kind"] = "cladding" if it["category"] == "cladding" else "timber"
+        if sups:
+            line["supplier"] = supplier
         timber.append(line)
         hints += ways_to_waste_less(line, groups[key], it, lengths, prices, kerf, waste_pct, currency, trim, frame["units"])
 
     sheets = []
     for key in sorted(sheet_groups):
-        line, probs = build_sheet_line(key, sheet_groups[key], tl.item(lib, key), snapshot, kerf, sheet_spare_pct)
+        line, probs = build_sheet_line(key, sheet_groups[key], tl.item(lib, key), sups, kerf, sheet_spare_pct)
         problems += probs
         sheets.append(line)
 
     fasteners, probs = count_fasteners(frame.get("joints", []), lib, waste_pct)
     problems += probs
+    if sups:
+        price_fasteners(fasteners, lib, sups)
 
     bought = []
     for b in frame.get("bought", []):
@@ -629,15 +846,23 @@ def make_bom(frame, snapshot=None, waste_pct=None, kerf=None, sheet_spare_pct=0,
         bought.append({"item": b["item"], "name": name, "qty": b["qty"], "unit": b["unit"],
                        "note": b.get("note", ""), "unit_price": None, "total": None, "priced": False})
 
+    if sups:
+        price_bought(bought, lib, sups)
+
     lines = timber + sheets + fasteners + bought
     priced = [l for l in lines if l["priced"]]
     unpriced = [l["item"] + (f" ({l['variant']})" if l.get("variant") else "") for l in lines if not l["priced"]]
-    totals = {"currency": currency, "amount": round(sum(l["total"] for l in priced), 2) if snapshot else None,
+    totals = {"currency": currency, "amount": round(sum(l["total"] for l in priced), 2) if sups else None,
               "priced_lines": len(priced), "lines": len(lines), "partial": bool(unpriced),
               "unpriced": unpriced}
     snap = None
-    if snapshot:
-        snap = {"supplier": snapshot[0]["supplier"], "read_date": snapshot[0]["read_date"], "currency": currency}
+    if sups:
+        n_used = {s["supplier"]: sum(1 for l in priced if l.get("supplier") == s["supplier"]) for s in sups}
+        used = [s for s in sups if n_used[s["supplier"]]] or sups
+        snap = {"supplier": ", ".join(s["supplier"] for s in used), "read_date": max(s["read_date"] for s in used),
+                "currency": currency,
+                "suppliers": [{"supplier": s["supplier"], "read_date": s["read_date"], "lines": n_used[s["supplier"]]}
+                              for s in sups]}
     return {
         "schema": SCHEMA, "name": frame.get("name", ""), "region": frame["region"], "units": frame["units"],
         "waste_pct": waste_pct, "sheet_spare_pct": sheet_spare_pct, "trim_mm": trim, "kerf_mm": kerf, "snapshot": snap,
@@ -653,7 +878,7 @@ def make_bom(frame, snapshot=None, waste_pct=None, kerf=None, sheet_spare_pct=0,
             "over, before the spare pieces.",
             "Sheet parts are laid out by their bounding rectangle; parts with a cut-out outline use "
             "more sheet than they need.",
-        ] + special,
+        ] + ([PRICE_NOTE] if sups else []) + special,
         **({"decisions": frame["decisions"]} if frame.get("decisions") else {}),
     }
 
@@ -662,6 +887,35 @@ def make_bom(frame, snapshot=None, waste_pct=None, kerf=None, sheet_spare_pct=0,
 
 def money(x, cur):
     return tl.money(x, cur)
+
+
+def bought_note(b):
+    """A bought item's note, with what to buy where a supplier prices it (a roll, a 2 m piece, a piece)."""
+    if b.get("included_in"):
+        return (b["note"] + "; " if b["note"] else "") + "included in the ground screw's price"
+    if not b.get("packs"):
+        return b["note"]
+    unit = {"pcs": "", "m": " m", "m2": " m2"}.get(b["unit"], "")
+    buy = "buy " + " + ".join(f"{p['qty']} x {p['size']:g}{unit}" for p in b["packs"]) if b["unit"] != "pcs" else ""
+    return "; ".join(x for x in (b["note"], buy) if x)
+
+
+def price_basis(snap):
+    """'gross, CZK' or, for US dollars, 'shelf prices before sales tax, USD'."""
+    cur = snap["currency"]
+    return f"shelf prices before sales tax, {cur}" if cur == "USD" else f"gross, {cur}"
+
+
+def suppliers_text(snap):
+    """Every supplier the list was priced from, with its read date: 'A, read 2026-11-10; B, read ...'.
+    Where several were looked at, the lines each one prices are counted."""
+    sups = [s for s in snap.get("suppliers", []) if s["lines"]] or snap.get("suppliers") or [snap]
+    many = len(snap.get("suppliers", [])) > 1
+    return "; ".join(f"{s['supplier']}, read {s['read_date']}" + (f" ({s['lines']} lines)" if many else "") for s in sups)
+
+
+def multi_supplier(bom):
+    return len((bom.get("snapshot") or {}).get("suppliers", [])) > 1
 
 
 def render_md(bom):
@@ -676,8 +930,7 @@ def render_md(bom):
                + f"; saw kerf {L(bom['kerf_mm'])}"
                + (f"; {L(bom['trim_mm'])} of every length kept for squaring its ends." if bom.get("trim_mm") else "."))
     if bom["snapshot"]:
-        s = bom["snapshot"]
-        out.append(f"Prices: {s['supplier']}, read {s['read_date']} (gross, {cur}).")
+        out.append(f"Prices: {suppliers_text(bom['snapshot'])} ({price_basis(bom['snapshot'])}).")
     else:
         out.append("No price snapshot given: no prices.")
     out.append("")
@@ -699,12 +952,16 @@ def render_md(bom):
         return money(unit, cur), money(total, cur)
 
     out += ["## Timber and cladding", ""]
-    out += ["| Item | Variant | Buy | Price each | Line total |", "|---|---|---|---|---|"]
+    ms = multi_supplier(bom)                      # a Supplier column where several suppliers were looked at
+    sc = lambda who: (f" {who or ''} |" if ms else "")
+    sh = (" Supplier |", "---|") if ms else ("", "")
+    out += [f"| Item | Variant | Buy | Price each | Line total |{sh[0]}", f"|---|---|---|---|---|{sh[1]}"]
     for ln in bom["timber"]:
         for i, r in enumerate(ln["pieces"]):
             qty = f"{r['total_qty']} × {L(r['length_mm'])}" + (f" (incl. {r['spare']} spare)" if r["spare"] else "")
             each, tot = price_cells(r["unit_price"], r["line_total"])
-            out.append(f"| {ln['name'] if i == 0 else ''} | {ln['variant'] if i == 0 else ''} | {qty} | {each} | {tot} |")
+            out.append(f"| {ln['name'] if i == 0 else ''} | {ln['variant'] if i == 0 else ''} | {qty} | {each} | {tot} |"
+                       + sc(ln.get("supplier") if i == 0 else ""))
     out.append("")
     oc = bom["offcuts"]
     out += [f"Offcuts: {oc['mm'] / 1000:.1f} m of {oc['bought_mm'] / 1000:.0f} m bought ({oc['pct']:g}%), before the spare pieces. "
@@ -723,12 +980,12 @@ def render_md(bom):
         out += ["", f"Cuts: {kinds_in_words(ln['by_kind'])}.", ""]
 
     out += ["## Sheets", ""]
-    out += ["| Item | Sheet | Buy | Price each | Line total |", "|---|---|---|---|---|"]
+    out += [f"| Item | Sheet | Buy | Price each | Line total |{sh[0]}", f"|---|---|---|---|---|{sh[1]}"]
     for ln in bom["sheets"]:
         a, b = ln["sheet_size_mm"]
         qty = f"{ln['sheets_to_buy']}" + (f" (incl. {ln['spare_sheets']} spare)" if ln["spare_sheets"] else "")
         each, tot = price_cells(ln["unit_price"], ln["total"])
-        out.append(f"| {ln['name']} | {L(a)} × {L(b)} | {qty} | {each} | {tot} |")
+        out.append(f"| {ln['name']} | {L(a)} × {L(b)} | {qty} | {each} | {tot} |" + sc(ln.get("supplier")))
     out.append("")
     for ln in bom["sheets"]:
         out += [f"### {ln['name']}: {ln['parts']} parts on {ln['sheets_packed']} sheets"
@@ -740,6 +997,9 @@ def render_md(bom):
             out.append(f"| {s['sheet']} | {parts} | {s['used_pct']:g}% |")
         out.append("")
 
+    def total_cell(line):
+        return money(line["total"], cur) if line.get("priced") else "no price"
+
     def fastener_rows(lines, nails):
         for f in lines:
             used = ", ".join(f"{JOINT_NAMES.get(t, t)} {n:,}" for t, n in
@@ -748,27 +1008,28 @@ def render_md(bom):
                 u = f["weight_unit"]
                 packs = " + ".join(f"{p['qty']} × {p['size']:g} {u}" for p in f["packs"])
                 out.append(f"| {f['name']} | {f['counted']:,} | {f['spare']:,} | about {f['weight']:g} {u} | "
-                           f"{packs} ({f['to_buy']:,} nails) | {used} | no price |")
+                           f"{packs} ({f['to_buy']:,} nails) | {used} | {total_cell(f)} |" + sc(f.get("supplier")))
             else:
-                packs = ", ".join(f"{p['qty']} × {p['size']}" for p in f["packs"])
-                out.append(f"| {f['name']} | {f['counted']} | {f['spare']} | {f['to_buy']} | {packs} | {used} | no price |")
+                packs = ", ".join(f"{p['qty']} × {p['size']:g}" for p in f["packs"])
+                out.append(f"| {f['name']} | {f['counted']} | {f['spare']} | {f['to_buy']} | {packs} | {used} | {total_cell(f)} |"
+                           + sc(f.get("supplier")))
 
     nails = [f for f in bom["fasteners"] if f["kind"] == "nail"]
     screws = [f for f in bom["fasteners"] if f["kind"] != "nail"]
     out += ["## Nails", "",
             "Nails are bought by weight: the count (with the spare) is turned into kg or lb and rounded up to the box sizes.", ""]
-    out += ["| Nail | Counted | Spare | Weight | Buy | Counted for | Price |", "|---|---|---|---|---|---|---|"]
+    out += [f"| Nail | Counted | Spare | Weight | Buy | Counted for | Price |{sh[0]}", f"|---|---|---|---|---|---|---|{sh[1]}"]
     fastener_rows(nails, True)
     out.append("")
     out += ["## Structural screws", "",
             "Only where a screw is stronger than a nail: the rafters to the wall plates (uplift) and the wall panels to each other at the corners.", ""]
-    out += ["| Item | Counted | Spare | Buy | Packs | Counted for | Price |", "|---|---|---|---|---|---|---|"]
+    out += [f"| Item | Counted | Spare | Buy | Packs | Counted for | Price |{sh[0]}", f"|---|---|---|---|---|---|---|{sh[1]}"]
     fastener_rows(screws, False)
     out.append("")
     out += ["## Bought items", ""]
-    out += ["| Item | Quantity | Note | Price |", "|---|---|---|---|"]
+    out += [f"| Item | Quantity | Note | Price |{sh[0]}", f"|---|---|---|---|{sh[1]}"]
     for b in bom["bought"]:
-        out.append(f"| {b['name']} | {b['qty']:g} {b['unit']} | {b['note']} | no price |")
+        out.append(f"| {b['name']} | {b['qty']:g} {b['unit']} | {bought_note(b)} | {total_cell(b)} |" + sc(b.get("supplier")))
     out.append("")
     out += ["## Notes", ""] + [f"- {n}" for n in bom["notes"]] + [""]
     return "\n".join(out)
@@ -779,8 +1040,10 @@ CUT_FIELDS = ["type", "item", "variant", "piece", "stock_mm", "member", "group",
 
 
 def write_cutlist(bom, path):
+    """One row per cut and per sheet part; with prices, a last `supplier` column: where the line it belongs to is bought."""
+    fields = CUT_FIELDS + (["supplier"] if bom.get("snapshot") else [])
     with open(path, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, CUT_FIELDS)
+        w = csv.DictWriter(f, fields, extrasaction="ignore")
         w.writeheader()
         for ln in bom["timber"]:
             for p in ln["layouts"]:
@@ -788,13 +1051,15 @@ def write_cutlist(bom, path):
                     w.writerow({"type": ln["kind"], "item": ln["item"], "variant": ln["variant"],
                                 "piece": p["piece"], "stock_mm": p["stock_mm"], "member": c["id"],
                                 "group": c["group"], "kind": c["kind"], "what": c["what"], "length_mm": c["length_mm"],
-                                "cut_deg_a": c["cut_deg"][0], "cut_deg_b": c["cut_deg"][1]})
+                                "cut_deg_a": c["cut_deg"][0], "cut_deg_b": c["cut_deg"][1],
+                                "supplier": ln.get("supplier") or ""})
         for ln in bom["sheets"]:
             for s in ln["layouts"]:
                 for p in s["parts"]:
                     w.writerow({"type": "sheet", "item": ln["item"], "variant": "", "piece": f"{ln['item']}#{s['sheet']}",
                                 "stock_mm": "", "member": p["id"], "what": KIND_NAMES["sheet"][0], "length_mm": p["w"], "width_mm": p["h"],
-                                "x_mm": p["x"], "y_mm": p["y"], "rotated": int(p["rotated"])})
+                                "x_mm": p["x"], "y_mm": p["y"], "rotated": int(p["rotated"]),
+                                "supplier": ln.get("supplier") or ""})
 
 
 def nail_summary(bom):
@@ -808,7 +1073,10 @@ def nail_summary(bom):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("frame", help="frame.json from tools/frame.py")
-    ap.add_argument("--snapshot", help="price snapshot CSV (data/timber/prices/); without it there are no prices")
+    ap.add_argument("--snapshot", help="one price snapshot CSV (data/timber/prices/); without it there are no prices")
+    ap.add_argument("--prices", metavar="REGION[:SUPPLIER]",
+                    help="price from the newest snapshot of every supplier in a region (hu, cz, us), or of one "
+                         "supplier (hu:szekely-fatelep); each line goes to the supplier that sells all of it cheapest")
     ap.add_argument("--waste", type=float, default=None,
                     help="spare, in %% of every piece count, rounded up (default: the library's, 10)")
     ap.add_argument("--kerf", type=float, default=None, help="saw blade width in mm (default: the library's, 4)")
@@ -820,6 +1088,13 @@ def main():
     with open(a.frame, encoding="utf-8") as f:
         frame = json.load(f)
     snap = tl.load_snapshot(a.snapshot) if a.snapshot else None
+    if a.prices and not a.snapshot:
+        try:
+            snap = [rows for _, rows in tl.load_snapshots(a.prices)]
+        except ValueError as e:
+            if "currency" in str(e):
+                sys.exit(f"bom: {e}")
+            print(f"   {e}: the list has no prices", file=sys.stderr)
     bom = make_bom(frame, snap, a.waste, a.kerf, a.sheet_spare, a.trim)
     os.makedirs(a.out, exist_ok=True)
     with open(os.path.join(a.out, "bom.json"), "w", encoding="utf-8") as f:
