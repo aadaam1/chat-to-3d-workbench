@@ -143,6 +143,8 @@ def test_no_oracle_case_got_worse(mode):
     snap = tl.load_snapshot(SNAPSHOT) if mode.startswith("priced") else None
     trim = 20 if mode.endswith("20") else 0
     for name, frame in oracle_frames().items():
+        if snap and frame["region"] != "eu":
+            continue            # the Hungarian prices are refused for a us structure (see test_prices.py)
         b = bm.make_bom(frame, snap, 10, 4, 0, trim)
         for ln in b["timber"]:
             cuts = [(c["id"], c["length_mm"]) for p in ln["layouts"] for c in p["cuts"]]
