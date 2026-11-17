@@ -911,7 +911,7 @@ def suppliers_text(snap):
     Where several were looked at, the lines each one prices are counted."""
     sups = [s for s in snap.get("suppliers", []) if s["lines"]] or snap.get("suppliers") or [snap]
     many = len(snap.get("suppliers", [])) > 1
-    return "; ".join(f"{s['supplier']}, read {s['read_date']}" + (f" ({s['lines']} lines)" if many else "") for s in sups)
+    return "; ".join(f"{s['supplier']}, read {s['read_date']}" + (f", {s['lines']} line{'s' if s['lines'] != 1 else ''}" if many else "") for s in sups)
 
 
 def multi_supplier(bom):
