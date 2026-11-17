@@ -1,0 +1,12 @@
+# supplier: Drevotta Talajcsavar (talajcsavar.hu), ground screw maker/seller
+# region: hu
+# read_date: 2026-11-17
+# currency: HUF
+# prices: gross (incl. VAT) as on the product-series pages ("Bruttó ár")
+source_url	product	kind	item	variant	species	grade	thickness_mm	width_mm	length_mm	unit	pack_qty	price_net	price_gross	notes
+https://talajcsavar.hu/termekek/talajcsavar-m-szeria-2	Talajcsavar DRT M 76 X 800 X 2,5 - M12	bought	ground-screw-76x800							piece	1		13500	Ø76 x 800 mm, flange head with M12 thread, hot-dip galvanised, 950 kg vertical load; NO post bracket; in stock
+https://talajcsavar.hu/termekek/talajcsavar-m-szeria-2	Talajcsavar DRT M 76 X 1000 X 2,5 - M12	bought	ground-screw-76x1000							piece	1		14900	Ø76 x 1000 mm, M12 flange head; NO post bracket; in stock
+https://talajcsavar.hu/termekek/talajcsavar-m-szeria-2	Talajcsavar DRT M 76 X 1300 X 3 - M16	bought								piece	1		22900	Ø76 x 1300 mm, M16 flange head (no 1200 mm size); NO post bracket; in stock
+https://talajcsavar.hu/termekek/talajcsavar-u-szeria-2	Talajcsavar DRT U 68 X 770 - 100	bought	post-base-u							piece	1		8490	Ø68 x 770 mm with U bracket for a 100 mm post; 450 kg vertical load; hand-driven; in stock
+https://talajcsavar.hu/termekek/talajcsavar-u-szeria-2	DRT U 68 x 1000 * 2 - 91	bought	post-base-u							piece	1		11900	Ø68 x 1000 mm with U bracket, 91 mm slot
+https://talajcsavar.hu/termekek/talajcsavar-u-szeria-2	DRT U 68 x 1000 * 2 - 111	bought	post-base-u							piece	1		11900	Ø68 x 1000 mm with U bracket, 111 mm slot
