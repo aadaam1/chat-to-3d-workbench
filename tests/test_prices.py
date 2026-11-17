@@ -323,3 +323,58 @@ def test_importer_turns_prices_per_m2_and_per_m_into_piece_prices(tmp_path):
     assert "Net only" not in by and "no VAT rate" in r.stderr
     loaded = tl.load_snapshot(str(tmp_path / "zz-misc-2026-11-05.csv"))
     assert next(x for x in loaded if x["item"] == "ground-screw-76x800")["price_net"] is None
+
+
+def test_importer_shortens_the_suppliers_header_name(tmp_path):
+    src = open(os.path.join(RAW, "zz-alpha-2026-11-01.tsv"), encoding="utf-8").read().replace(
+        "# supplier: Alpha Timber", "# supplier: Alpha Timber (alpha.example), Town - pages not in the old snapshot")
+    f = tmp_path / "zz-alpha-2026-11-01.tsv"
+    f.write_text(src, encoding="utf-8")
+    subprocess.run([sys.executable, os.path.join(ROOT, "tools", "timber_import.py"), str(f), str(tmp_path / "a.csv")], check=True, capture_output=True)
+    assert {r["supplier"] for r in csv.DictReader(open(tmp_path / "a.csv", encoding="utf-8"))} == {"Alpha Timber"}
+
+
+def test_a_later_partial_read_of_a_supplier_adds_to_the_earlier_one_product_by_product(prices):
+    with open(prices / "zz-alpha-2026-11-01.csv", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    newer = [dict(r, read_date="2026-12-01", price_gross="11.00", price_net="9.09") for r in rows
+             if r["item"] == "nail-framing" and r["pack_qty"] == "1"]
+    with open(prices / "zz-alpha-2026-12-01.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(rows[0]))
+        w.writeheader()
+        w.writerows(newer)
+    [(path, merged)] = tl.load_snapshots("zz:alpha")
+    assert path.endswith("zz-alpha-2026-12-01.csv")
+    assert len(merged) == len(rows)                                     # nothing lost, nothing doubled
+    box = next(r for r in merged if r["item"] == "nail-framing" and r["pack_qty"] == 1)
+    assert (box["price_gross"], box["read_date"]) == (11.0, "2026-12-01")      # the newer price wins
+    assert any(r["kind"] == "lumber" and r["read_date"] == "2026-11-01" for r in merged)   # the rest from the older read
+    b = bm.make_bom(small(), [merged], 10, 4, 0, 20)
+    assert b["snapshot"]["suppliers"][0]["read_dates"] == ["2026-11-01", "2026-12-01"]
+    assert "read 2026-11-01 and 2026-12-01" in bm.render_md(b)
+    assert line(b, "fasteners", "nail-framing")["total"] == 11.0
+
+
+def test_us_untreated_members_are_priced_by_dressed_rows():
+    """US dimension lumber is sold dressed (planed): the US library lets a 'sawn' member take a 'planed' row,
+    never an impregnated one; the EU library does not."""
+    def row(variant, price):
+        return {"kind": "lumber", "variant": variant, "thickness_mm": 38.0, "width_mm": 89.0, "length_mm": 2438.0,
+                "price_gross": price, "price_net": price, "currency": "USD"}
+    us, eu = tl.load("us"), tl.load("eu")
+    hit = tl.price_for([row("impregnated", 7.59), row("planed", 4.25)], tl.item(us, "2x4"), 2438, "sawn")
+    assert hit["price_gross"] == 4.25
+    assert tl.price_for([row("impregnated", 7.59)], tl.item(us, "2x4"), 2438, "sawn") is None
+    assert tl.price_for([row("planed", 4.25)], tl.item(us, "2x4"), 2438, "impregnated") is None
+    assert tl.price_for([row("planed", 4.25)], tl.item(eu, "50x100"), 2438, "sawn") is None
+
+
+def test_the_single_snapshot_default_is_the_most_complete_lumber_list(prices):
+    assert os.path.basename(tl.newest_snapshot("zz")) == "zz-beta-2026-11-02.csv"       # 2 lumber rows each: the newer one
+    with open(prices / "zz-alpha-2026-11-01.csv", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    with open(prices / "zz-gamma-2026-10-01.csv", "w", newline="", encoding="utf-8") as f:   # older but bigger
+        w = csv.DictWriter(f, fieldnames=list(rows[0]))
+        w.writeheader()
+        w.writerows([r for r in rows if r["kind"] == "lumber"] * 2)
+    assert os.path.basename(tl.newest_snapshot("zz")) == "zz-gamma-2026-10-01.csv"

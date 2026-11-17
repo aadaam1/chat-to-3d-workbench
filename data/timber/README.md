@@ -29,7 +29,7 @@ with the supplier before you buy.
 ```
 
 (`timber.py` and the shopping list differ on prices: `timber.py` reads one snapshot, the
-newest for the region. A shopping list, `PRICES=hu tools/build_frame.sh <project>` or
+region's most complete lumber list (the one with the most lumber rows). A shopping list, `PRICES=hu tools/build_frame.sh <project>` or
 `tools/bom.py --prices hu`, reads the newest snapshot of **every** supplier in the region.
 See "Several suppliers" below.)
 
@@ -57,6 +57,7 @@ changes how lengths are shown.
 
 | Block | Holds |
 |---|---|
+| `variant_aliases` | which snapshot variants may price a library variant (US: a `sawn` member takes a `planed` row, since dimension lumber is sold dressed) |
 | `sections` | actual thickness and width, stock lengths, usual uses (the planner picks a section for a role by these) |
 | `sheets`, `cladding` | thickness, sheet size, board and cover width; a cladding may list `order_lengths_mm` (special-order lengths, used only for a board longer than the stocked ones) |
 | `fasteners`, `joint_rules` | nails (size, count per kg or lb, box sizes) and structural screws (pack sizes); fasteners per joint type |
@@ -110,7 +111,9 @@ supplier lists the planed size itself, the snapshot has it.
 ## Several suppliers per region
 
 `PRICES=hu tools/build_frame.sh <project>` (or `bom.py --prices hu`) uses the newest snapshot
-of **each** supplier in the region; `PRICES=hu:<supplier-slug>` (the part of the file name between
+of **each** supplier in the region (where a later read covers only some of a supplier's pages, the
+older snapshot of that supplier still supplies the products the newer one doesn't list; each row
+keeps its read date); `PRICES=hu:<supplier-slug>` (the part of the file name between
 the region and the date, `szekely-fatelep`) uses one supplier only. `--snapshot <csv>` still
 prices from one file. The Czech Republic (`cz`, CZK) uses the `eu` library, the US (`us`, USD) the
 `us` one. One region is one currency: snapshots of different currencies are never added together.
@@ -173,3 +176,9 @@ the yard before buying, and change any number you know better.
 | Region | Supplier | Read | What's in it |
 |---|---|---|---|
 | hu | [Székely Fatelep](https://szekelyfatelep.hu/), Budapest XVI | 2026-11-10 | planks, boards, planed boards, beams and rafters, battens, OSB: 295 products |
+| hu | [Larex Fatelep](https://www.fatelep.hu/), Budapest | 2026-11-17 | planed boards, deck and cladding boards, battens, beams (50 products), OSB (4), nails, screws and bolts (12), joist hangers, post bases, felt (9) |
+| hu | [Praktiker Hungary](https://www.praktiker.hu/) | 2026-11-17 | boards, battens, posts and deck boards (14), OSB (3), nails, screws and bolts (7), felt, trims, hinges, latch, joist hangers, post base (12) |
+| hu | [Székely Fatelep](https://szekelyfatelep.hu/), Budapest XVI (a second read: pages the 2026-11-10 read lacks) | 2026-11-17 | cladding and deck boards (7), screws and bolts (5), ground screws and post bases (9); the 2026-11-10 timber stays in use |
+| hu | [Drevotta Talajcsavar](https://talajcsavar.hu/) | 2026-11-17 | ground screws and U post brackets (5); no sections |
+| cz (CZK, `eu` library) | [Hornbach Czech Republic](https://www.hornbach.cz/) | 2026-11-17 | sawn, impregnated and planed timber, deck boards (84), OSB (4), nails, screws and bolts (12), felt, trims, hinges, latch, joist hangers, post bases (15); online prices; sheets priced per m² on the page, turned into the price of a 1250 × 2500 sheet |
+| us (USD, before sales tax) | [Menards](https://www.menards.com/) | 2026-11-17 | dimension lumber 1×4 to 6×6, deck boards (72), OSB (4), nails, deck and structural screws, bolts (14), felt, trims, hinges, latch, hangers, post caps and bases, pier blocks (13); online prices, no store selected, rebates not deducted |

@@ -3,6 +3,12 @@
   "region": "us",
   "name": "United States (dressed nominal lumber, 16 in on centre, 4 × 8 ft sheets)",
   "units": "imperial",
+  "variant_aliases": {
+    "sawn": [
+      "sawn",
+      "planed"
+    ]
+  },
   "sections": {
     "1x4": {
       "name": "1×4",

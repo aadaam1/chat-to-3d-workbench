@@ -53,6 +53,8 @@ def item(lib, key):
         if key in lib.get(cat, {}):
             d = dict(lib[cat][key])
             d["key"], d["category"] = key, cat
+            if lib.get("variant_aliases"):
+                d["variant_aliases"] = lib["variant_aliases"]
             return d
     raise KeyError(f"{key!r} is not in the {lib.get('region', '?')} library")
 
@@ -251,29 +253,38 @@ def snapshot_slug(path):
 
 
 def newest_snapshot(region):
-    """Path of the newest price snapshot for a region; ValueError when there is none."""
-    files = sorted(glob.glob(os.path.join(PRICES, f"{region}-*.csv")), key=_stamp)
+    """Path of the region's most complete timber price list, for the single-snapshot tools
+    (tools/timber.py): the snapshot with the most lumber rows, the newest of equals. (A shopping
+    list uses every supplier: see snapshot_files.) ValueError when there is none."""
+    def lumber_rows(p):
+        with open(p, encoding="utf-8") as f:
+            return sum(1 for r in csv.DictReader(f) if r["kind"] == "lumber")
+    files = glob.glob(os.path.join(PRICES, f"{region}-*.csv"))
     if not files:
         raise ValueError(f"no price snapshot for region {region!r} in {PRICES}")
-    return files[-1]
+    return max(sorted(files), key=lambda p: (lumber_rows(p), _stamp(p)))
+
+
+def snapshot_files(spec):
+    """{supplier slug: [snapshot paths, newest first]} for a price spec: 'hu' is every supplier in
+    that region, 'hu:<supplier-slug>' only that supplier. ValueError when there is none."""
+    region, _, slug = spec.partition(":")
+    found = {}
+    for p in sorted(glob.glob(os.path.join(PRICES, f"{region}-*.csv")), key=_stamp, reverse=True):
+        found.setdefault(snapshot_slug(p), []).append(p)
+    if slug:
+        if slug not in found:
+            raise ValueError(f"no price snapshot for supplier {slug!r} in region {region!r}; have: "
+                             f"{', '.join(sorted(found)) or 'none'}")
+        return {slug: found[slug]}
+    if not found:
+        raise ValueError(f"no price snapshot for region {region!r} in {PRICES}")
+    return dict(sorted(found.items()))
 
 
 def snapshot_paths(spec):
-    """Paths of the snapshots a price spec names: 'hu' is the newest snapshot of each
-    supplier in that region, 'hu:<supplier-slug>' only that supplier's newest.
-    ValueError when there is none."""
-    region, _, slug = spec.partition(":")
-    newest = {}
-    for p in sorted(glob.glob(os.path.join(PRICES, f"{region}-*.csv")), key=_stamp):
-        newest[snapshot_slug(p)] = p          # sorted by date: the last one per supplier wins
-    if slug:
-        if slug not in newest:
-            raise ValueError(f"no price snapshot for supplier {slug!r} in region {region!r}; have: "
-                             f"{', '.join(sorted(newest)) or 'none'}")
-        return [newest[slug]]
-    if not newest:
-        raise ValueError(f"no price snapshot for region {region!r} in {PRICES}")
-    return [newest[k] for k in sorted(newest)]
+    """Paths of the newest snapshot of each supplier a price spec names (see snapshot_files)."""
+    return [paths[0] for paths in snapshot_files(spec).values()]
 
 
 SNAPSHOT_NUMBERS = ("thickness_mm", "width_mm", "length_mm", "price_gross", "price_net", "pack_qty")
@@ -294,10 +305,32 @@ def load_snapshot(path):
     return rows
 
 
+def row_key(r):
+    """What a row sells, for merging a supplier's snapshots: a board or sheet by variant and size,
+    a fastener or bought item by item key, unit and pack size."""
+    if r["kind"] in ("lumber", "sheet"):
+        t, w = sorted((r["thickness_mm"], r["width_mm"]))
+        return (r["kind"], r["variant"], t, w, r["length_mm"], r["species"], r["grade"])
+    return (r["kind"], r["item"], r["unit"], r["pack_qty"])
+
+
+def merge_snapshots(snapshots):
+    """The rows of one supplier's snapshots, newest first: the newest snapshot's rows, then those
+    of an older one for products the newer ones do not list (a later read may cover only some of the
+    supplier's pages). Every row keeps its own read date."""
+    rows, seen = [], set()
+    for snap in snapshots:
+        keys = {row_key(r) for r in snap}
+        rows += [r for r in snap if row_key(r) not in seen]
+        seen |= keys
+    return rows
+
+
 def load_snapshots(spec):
-    """[(path, rows)] for a price spec (see snapshot_paths). All must share one currency:
-    one region, one currency; ValueError otherwise."""
-    out = [(p, load_snapshot(p)) for p in snapshot_paths(spec)]
+    """[(newest path, rows)], one per supplier, for a price spec (see snapshot_files). Where a
+    supplier has several snapshots the newest wins product by product (merge_snapshots). All
+    must share one currency: one region, one currency; ValueError otherwise."""
+    out = [(paths[0], merge_snapshots([load_snapshot(p) for p in paths])) for paths in snapshot_files(spec).values()]
     cur = {r["currency"] for _, rows in out for r in rows}
     if len(cur) > 1:
         raise ValueError(f"the snapshots for {spec!r} use more than one currency ({', '.join(sorted(cur))}): "
@@ -328,7 +361,9 @@ def price_for(snapshot_rows, it, length_mm=None, variant="sawn", tol_mm=0.5):
     `variant` are ignored. Returns {price_gross, price_net, currency, row}.
     A snapshot lists sizes as the supplier names them, so this finds only what
     the supplier sells at that size: an item with no row gets None, never a
-    price for a different size."""
+    price for a different size. A library may list `variant_aliases`: in the US library an
+    untreated ("sawn") member is priced by a "planed" row too, because dimension lumber is
+    sold dressed."""
     def near(a, b):
         return abs(a - b) <= tol_mm
 
@@ -350,7 +385,7 @@ def price_for(snapshot_rows, it, length_mm=None, variant="sawn", tol_mm=0.5):
     t = it["thickness_mm"]
     w = it.get("width_mm", it.get("face_width_mm"))
     rows = [r for r in snapshot_rows
-            if r["kind"] == "lumber" and r["variant"] == variant
+            if r["kind"] == "lumber" and r["variant"] in it.get("variant_aliases", {}).get(variant, [variant])
             and near(min(r["thickness_mm"], r["width_mm"]), min(t, w))
             and near(max(r["thickness_mm"], r["width_mm"]), max(t, w))
             and near(r["length_mm"], length_mm)]

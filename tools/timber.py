@@ -9,8 +9,8 @@
 
 Sizes are thickness x width in mm, smaller first ("50x100" = "100x50").
 The price data is a dated snapshot in data/timber/prices/, made from a
-supplier's price list by tools/timber_import.py. Without --snapshot the newest
-snapshot for --region (default hu) is used. Everything here is plain
+supplier's price list by tools/timber_import.py. Without --snapshot the region's
+most complete timber list (default region hu; the snapshot with the most lumber rows) is used. Everything here is plain
 arithmetic on that table: the same snapshot and request always give the
 same answer.
 """
@@ -115,7 +115,7 @@ def cmd_buy(a):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--region", default="hu")
-    ap.add_argument("--snapshot", help="a price CSV in data/timber/prices/ (default: newest for --region)")
+    ap.add_argument("--snapshot", help="a price CSV in data/timber/prices/ (default: the most complete lumber list for --region)")
     sub = ap.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("classify"); c.add_argument("size")
     sub.add_parser("sections")
