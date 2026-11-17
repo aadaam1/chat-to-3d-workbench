@@ -9,6 +9,9 @@ workbench is a working prototype, and anything may still change.
 
 ## [Unreleased]
 
+### Changed
+- Prices from several suppliers per region, now also for nails, screws, felt, ground screws and fittings; Czech and US price snapshots.
+
 ## [0.8.0] - 2026-11-15
 
 A site pack to print for the building site, less offcut in the shopping list, and an open tiled roof for the summer kitchen

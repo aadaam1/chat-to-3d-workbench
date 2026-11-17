@@ -7,7 +7,7 @@ price lists, one region and supplier at a time.
 
 ```
 prices/<region>-<supplier>-<YYYY-MM-DD>.csv        the snapshot the tools read
-prices/raw/<region>-<supplier>-<YYYY-MM-DD>.txt    the price list it was made from
+prices/raw/<region>-<supplier>-<YYYY-MM-DD>.tsv    the price list it was made from (older ones: .txt)
 ```
 
 A snapshot is the supplier's public price list as read on its date, with
@@ -27,6 +27,11 @@ with the supplier before you buy.
 ```bash
 .venv/bin/python tools/timber.py buy 50x100 2400 12 --variant impregnated
 ```
+
+(`timber.py` and the shopping list differ on prices: `timber.py` reads one snapshot, the
+newest for the region. A shopping list, `PRICES=hu tools/build_frame.sh <project>` or
+`tools/bom.py --prices hu`, reads the newest snapshot of **every** supplier in the region.
+See "Several suppliers" below.)
 
 `classify` names a section (Hungarian and English); `sections` lists every
 section on offer with its variants, stock lengths and price per m³; `buy`
@@ -86,34 +91,78 @@ different size: no row, no price. Tests: `.venv/bin/python -m pytest tests/test_
 |---|---|
 | `region`, `supplier`, `read_date`, `source_url` | where and when the price was read |
 | `product` | the supplier's own name for it, unchanged |
-| `kind` | `lumber` (sold by the piece, one length) or `sheet` |
+| `kind` | `lumber` (sold by the piece, one length; deck and cladding boards too), `sheet`, `fastener` or `bought` |
+| `item` | the library key (`nail-framing`, `ground-screw-76x1000`, `roofing-felt`); required for `fastener` and `bought`, optional for timber (matched by size anyway) |
 | `variant` | `sawn`, `planed`, `impregnated` (lumber); `sheet` |
 | `species`, `grade`, `notes` | only where the supplier names them (spruce, larch, C24, dried, tongue and groove) |
 | `thickness_mm`, `width_mm`, `length_mm` | as sold; sheets: thickness, then the sheet's short and long side |
-| `price_net`, `price_gross`, `currency` | per piece or sheet, as listed |
+| `unit`, `pack_qty` | what one price buys: `piece`, `box` (nails: `pack_qty` is the box's weight in kg, in lb for the US), `pack` (screws, bolts: the count), `roll` (felt: the m² it covers), `m2`, `m`, `kg`; for `piece` of a trim, `pack_qty` is its length in m |
+| `price_net`, `price_gross`, `currency` | per unit (piece, sheet, box, pack, roll, m, m²), as listed. US: both are the shelf price, **before sales tax** |
 | `gross_per_m3`, `gross_per_m`, `gross_per_m2` | computed, for comparing sizes and suppliers |
+
+Snapshots made before `item`, `unit` and `pack_qty` existed lack those columns; they
+load with them blank and price timber and sheets as before.
 
 Sizes are the supplier's stated sizes. Planed timber is usually a few mm
 smaller than its sawn name (a planed "5×10" is closer to 45×95); where the
 supplier lists the planed size itself, the snapshot has it.
 
+## Several suppliers per region
+
+`PRICES=hu tools/build_frame.sh <project>` (or `bom.py --prices hu`) uses the newest snapshot
+of **each** supplier in the region; `PRICES=hu:<supplier-slug>` (the part of the file name between
+the region and the date, `szekely-fatelep`) uses one supplier only. `--snapshot <csv>` still
+prices from one file. The Czech Republic (`cz`, CZK) uses the `eu` library, the US (`us`, USD) the
+`us` one. One region is one currency: snapshots of different currencies are never added together.
+
+Each shopping-list line is priced by the supplier that sells **all of it** cheapest:
+
+- Timber and cladding: the plan is made on that supplier's own stock lengths (each is priced at its
+  own length), and the cheapest complete plan across suppliers wins. A supplier that lacks a length
+  the plan needs is not a candidate, it simply plans on the lengths it has.
+- Sheets: the cheapest price for the sheet.
+- Nails: the supplier's boxes of that item (`unit` `box`); the cheapest combination of boxes that
+  covers the weight (with the spare). Screws and bolts: its packs; the cheapest combination
+  covering the count. The line then shows that supplier's pack sizes, not the library's.
+- Felt: by the roll (`pack_qty` m² per roll) or by the m², whichever is cheaper for the area; drip
+  edge and ridge cap by the metre or in pieces of `pack_qty` m; the rest by the piece.
+- Where one supplier lists an item several times (sizes, finishes), the cheapest combination of
+  whole packs that covers the need is used, whatever the finish: the note and the product name
+  say what is bought.
+- A ground screw's price includes its post bracket, so the `post-base-u` line of a priced ground
+  screw is free. Doors, windows and concrete footings are not priced (they depend on choices).
+- A line no supplier prices in full is left out of the total: "no price", and the total says
+  "partial: no price for ...".
+
+Each line records its supplier in `bom.json`; `bom.md`, the cut list (a `supplier` column) and
+the site pack show it, and the header lists every supplier used with its read date.
+
 ## Adding prices
 
-1. Copy the supplier's price tables into a text file in `prices/raw/`: one
-   product per line, name, net price and gross price separated by tabs, with
-   a `## <page URL>` line above each table. Comment lines start with `#`.
-   Claude can do this from the supplier's pages; a price list pasted into
-   the chat works too.
-2. Run the importer:
+**A TSV price list** (several suppliers, any kind of item) is a tab-separated file in `prices/raw/`
+named `<region>-<supplier-slug>-<YYYY-MM-DD>.tsv`: `# key: value` header lines (`supplier`,
+`region`, `read_date`, `currency`, `prices`: `gross (incl. 21% VAT)` or `before sales tax`), then a header
+row and one row per product, with the columns `source_url product kind item variant species grade
+thickness_mm width_mm length_mm unit pack_qty price_net price_gross notes`. Only a price read on
+the supplier's own page, with that page as `source_url`. Fill the price the page shows (the importer
+computes the other from the VAT rate), with a decimal point and no thousands separators.
 
-   ```bash
-   .venv/bin/python tools/timber_import.py prices/raw/FILE.txt prices/FILE.csv --supplier "Name" --region hu --date YYYY-MM-DD
-   ```
+```bash
+.venv/bin/python tools/timber_import.py data/timber/prices/raw/FILE.tsv data/timber/prices/FILE.csv
+```
 
-   It lists any line it can't read rather than guessing; fix those by hand
-   or teach the importer the new format.
-3. Commit both files. Old snapshots stay, so a design can say which prices
-   it used.
+**A Hungarian-style text list** (older format): one product per line, name, net price and gross
+price separated by tabs, with a `## <page URL>` line above each table, comment lines starting
+with `#`. Claude can do this from the supplier's pages; a price list pasted into the chat works
+too.
+
+```bash
+.venv/bin/python tools/timber_import.py prices/raw/FILE.txt prices/FILE.csv --supplier "Name" --region hu --date YYYY-MM-DD
+```
+
+Either way the importer lists any line it can't read rather than guessing; fix those by hand
+or teach the importer the new format. Commit both files. Old snapshots stay, so a design can say
+which prices it used; only the newest of each supplier is used for new lists.
 
 Prices go stale and differ by yard: treat a snapshot as an estimate, check
 the yard before buying, and change any number you know better.
