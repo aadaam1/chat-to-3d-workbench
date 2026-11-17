@@ -747,7 +747,8 @@ def suppliers_of(snapshot):
     if not snapshot:
         return []
     lists = snapshot if isinstance(snapshot[0], list) else [snapshot]
-    sups = [{"supplier": rows[0]["supplier"], "read_date": rows[0]["read_date"],
+    sups = [{"supplier": rows[0]["supplier"], "read_date": max(r["read_date"] for r in rows),
+             "read_dates": sorted({r["read_date"] for r in rows}),
              "currency": rows[0]["currency"], "rows": rows} for rows in lists if rows]
     cur = sorted({s["currency"] for s in sups})
     if len(cur) > 1:
@@ -796,8 +797,8 @@ def make_bom(frame, snapshot=None, waste_pct=None, kerf=None, sheet_spare_pct=0,
             if not prices:
                 continue
             lengths, spec_note = with_order_lengths(it, lengths, longest, frame["units"])
-            if longest > max(lengths) + EPS:
-                continue
+            if longest + trim > max(lengths) + EPS:
+                continue                  # this supplier has no piece long enough for the longest cut
             line = build_timber_line(key, groups[key], it, lengths, prices, kerf, waste_pct, currency, trim)
             if line["priced"] and (chosen is None or line["total"] < chosen[0]["total"] - 1e-9):
                 chosen = (line, lengths, prices, spec_note, sup["supplier"])
@@ -805,8 +806,10 @@ def make_bom(frame, snapshot=None, waste_pct=None, kerf=None, sheet_spare_pct=0,
             line, lengths, prices, spec_note, supplier = chosen
             if spec_note:
                 special.append(spec_note)
-        else:                              # nothing prices it all: the first supplier's lengths, else the library's
-            lengths, prices = stock_for(it, key[1], sups[0]["rows"] if sups else None)
+        else:                              # nothing prices it all: the first supplier whose lengths hold every cut, else the library's
+            lengths, prices = next(((l, p) for l, p in (stock_for(it, key[1], sup["rows"]) for sup in sups)
+                                    if p and longest + trim <= max(with_order_lengths(it, l, longest, frame["units"])[0]) + EPS),
+                                   stock_for(it, key[1], None))
             lengths, spec_note = with_order_lengths(it, lengths, longest, frame["units"])
             if spec_note:
                 special.append(spec_note)
@@ -861,7 +864,8 @@ def make_bom(frame, snapshot=None, waste_pct=None, kerf=None, sheet_spare_pct=0,
         used = [s for s in sups if n_used[s["supplier"]]] or sups
         snap = {"supplier": ", ".join(s["supplier"] for s in used), "read_date": max(s["read_date"] for s in used),
                 "currency": currency,
-                "suppliers": [{"supplier": s["supplier"], "read_date": s["read_date"], "lines": n_used[s["supplier"]]}
+                "suppliers": [{"supplier": s["supplier"], "read_date": s["read_date"], "read_dates": s["read_dates"],
+                               "lines": n_used[s["supplier"]]}
                               for s in sups]}
     return {
         "schema": SCHEMA, "name": frame.get("name", ""), "region": frame["region"], "units": frame["units"],
@@ -911,7 +915,7 @@ def suppliers_text(snap):
     Where several were looked at, the lines each one prices are counted."""
     sups = [s for s in snap.get("suppliers", []) if s["lines"]] or snap.get("suppliers") or [snap]
     many = len(snap.get("suppliers", [])) > 1
-    return "; ".join(f"{s['supplier']}, read {s['read_date']}" + (f", {s['lines']} line{'s' if s['lines'] != 1 else ''}" if many else "") for s in sups)
+    return "; ".join(f"{s['supplier']}, read {' and '.join(s.get('read_dates') or [s['read_date']])}" + (f", {s['lines']} line{'s' if s['lines'] != 1 else ''}" if many else "") for s in sups)
 
 
 def multi_supplier(bom):

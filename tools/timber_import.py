@@ -28,7 +28,8 @@ region, read_date, currency, prices) and a header row, one row per product, for 
 kind of item: lumber, sheets, fasteners and bought items (nails by the box, screws by
 the pack, felt by the roll, trims, ground screws). It is detected by its header row
 (source_url, product, kind, item, ...); the columns are described in data/timber/README.md.
---supplier, --region, --date and --currency then default to the header lines.
+--supplier, --region, --date and --currency then default to the header lines (the supplier
+is shortened to its name before the first bracket, comma or dash).
 EU files give gross or net prices (the other is computed from the VAT rate in the
 "# prices:" line); US files give the shelf price, before sales tax, as both.
 """
@@ -130,6 +131,12 @@ def read_tsv(path):
         parts += [""] * (len(cols) - len(parts))
         rows.append(dict(zip(cols, (p.strip() for p in parts))))
     return head, rows, bad
+
+
+def short_name(supplier):
+    """A supplier's short name for the shopping list: the header's text up to its first bracket,
+    comma or dash ('Larex Fatelep (Larex-Trade Kft.), Budapest' -> 'Larex Fatelep')."""
+    return re.split(r"\s+\(|,|\s+[-–]\s", supplier, maxsplit=1)[0].strip() or supplier
 
 
 def vat_of(head):
@@ -266,7 +273,8 @@ def main():
 
     if is_tsv(a.raw):
         head = read_tsv(a.raw)[0]
-        supplier, region = a.supplier or head.get("supplier"), a.region or head.get("region")
+        supplier = a.supplier or (short_name(head["supplier"]) if head.get("supplier") else None)
+        region = a.region or head.get("region")
         date, currency = a.date or head.get("read_date"), a.currency or head.get("currency")
         for name, v in (("supplier", supplier), ("region", region), ("read_date", date), ("currency", currency)):
             if not v:

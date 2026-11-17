@@ -10,7 +10,7 @@ workbench is a working prototype, and anything may still change.
 ## [Unreleased]
 
 ### Changed
-- Prices from several suppliers per region, now also for nails, screws, felt, ground screws and fittings; Czech and US price snapshots.
+- Prices from several suppliers per region, now also for nails, screws, felt, ground screws and fittings; Czech and US price snapshots, and Hungarian ones from four more suppliers.
 
 ## [0.8.0] - 2026-11-15
 
