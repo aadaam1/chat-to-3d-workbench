@@ -5,7 +5,8 @@
 #       <project>   a folder under projects/ (or examples/) holding the description
 #                   (default structure.json; an older shed.json still works)
 #   NOTE="taller door" tools/build_frame.sh garden-shed     labels the version
-#   PRICES=hu tools/build_frame.sh garden-shed               price the list from the newest hu-* snapshot
+#   PRICES=hu tools/build_frame.sh garden-shed               price the list from the newest snapshot of each hu supplier
+#   PRICES=hu:szekely-fatelep ...                            ... from that one supplier only
 #   TITLE="Bike shed"                                        the preview's title (default: the project name)
 # Output goes to <project folder>/out/ (never committed):
 #   frame.json  checks.json  bom.json  bom.md  cutlist.csv  versions/v<N>/
@@ -30,15 +31,10 @@ mkdir -p "$out"
 
 "$PY" tools/framecheck.py "$out/frame.json" --out "$out/checks.json" || exit 1
 
-# prices: the newest snapshot for the region named by PRICES
-region=${PRICES:-}
-snap=""
-if [ -n "$region" ]; then
-  snap=$(ls data/timber/prices/"$region"-*.csv 2>/dev/null | sort | tail -1)
-  [ -n "$snap" ] || echo "   no price snapshot for '$region' in data/timber/prices/: the list has no prices"
-fi
-if [ -n "$snap" ]; then
-  "$PY" tools/bom.py "$out/frame.json" --snapshot "$snap" --out "$out" || exit 1
+# prices: PRICES=<region> uses the newest snapshot of every supplier in that region (hu, cz, us);
+# PRICES=<region>:<supplier-slug> only that supplier. Each line goes to the supplier that sells all of it cheapest.
+if [ -n "${PRICES:-}" ]; then
+  "$PY" tools/bom.py "$out/frame.json" --prices "$PRICES" --out "$out" || exit 1
 else
   "$PY" tools/bom.py "$out/frame.json" --out "$out" || exit 1
 fi
