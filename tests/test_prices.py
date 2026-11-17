@@ -277,15 +277,19 @@ def test_trim_by_the_piece_and_pieces(prices):
     assert "latch" in b["totals"]["unpriced"] and b["totals"]["partial"]
 
 
-def test_a_ground_screw_price_includes_its_post_bracket(tmp_path):
-    rows = [{"kind": "bought", "item": "ground-screw-76x800", "unit": "piece", "pack_qty": 1.0, "price_gross": 20.0,
-             "product": "Ground screw 76x800 with bracket", "supplier": "S", "read_date": "2026-11-01", "currency": "EUR",
-             "variant": "", "thickness_mm": None, "width_mm": None, "length_mm": None, "price_net": 16.5, "notes": ""}]
+def test_a_ground_screw_and_its_bracket_are_priced_from_their_own_rows(tmp_path):
+    def row(item, price, notes):
+        return {"kind": "bought", "item": item, "unit": "piece", "pack_qty": 1.0, "price_gross": price, "product": item + " product",
+                "supplier": "S", "read_date": "2026-11-01", "currency": "EUR", "variant": "", "thickness_mm": None, "width_mm": None,
+                "length_mm": None, "price_net": None, "notes": notes}
     bought = [{"item": "ground-screw-76x800", "name": "g", "qty": 9, "unit": "pcs", "note": "", "unit_price": None, "total": None, "priced": False},
-              {"item": "post-base-u", "name": "p", "qty": 9, "unit": "pcs", "note": "", "unit_price": None, "total": None, "priced": False}]
-    bm.price_bought(bought, tl.load("eu"), bm.suppliers_of(rows))
-    assert bought[0]["total"] == 180.0 and bought[1]["total"] == 0.0 and bought[1]["priced"]
-    assert "included" in bm.bought_note(bought[1])
+              {"item": "post-base-u", "name": "p", "qty": 9, "unit": "pcs", "note": "", "unit_price": None, "total": None, "priced": False},
+              {"item": "latch", "name": "l", "qty": 1, "unit": "pcs", "note": "x", "unit_price": None, "total": None, "priced": False}]
+    bm.price_bought(bought, tl.load("eu"), bm.suppliers_of([row("ground-screw-76x800", 20.0, "NO post bracket"), row("post-base-u", 8.0, "")]))
+    assert (bought[0]["total"], bought[1]["total"]) == (180.0, 72.0) and not bought[2]["priced"]
+    assert "priced as ground-screw-76x800 product" in bm.bought_note(bought[0]) and "NO post bracket" not in bm.bought_note(bought[0])
+    assert "(NO post bracket)" in bm.bought_note(bought[0], True)            # the md list shows the supplier's note
+    assert bm.bought_note(bought[2]) == "x"
 
 
 def test_us_list_is_priced_in_dollars_before_sales_tax(tmp_path, monkeypatch):

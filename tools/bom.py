@@ -683,7 +683,8 @@ def price_need(need, key, it, ctx, sups):
             "bought": round(bought, 4),
             "packs": [dict({"size": round(pack_size(r, ctx, it), 4), "qty": q, "unit_price": r["price_gross"],
                             "product": r["product"]},
-                           **({"count": r["pack_qty"] or 1} if ctx == "weight" and r["unit"] in ("pack", "piece") else {}))
+                           **({"count": r["pack_qty"] or 1} if ctx == "weight" and r["unit"] in ("pack", "piece") else {}),
+                           **({"notes": r["notes"]} if r["notes"] else {}))
                       for r, q in packs]}
 
 
@@ -715,8 +716,9 @@ UNIT_CTX = {"m2": "m2", "m": "m", "pcs": "count"}
 
 def price_bought(bought, lib, sups):
     """Prices the bought items by item key: felt by the roll or the m2, trim by the metre or in
-    pieces, the rest by the piece. A ground screw's price includes its post bracket, so the
-    bracket line (the foundation's `base`) of a priced ground screw costs nothing extra."""
+    pieces, the rest by the piece. Each line is priced from its own rows only: a ground screw
+    and its post bracket (`post-base-u`) are two lines, so check the rows' notes (does the screw
+    come with a bracket?)."""
     for b in bought:
         b["supplier"] = None
         try:
@@ -729,13 +731,6 @@ def price_bought(bought, lib, sups):
             b.update({"packs": got["packs"], "bought_qty": got["bought"], "total": got["cost"], "priced": True,
                       "supplier": got["supplier"], "currency": got["currency"],
                       "unit_price": got["packs"][0]["unit_price"] if len(got["packs"]) == 1 else None})
-    done = {b["item"]: b for b in bought if b["priced"]}
-    for b in bought:
-        for key, screw in done.items():
-            f = lib.get("bought", {}).get(key, {}).get("foundation", {})
-            if f.get("kind") == "ground_screw" and f.get("base") == b["item"] and b is not screw:
-                b.update({"total": 0.0, "priced": True, "supplier": screw["supplier"], "currency": screw["currency"],
-                          "unit_price": 0.0, "packs": [], "included_in": key})
 
 
 def nail_packs_text(line):
@@ -902,15 +897,16 @@ def money(x, cur):
     return tl.money(x, cur)
 
 
-def bought_note(b):
-    """A bought item's note, with what to buy where a supplier prices it (a roll, a 2 m piece, a piece)."""
-    if b.get("included_in"):
-        return (b["note"] + "; " if b["note"] else "") + "included in the ground screw's price"
+def bought_note(b, notes=False):
+    """A bought item's note, with what is priced where a supplier prices it: what to buy (a roll, a 2 m piece)
+    and the product it was priced as; `notes` adds the supplier row's own notes (finish, what is not included)."""
     if not b.get("packs"):
         return b["note"]
     unit = {"pcs": "", "m": " m", "m2": " m2"}.get(b["unit"], "")
     buy = "buy " + " + ".join(f"{p['qty']} x {p['size']:g}{unit}" for p in b["packs"]) if b["unit"] != "pcs" else ""
-    return "; ".join(x for x in (b["note"], buy) if x)
+    how = "priced as " + "; ".join(dict.fromkeys(p["product"] + (f" ({p['notes']})" if notes and p.get("notes") else "")
+                                                 for p in b["packs"]))
+    return "; ".join(x for x in (b["note"], buy, how) if x)
 
 
 def price_basis(snap):
@@ -1042,7 +1038,7 @@ def render_md(bom):
     out += ["## Bought items", ""]
     out += [f"| Item | Quantity | Note | Price |{sh[0]}", f"|---|---|---|---|{sh[1]}"]
     for b in bom["bought"]:
-        out.append(f"| {b['name']} | {b['qty']:g} {b['unit']} | {bought_note(b)} | {total_cell(b)} |" + sc(b.get("supplier")))
+        out.append(f"| {b['name']} | {b['qty']:g} {b['unit']} | {bought_note(b, True)} | {total_cell(b)} |" + sc(b.get("supplier")))
     out.append("")
     out += ["## Notes", ""] + [f"- {n}" for n in bom["notes"]] + [""]
     return "\n".join(out)

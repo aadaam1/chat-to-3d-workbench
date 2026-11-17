@@ -132,8 +132,9 @@ Each shopping-list line is priced by the supplier that sells **all of it** cheap
 - Where one supplier lists an item several times (sizes, finishes), the cheapest combination of
   whole packs that covers the need is used, whatever the finish: the note and the product name
   say what is bought.
-- A ground screw's price includes its post bracket, so the `post-base-u` line of a priced ground
-  screw is free. Doors, windows and concrete footings are not priced (they depend on choices).
+- Each bought line is priced from its own rows: a ground screw and its post bracket (`post-base-u`)
+  are two lines, so read the rows' notes (the `bom.md` shows them): some ground screws come
+  without a bracket. Doors, windows and concrete footings are not priced (they depend on choices).
 - A line no supplier prices in full is left out of the total: "no price", and the total says
   "partial: no price for ...".
 
