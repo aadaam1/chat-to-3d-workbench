@@ -1,0 +1,10 @@
+# supplier: Gamma Lumber
+# region: us
+# read_date: 2026-11-03
+# currency: USD
+# prices: before sales tax
+# store: ZIP 30301
+source_url	product	kind	item	variant	species	grade	thickness_mm	width_mm	length_mm	unit	pack_qty	price_net	price_gross	notes
+https://shop.example/l	2 in x 4 in x 8 ft stud	lumber	2x4	sawn			38	89	2438	piece		3.98		
+https://shop.example/o	7/16 in OSB 4x8	sheet	osb-12	sheet			11.9	1219	2438	piece		14.50		
+https://shop.example/n	16d framing nails 5 lb	fastener	nail-framing							box	5	12.48		lb
