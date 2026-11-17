@@ -1,0 +1,28 @@
+# supplier: Szekely Fatelep (szekelyfatelep.hu), Budapest - pages not in the 2026-11-10 snapshot: ground screws, hardware, screws, cladding, deck
+# region: hu
+# read_date: 2026-11-17
+# currency: HUF
+# prices: gross (incl. 27% VAT); net as listed on the same page
+source_url	product	kind	item	variant	species	grade	thickness_mm	width_mm	length_mm	unit	pack_qty	price_net	price_gross	notes
+https://szekelyfatelep.hu/fatelep/talajcsavar/	DRT U 68 x 770- 100  AKCIÓS	bought	post-base-u							piece	1	6692.91	8500	ground screw Ø68 x 770 mm with U bracket for a 100 mm post; hand-driven; listed as AKCIÓS (sale price); Ø68 not 76
+https://szekelyfatelep.hu/fatelep/talajcsavar/	DRT U 68 x 1000- 91	bought	post-base-u							piece	1	9055.12	11500	ground screw Ø68 x 1000 mm with U bracket, 91 mm slot (too narrow for a 100 mm post)
+https://szekelyfatelep.hu/fatelep/talajcsavar/	DRT U 68 x 1000- 111	bought	post-base-u							piece	1	9055.12	11500	ground screw Ø68 x 1000 mm with U bracket, 111 mm slot (loose for a 100 mm post)
+https://szekelyfatelep.hu/fatelep/talajcsavar/	DRT M 76 x 800 x 2,5 – M12	bought	ground-screw-76x800							piece	1	10629.92	13500	Ø76 x 800 mm, flange head with holes and M12 thread; NO post bracket included (a post base is bought separately)
+https://szekelyfatelep.hu/fatelep/talajcsavar/	DRT M 76 x 1000 x 2,5 – M12	bought	ground-screw-76x1000							piece	1	11811.02	15000	Ø76 x 1000 mm, flange head with holes and M12 thread; NO post bracket included
+https://szekelyfatelep.hu/fatelep/talajcsavar/	DRT M 76 x 1300 x 3 – M16	bought								piece	1	12992.13	16500	Ø76 x 1300 mm (no 1200 mm size listed), M16 flange head; NO post bracket included
+https://szekelyfatelep.hu/fatelep/vasaru/	Oszloptartó csavarozható U (szürke) 10cm	bought	post-base-bolt-on							piece	1	1850.39	2350	screw-on U post base for a 100 mm post
+https://szekelyfatelep.hu/fatelep/vasaru/	Oszloptartó betonozható 10cm	bought	post-base-bolt-on							piece	1	1929.13	2450	cast-in post base for a 100 mm post
+https://szekelyfatelep.hu/fatelep/vasaru/	Oszloptartó csavarozható U (állítható) 10cm	bought	post-base-adjustable							piece	1	2519.69	3200	screw-on U post base, adjustable, for a 100 mm post
+https://szekelyfatelep.hu/fatelep/vasaru/	Oszloptartó állítható szélességű és magasságú talpas 80-150 mm	bought	post-base-adjustable							piece	1	3748.03	4760	adjustable width and height, with foot plate, 80-150 mm post
+https://szekelyfatelep.hu/fatelep/vasaru/	Szeg 65 mm kimért, kilós	fastener	nail-toe							kg	1	866.14	1100	weighed loose nails sold per kg (page header says ár/db); nail diameter not stated; 65 mm length matches
+https://szekelyfatelep.hu/fatelep/csavarok/	Tányérfejű 8mm*160mm	fastener	screw-rafter							piece	1	78.74	100	8 x 160 mm washer-head structural screw (not countersunk); thread length and finish not stated
+https://szekelyfatelep.hu/fatelep/csavarok/	Faforgácslap csavar 6*120	fastener	screw-corner							piece	1	27.56	35	6 x 120 mm countersunk chipboard/wood screw; thread length not stated
+https://szekelyfatelep.hu/fatelep/csavarok/	Tányérfejű 6mm*120mm	fastener	screw-corner							piece	1	31.50	40	6 x 120 mm washer-head structural screw; thread length not stated
+https://szekelyfatelep.hu/fatelep/csavarok/	Alapcsavar galvanizált horganyzott M12x200	fastener	bolt-m12							piece	1	157.48	200	galvanised M12 x 200 bolt ("alapcsavar"); page does not say whether a nut/washers are included
+https://szekelyfatelep.hu/fatelep/lamberia/	Lambéria 14mmx121mmx4fm A/B (1cs-8 db 3,872 m2) Soft Luc	lumber		planed	spruce		14	121	4000	m2	1	3929.13	4990	tongue-and-groove "soft" profile, sold per m2; pack of 8 = 3.872 m2
+https://szekelyfatelep.hu/fatelep/lamberia/	Lambéria 14mmx121mmx4fm C (1cs-7 db 3,388 m2) Soft Luc	lumber		planed	spruce		14	121	4000	m2	1	2590.55	3290	C grade; per m2; pack of 7 = 3.388 m2
+https://szekelyfatelep.hu/fatelep/lamberia/	Lambéria 14mmx121mmx4,2fm A-B (8db – 4,0656 m2 /csomag) SOFT BOROVI	lumber		planed	pine		14	121	4200	m2	1	3700.78	4700	per m2; pack of 8 = 4.0656 m2
+https://szekelyfatelep.hu/fatelep/hajopadlo/	Hajópadló 19mmx146mmx4fm C (1 cs-6 db-3,504 m2) Luc	lumber		planed	spruce		19	146	4000	m2	1	3125.98	3970	floor/cladding board (hajópadló) with tongue and groove profile; C grade, per m2; pack of 6 = 3.504 m2
+https://szekelyfatelep.hu/fatelep/hajopadlo/	Hajópadló 19mmx146mmx4fm PRÉMIUM AB (1csomag 6db -3,504m2) Luc	lumber		planed	spruce		19	146	4000	m2	1	5433.07	6900	floor/cladding board (hajópadló) with tongue and groove profile; premium A/B, per m2; pack of 6 = 3.504 m2
+https://szekelyfatelep.hu/fatelep/hajopadlo/	Hajópadló 19mmx116mmx4fm A/B (1 csomag-6 db-2,784 m2)Microfózolt+Járó Luc	lumber		planed	spruce		19	116	4000	m2	1	4732.28	6010	floor/cladding board (hajópadló) with tongue and groove profile; per m2; pack of 6 = 2.784 m2
+https://szekelyfatelep.hu/fatelep/hajopadlo/	Teraszburkoló Borovi 20mm*145mm*4fm A/B (1cs-5db-2,9m2)	lumber		sawn	pine		20	145	4000	m2	1	4960.63	6300	deck board 20x145 mm pine; treatment not stated; per m2; pack of 5 = 2.9 m2 (nearest to deck-28x145, thinner)
