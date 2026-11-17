@@ -1,0 +1,14 @@
+# supplier: Bad Co
+# region: zz
+# read_date: 2026-11-04
+# currency: EUR
+# prices: gross (incl. 21% VAT)
+source_url	product	kind	item	variant	species	grade	thickness_mm	width_mm	length_mm	unit	pack_qty	price_net	price_gross	notes
+https://shop.example/t	Batten 50x100 3 m	lumber	50x100	sawn			50	100	3000	piece			12.00	
+https://shop.example/t	No price	lumber	50x100	sawn			50	100	4000	piece				
+https://shop.example/t	Comma price	lumber	50x100	sawn			50	100	5000	piece			1,299.00	
+https://shop.example/n	Nails without item	fastener								box	1		5.00	
+https://shop.example/n	Nails without box size	fastener	nail-toe							box			5.00	
+https://shop.example/t	Mismatch	lumber	50x100	sawn			50	100	6000	piece		10.00	30.00	
+	No source	lumber	50x100	sawn			50	100	2000	piece			9.00	
+https://shop.example/t	Wrong unit	lumber	50x100	sawn			50	100	2400	furlong			9.00	

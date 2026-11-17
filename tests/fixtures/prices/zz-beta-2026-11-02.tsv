@@ -1,0 +1,11 @@
+# supplier: Beta Yard
+# region: zz
+# read_date: 2026-11-02
+# currency: EUR
+# prices: gross (incl. 21% VAT)
+source_url	product	kind	item	variant	species	grade	thickness_mm	width_mm	length_mm	unit	pack_qty	price_net	price_gross	notes
+https://shop.example/t	Batten 50x100 2.5 m	lumber	50x100	sawn			50	100	2500	piece		8.00		
+https://shop.example/t	Batten 50x100 5 m	lumber	50x100	sawn			50	100	5000	piece		15.00		
+https://shop.example/o	OSB 12 mm 1250x2500	sheet	osb-12	sheet			12	1250	2500	piece		35.00		
+https://shop.example/f	Roofing felt per m2	bought	roofing-felt							m2	1		7.00	
+https://shop.example/h	Hinge	bought	hinge							piece	1	2.00		
