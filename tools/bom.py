@@ -681,8 +681,10 @@ def price_need(need, key, it, ctx, sups):
     (cost, bought, packs), i = best
     return {"supplier": sups[i]["supplier"], "currency": sups[i]["currency"], "cost": round(cost, 2),
             "bought": round(bought, 4),
-            "packs": [{"size": round(pack_size(r, ctx, it), 4), "qty": q, "unit_price": r["price_gross"],
-                       "product": r["product"]} for r, q in packs]}
+            "packs": [dict({"size": round(pack_size(r, ctx, it), 4), "qty": q, "unit_price": r["price_gross"],
+                            "product": r["product"]},
+                           **({"count": r["pack_qty"] or 1} if ctx == "weight" and r["unit"] in ("pack", "piece") else {}))
+                      for r, q in packs]}
 
 
 def price_fasteners(lines, lib, sups):
@@ -734,6 +736,13 @@ def price_bought(bought, lib, sups):
             if f.get("kind") == "ground_screw" and f.get("base") == b["item"] and b is not screw:
                 b.update({"total": 0.0, "priced": True, "supplier": screw["supplier"], "currency": screw["currency"],
                           "unit_price": 0.0, "packs": [], "included_in": key})
+
+
+def nail_packs_text(line):
+    """'1 x 5 kg + 2 x 1 kg' for a nail line; a pack sold by the count reads '2 x 2000 nails'."""
+    u = line["weight_unit"]
+    return " + ".join(f"{p['qty']} x {p['count']:g} nails" if p.get("count") else f"{p['qty']} x {p['size']:g} {u}"
+                      for p in line["packs"])
 
 
 def pack_text(line, unit=""):
@@ -1010,7 +1019,7 @@ def render_md(bom):
                              sorted(f["by_joint_type"].items(), key=lambda tn: (-tn[1], tn[0])))
             if nails:
                 u = f["weight_unit"]
-                packs = " + ".join(f"{p['qty']} × {p['size']:g} {u}" for p in f["packs"])
+                packs = nail_packs_text(f).replace(" x ", " × ")
                 out.append(f"| {f['name']} | {f['counted']:,} | {f['spare']:,} | about {f['weight']:g} {u} | "
                            f"{packs} ({f['to_buy']:,} nails) | {used} | {total_cell(f)} |" + sc(f.get("supplier")))
             else:

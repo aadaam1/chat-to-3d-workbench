@@ -1468,7 +1468,7 @@ def shopping_html(bom, units):
                    f"<table><tr><th>Nail</th><th>Buy</th><th class=n>About</th><th class=n>Price</th>{sh}</tr>")
         for f in nails:
             u = f["weight_unit"]
-            packs = " + ".join(f"{p['qty']} x {p['size']:g} {u}" for p in f["packs"])
+            packs = bomlib.nail_packs_text(f)
             out.append(f"<tr><td>{esc(f['name'])}</td><td>{esc(packs)}</td><td class=n>{f['weight']:g} {esc(u)}</td>"
                        f"<td class=n>{total_cell(f)}</td>{sc(f.get('supplier'))}</tr>")
         out.append("</table>")
