@@ -145,7 +145,8 @@ named `<region>-<supplier-slug>-<YYYY-MM-DD>.tsv`: `# key: value` header lines (
 row and one row per product, with the columns `source_url product kind item variant species grade
 thickness_mm width_mm length_mm unit pack_qty price_net price_gross notes`. Only a price read on
 the supplier's own page, with that page as `source_url`. Fill the price the page shows (the importer
-computes the other from the VAT rate), with a decimal point and no thousands separators.
+computes the other from the VAT rate; with no rate in the header, a gross price alone is kept and the net left blank), with a decimal point and no thousands separators.
+A board or sheet priced per m² or per m (`unit` `m2` or `m`) becomes the price of one piece of the stated size, with a note saying so.
 
 ```bash
 .venv/bin/python tools/timber_import.py data/timber/prices/raw/FILE.tsv data/timber/prices/FILE.csv

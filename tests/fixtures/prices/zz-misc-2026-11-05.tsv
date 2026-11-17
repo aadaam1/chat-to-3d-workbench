@@ -1,0 +1,11 @@
+# supplier: Misc Shop
+# region: zz
+# read_date: 2026-11-05
+# currency: CZK
+# prices: gross (incl. VAT)
+source_url	product	kind	item	variant	species	grade	thickness_mm	width_mm	length_mm	unit	pack_qty	price_net	price_gross	notes
+https://shop.example/m	OSB 12 per m2	sheet	osb-12	sheet			12	1250	2500	m2	1		168	
+https://shop.example/m	Board 14x121x4m per m2	lumber		planed			14	121	4000	m2	1		4990	T&G
+https://shop.example/m	Trim per m	lumber		sawn			20	30	2000	m	1		50	
+https://shop.example/m	Ground screw	bought	ground-screw-76x800							piece	1		13500	
+https://shop.example/m	Net only	bought	hinge							piece	1	10		

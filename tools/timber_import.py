@@ -176,10 +176,10 @@ def convert_tsv(path, region, supplier, date, currency):
                 bad("US files give one shelf price, in price_net"); continue
             pn = pg = pn if pn is not None else pg
         else:
-            if vat is None and (pn is None or pg is None):
-                bad("only one of net and gross is given and the header has no VAT rate"); continue
+            if pg is None and vat is None:
+                bad("only the net price is given and the header has no VAT rate, so there is no gross price"); continue
             if pn is None:
-                pn = pg / (1 + vat)
+                pn = pg / (1 + vat) if vat is not None else None      # no VAT rate in the header: net stays blank
             elif pg is None:
                 pg = pn * (1 + vat)
             elif vat is not None and abs(pn * (1 + vat) - pg) > max(0.03 * pg, 0.5):
@@ -194,8 +194,8 @@ def convert_tsv(path, region, supplier, date, currency):
             t, w, l = nums["thickness_mm"], nums["width_mm"], nums["length_mm"]
             if not (t and w and l):
                 bad("lumber and sheets need thickness_mm, width_mm and length_mm"); continue
-            if unit != "piece":
-                bad(f"{kind} must be priced per piece, not per {unit}"); continue
+            if unit not in ("piece", "m2", "m"):
+                bad(f"{kind} must be priced per piece, m2 or m, not per {unit}"); continue
             if kind == "sheet":
                 variant = "sheet"
                 t, w, l = t, min(w, l), max(w, l)
@@ -203,6 +203,12 @@ def convert_tsv(path, region, supplier, date, currency):
                 bad(f"lumber variant {r['variant']!r} is not one of {', '.join(VARIANTS)}"); continue
             else:
                 t, w = min(t, w), max(t, w)
+            if unit != "piece":     # a price per m2 or per m is turned into the price of the piece of the stated size
+                f = w * l / 1e6 if unit == "m2" else l / 1000
+                pn, pg = (x * f if x is not None else None for x in (pn, pg))
+                note = f"price per {unit} x {f:.4g} {unit} per piece"
+                r["notes"] = f"{r['notes']}; {note}" if r["notes"] else note
+                unit = "piece"
         else:
             t, w, l = nums["thickness_mm"], nums["width_mm"], nums["length_mm"]
         fmt = lambda x: f"{x:g}" if x is not None else ""
@@ -210,8 +216,9 @@ def convert_tsv(path, region, supplier, date, currency):
                "product": r["product"], "kind": kind, "item": r["item"], "variant": variant,
                "species": r["species"], "grade": r["grade"], "notes": r["notes"],
                "thickness_mm": fmt(t), "width_mm": fmt(w), "length_mm": fmt(l), "unit": unit,
-               "pack_qty": fmt(nums["pack_qty"]) if nums["pack_qty"] else ("1" if unit in ("piece", "m", "m2", "kg") else ""),
-               "price_net": f"{pn:.2f}", "price_gross": f"{pg:.2f}", "currency": currency,
+               "pack_qty": "1" if kind in ("lumber", "sheet") else
+               (fmt(nums["pack_qty"]) if nums["pack_qty"] else ("1" if unit in ("piece", "m", "m2", "kg") else "")),
+               "price_net": f"{pn:.2f}" if pn is not None else "", "price_gross": f"{pg:.2f}", "currency": currency,
                "gross_per_m3": "", "gross_per_m": "", "gross_per_m2": ""}
         if kind in ("lumber", "sheet"):
             vol = t * w * l / 1e9
