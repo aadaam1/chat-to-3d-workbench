@@ -14,7 +14,8 @@ https://szekelyfatelep.hu/fatelep/vasaru/	Oszloptartó csavarozható U (szürke)
 https://szekelyfatelep.hu/fatelep/vasaru/	Oszloptartó betonozható 10cm	bought	post-base-bolt-on							piece	1	1929.13	2450	cast-in post base for a 100 mm post
 https://szekelyfatelep.hu/fatelep/vasaru/	Oszloptartó csavarozható U (állítható) 10cm	bought	post-base-adjustable							piece	1	2519.69	3200	screw-on U post base, adjustable, for a 100 mm post
 https://szekelyfatelep.hu/fatelep/vasaru/	Oszloptartó állítható szélességű és magasságú talpas 80-150 mm	bought	post-base-adjustable							piece	1	3748.03	4760	adjustable width and height, with foot plate, 80-150 mm post
-https://szekelyfatelep.hu/fatelep/vasaru/	Szeg 65 mm kimért, kilós	fastener	nail-toe							kg	1	866.14	1100	weighed loose nails sold per kg (page header says ár/db); nail diameter not stated; 65 mm length matches
+# left out of the snapshot: the unit is ambiguous (priced per kg here, but the page header says per piece); the row is unchanged below
+# https://szekelyfatelep.hu/fatelep/vasaru/	Szeg 65 mm kimért, kilós	fastener	nail-toe							kg	1	866.14	1100	weighed loose nails sold per kg (page header says ár/db); nail diameter not stated; 65 mm length matches
 https://szekelyfatelep.hu/fatelep/csavarok/	Tányérfejű 8mm*160mm	fastener	screw-rafter							piece	1	78.74	100	8 x 160 mm washer-head structural screw (not countersunk); thread length and finish not stated
 https://szekelyfatelep.hu/fatelep/csavarok/	Faforgácslap csavar 6*120	fastener	screw-corner							piece	1	27.56	35	6 x 120 mm countersunk chipboard/wood screw; thread length not stated
 https://szekelyfatelep.hu/fatelep/csavarok/	Tányérfejű 6mm*120mm	fastener	screw-corner							piece	1	31.50	40	6 x 120 mm washer-head structural screw; thread length not stated

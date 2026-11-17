@@ -1423,9 +1423,13 @@ def shopping_html(bom, units):
     snap = bom.get("snapshot")
     cur = (snap or {}).get("currency")
     money = lambda x: tl.money(x, cur)
-    ms = bool(snap) and len(snap.get("suppliers", [])) > 1     # a Supplier column where several suppliers were looked at
-    sh = "<th>Supplier</th>" if ms else ""
-    sc = lambda who: (f"<td>{esc(who or '')}</td>" if ms else "")
+    ms = bool(snap)       # a Supplier column when priced: the supplier and, small, the product it was priced as
+    sh = "<th>Supplier and product</th>" if ms else ""
+
+    def sc(line, piece=None):
+        text = bomlib.priced_as(line, piece)
+        who, _, what = text.partition(": ")
+        return (f"<td>{esc(who)}" + (f"<br><span class=nd>{esc(what)}</span>" if what else "") + "</td>") if ms else ""
 
     def prices(unit, total):
         return ("no price", "no price") if total is None else (money(unit), money(total))
@@ -1450,7 +1454,7 @@ def shopping_html(bom, units):
             qty = f"{r['total_qty']} x {L(r['length_mm'])}" + (f" (incl. {r['spare']} spare)" if r["spare"] else "")
             each, tot = prices(r["unit_price"], r["line_total"])
             out.append(f"<tr><td>{esc(ln['name']) if i == 0 else ''}</td><td>{esc(ln['variant']) if i == 0 else ''}</td>"
-                       f"<td>{esc(qty)}</td><td class=n>{esc(each)}</td><td class=n>{esc(tot)}</td>{sc(ln.get('supplier') if i == 0 else '')}</tr>")
+                       f"<td>{esc(qty)}</td><td class=n>{esc(each)}</td><td class=n>{esc(tot)}</td>{sc(ln, r)}</tr>")
     out.append("</table>")
     if bom["sheets"]:
         out.append(f"<h3>Sheets</h3><table><tr><th>Item</th><th>Sheet</th><th>Buy</th><th class=n>Price each</th><th class=n>Line total</th>{sh}</tr>")
@@ -1459,7 +1463,7 @@ def shopping_html(bom, units):
             qty = f"{ln['sheets_to_buy']}" + (f" (incl. {ln['spare_sheets']} spare)" if ln["spare_sheets"] else "")
             each, tot = prices(ln["unit_price"], ln["total"])
             out.append(f"<tr><td>{esc(ln['name'])}</td><td>{esc(L(a))} x {esc(L(b))}</td><td>{esc(qty)}</td>"
-                       f"<td class=n>{esc(each)}</td><td class=n>{esc(tot)}</td>{sc(ln.get('supplier'))}</tr>")
+                       f"<td class=n>{esc(each)}</td><td class=n>{esc(tot)}</td>{sc(ln)}</tr>")
         out.append("</table>")
     nails = [f for f in bom["fasteners"] if f["kind"] == "nail"]
     screws = [f for f in bom["fasteners"] if f["kind"] != "nail"]
@@ -1470,20 +1474,20 @@ def shopping_html(bom, units):
             u = f["weight_unit"]
             packs = bomlib.nail_packs_text(f)
             out.append(f"<tr><td>{esc(f['name'])}</td><td>{esc(packs)}</td><td class=n>{f['weight']:g} {esc(u)}</td>"
-                       f"<td class=n>{total_cell(f)}</td>{sc(f.get('supplier'))}</tr>")
+                       f"<td class=n>{total_cell(f)}</td>{sc(f)}</tr>")
         out.append("</table>")
     if screws:
         out.append(f"<h3>Structural screws and bolts</h3><table><tr><th>Item</th><th>Buy</th><th class=n>Count</th><th class=n>Price</th>{sh}</tr>")
         for f in screws:
             packs = ", ".join(f"{p['qty']} x {p['size']:g}" for p in f["packs"])
             out.append(f"<tr><td>{esc(f['name'])}</td><td>{esc(packs)}</td><td class=n>{f['to_buy']}</td>"
-                       f"<td class=n>{total_cell(f)}</td>{sc(f.get('supplier'))}</tr>")
+                       f"<td class=n>{total_cell(f)}</td>{sc(f)}</tr>")
         out.append("</table>")
     if bom["bought"]:
         out.append(f"<h3>Bought items</h3><table><tr><th>Item</th><th class=n>Quantity</th><th>Note</th><th class=n>Price</th>{sh}</tr>")
         for b in bom["bought"]:
             out.append(f"<tr><td>{esc(b['name'])}</td><td class=n>{b['qty']:g} {esc(b['unit'])}</td><td>{esc(bomlib.bought_note(b))}</td>"
-                       f"<td class=n>{total_cell(b)}</td>{sc(b.get('supplier'))}</tr>")
+                       f"<td class=n>{total_cell(b)}</td>{sc(b)}</tr>")
         out.append("</table>")
     out.append("<h3>Not on this list</h3><ul class=dec>"
                "<li>Fixings for the base: what holds the bottom plates or the frame to the floor, the ground or the footings.</li>"

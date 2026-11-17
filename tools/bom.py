@@ -499,6 +499,8 @@ def build_sheet_line(item_key, members, it, sups, kerf, waste_pct):
     }
     if sups:
         line["supplier"] = best[2] if best else None
+        if best:
+            line["product"], line["notes"] = hit["row"]["product"], hit["row"]["notes"]
     return line, problems
 
 
@@ -773,6 +775,12 @@ def make_bom(frame, snapshot=None, waste_pct=None, kerf=None, sheet_spare_pct=0,
     kerf = df.get("kerf_mm", 4) if kerf is None else kerf
     problems = []
     sups = suppliers_of(snapshot)
+    for sp in sups:
+        region = sp["rows"][0].get("region")
+        if tl.LIBRARY_OF.get(region, frame["region"]) != frame["region"]:
+            fits = ", ".join(sorted(k for k, v in tl.LIBRARY_OF.items() if v == frame["region"] and k != v) or [frame["region"]])
+            raise ValueError(f"the {region} prices are for {tl.LIBRARY_OF[region]} structures (sizes, units and fasteners of the "
+                             f"{tl.LIBRARY_OF[region]} library), but this structure is {frame['region']}: use PRICES={fits.replace(', ', ' or PRICES=')}")
     currency = sups[0]["currency"] if sups else None
 
     groups, sheet_groups = {}, {}
@@ -830,6 +838,11 @@ def make_bom(frame, snapshot=None, waste_pct=None, kerf=None, sheet_spare_pct=0,
         line["kind"] = "cladding" if it["category"] == "cladding" else "timber"
         if sups:
             line["supplier"] = supplier
+            if supplier:
+                rows = next(sp["rows"] for sp in sups if sp["supplier"] == supplier)
+                for r in line["pieces"]:
+                    hit = tl.price_for(rows, it, r["length_mm"], key[1])
+                    r["product"], r["notes"] = hit["row"]["product"], hit["row"]["notes"]
         timber.append(line)
         hints += ways_to_waste_less(line, groups[key], it, lengths, prices, kerf, waste_pct, currency, trim, frame["units"])
 
@@ -897,16 +910,24 @@ def money(x, cur):
     return tl.money(x, cur)
 
 
-def bought_note(b, notes=False):
-    """A bought item's note, with what is priced where a supplier prices it: what to buy (a roll, a 2 m piece)
-    and the product it was priced as; `notes` adds the supplier row's own notes (finish, what is not included)."""
-    if not b.get("packs"):
+def bought_note(b):
+    """A bought item's note, with what to buy where a supplier prices it (a roll, 2 m pieces)."""
+    if not b.get("packs") or b["unit"] == "pcs":
         return b["note"]
-    unit = {"pcs": "", "m": " m", "m2": " m2"}.get(b["unit"], "")
-    buy = "buy " + " + ".join(f"{p['qty']} x {p['size']:g}{unit}" for p in b["packs"]) if b["unit"] != "pcs" else ""
-    how = "priced as " + "; ".join(dict.fromkeys(p["product"] + (f" ({p['notes']})" if notes and p.get("notes") else "")
-                                                 for p in b["packs"]))
-    return "; ".join(x for x in (b["note"], buy, how) if x)
+    unit = {"m": " m", "m2": " m2"}.get(b["unit"], "")
+    buy = "buy " + " + ".join(f"{p['qty']} x {p['size']:g}{unit}" for p in b["packs"])
+    return "; ".join(x for x in (b["note"], buy) if x)
+
+
+def priced_as(line, piece=None):
+    """What a priced line was priced as, for the Supplier column: 'Supplier: product (note); product'.
+    `piece` is one buy row of a timber line (each length is its own product). '' when unpriced."""
+    who = line.get("supplier")
+    if not who:
+        return ""
+    items = ([piece] if piece else line.get("packs") or [line])
+    seen = dict.fromkeys(f"{x['product']}" + (f" ({x['notes']})" if x.get("notes") else "") for x in items if x.get("product"))
+    return who + (": " + "; ".join(seen) if seen else "")
 
 
 def price_basis(snap):
@@ -961,16 +982,16 @@ def render_md(bom):
         return money(unit, cur), money(total, cur)
 
     out += ["## Timber and cladding", ""]
-    ms = multi_supplier(bom)                      # a Supplier column where several suppliers were looked at
-    sc = lambda who: (f" {who or ''} |" if ms else "")
-    sh = (" Supplier |", "---|") if ms else ("", "")
+    ms = bool(bom.get("snapshot"))                 # a Supplier column (supplier and product priced as) when priced
+    sc = lambda text: (f" {text} |" if ms else "")
+    sh = (" Supplier and product |", "---|") if ms else ("", "")
     out += [f"| Item | Variant | Buy | Price each | Line total |{sh[0]}", f"|---|---|---|---|---|{sh[1]}"]
     for ln in bom["timber"]:
         for i, r in enumerate(ln["pieces"]):
             qty = f"{r['total_qty']} × {L(r['length_mm'])}" + (f" (incl. {r['spare']} spare)" if r["spare"] else "")
             each, tot = price_cells(r["unit_price"], r["line_total"])
             out.append(f"| {ln['name'] if i == 0 else ''} | {ln['variant'] if i == 0 else ''} | {qty} | {each} | {tot} |"
-                       + sc(ln.get("supplier") if i == 0 else ""))
+                       + sc(priced_as(ln, r)))
     out.append("")
     oc = bom["offcuts"]
     out += [f"Offcuts: {oc['mm'] / 1000:.1f} m of {oc['bought_mm'] / 1000:.0f} m bought ({oc['pct']:g}%), before the spare pieces. "
@@ -994,7 +1015,7 @@ def render_md(bom):
         a, b = ln["sheet_size_mm"]
         qty = f"{ln['sheets_to_buy']}" + (f" (incl. {ln['spare_sheets']} spare)" if ln["spare_sheets"] else "")
         each, tot = price_cells(ln["unit_price"], ln["total"])
-        out.append(f"| {ln['name']} | {L(a)} × {L(b)} | {qty} | {each} | {tot} |" + sc(ln.get("supplier")))
+        out.append(f"| {ln['name']} | {L(a)} × {L(b)} | {qty} | {each} | {tot} |" + sc(priced_as(ln)))
     out.append("")
     for ln in bom["sheets"]:
         out += [f"### {ln['name']}: {ln['parts']} parts on {ln['sheets_packed']} sheets"
@@ -1017,11 +1038,11 @@ def render_md(bom):
                 u = f["weight_unit"]
                 packs = nail_packs_text(f).replace(" x ", " × ")
                 out.append(f"| {f['name']} | {f['counted']:,} | {f['spare']:,} | about {f['weight']:g} {u} | "
-                           f"{packs} ({f['to_buy']:,} nails) | {used} | {total_cell(f)} |" + sc(f.get("supplier")))
+                           f"{packs} ({f['to_buy']:,} nails) | {used} | {total_cell(f)} |" + sc(priced_as(f)))
             else:
                 packs = ", ".join(f"{p['qty']} × {p['size']:g}" for p in f["packs"])
                 out.append(f"| {f['name']} | {f['counted']} | {f['spare']} | {f['to_buy']} | {packs} | {used} | {total_cell(f)} |"
-                           + sc(f.get("supplier")))
+                           + sc(priced_as(f)))
 
     nails = [f for f in bom["fasteners"] if f["kind"] == "nail"]
     screws = [f for f in bom["fasteners"] if f["kind"] != "nail"]
@@ -1038,7 +1059,7 @@ def render_md(bom):
     out += ["## Bought items", ""]
     out += [f"| Item | Quantity | Note | Price |{sh[0]}", f"|---|---|---|---|{sh[1]}"]
     for b in bom["bought"]:
-        out.append(f"| {b['name']} | {b['qty']:g} {b['unit']} | {bought_note(b, True)} | {total_cell(b)} |" + sc(b.get("supplier")))
+        out.append(f"| {b['name']} | {b['qty']:g} {b['unit']} | {bought_note(b)} | {total_cell(b)} |" + sc(priced_as(b)))
     out.append("")
     out += ["## Notes", ""] + [f"- {n}" for n in bom["notes"]] + [""]
     return "\n".join(out)
@@ -1104,7 +1125,10 @@ def main():
             if "currency" in str(e):
                 sys.exit(f"bom: {e}")
             print(f"   {e}: the list has no prices", file=sys.stderr)
-    bom = make_bom(frame, snap, a.waste, a.kerf, a.sheet_spare, a.trim)
+    try:
+        bom = make_bom(frame, snap, a.waste, a.kerf, a.sheet_spare, a.trim)
+    except ValueError as e:
+        sys.exit(f"bom: {e}")
     os.makedirs(a.out, exist_ok=True)
     with open(os.path.join(a.out, "bom.json"), "w", encoding="utf-8") as f:
         json.dump(bom, f, indent=1, sort_keys=True, ensure_ascii=False)
