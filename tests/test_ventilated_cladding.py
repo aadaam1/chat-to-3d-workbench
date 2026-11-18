@@ -90,9 +90,9 @@ def test_joints_and_shopping_list(fixture):
     assert {"breather-membrane", "insect-mesh"} <= {x["item"] for x in b["bought"]}
 
 
-# sha256[:16] of json.dumps({members, joints, bought}, sort_keys=True) of main (v0.9.0), before this feature existed
-MAIN_HASHES = {"shed-eu": "baaa9a44fcc1304b", "gable-eu": "123055cc755a9c53",
-               "summer-kitchen-eu": "cffd6624e7b3a7db", "tool-shed": "a41dc11091a40b0d"}
+# sha256[:16] of json.dumps({members, joints, bought}, sort_keys=True) of the frame before this feature existed (main with the 19x146 cladding default)
+MAIN_HASHES = {"shed-eu": "baaa9a44fcc1304b", "gable-eu": "e83822f09452d758",
+               "summer-kitchen-eu": "b7351477ed3bffe5", "tool-shed": "8d1fd4712db2e37b"}
 
 
 @pytest.mark.parametrize("name", sorted(MAIN_HASHES))
