@@ -1330,6 +1330,9 @@ tr{break-inside:avoid}
 .pieces{font-size:8.5pt}
 .pieces td,.pieces th{padding:0.55mm 1.5mm}
 .pieces td:nth-child(2){white-space:nowrap}
+.pieces.tight{font-size:7.5pt}
+.pieces.tight td,.pieces.tight th{padding:0.3mm 1.2mm}
+.pieces.tight .lt{font-size:7.5pt;line-height:3.6mm;min-width:4.6mm}
 .note{font-size:8.5pt;color:var(--grey);margin:2mm 0 0}
 .nd{color:var(--grey)}
 svg{display:block;max-width:100%%}
@@ -1587,6 +1590,9 @@ def build_pages(frame, checks, bom, version, date):
     return doc
 
 
+TIGHT_LINES = 20   # table lines (rows, cut lines, headings) that fit beside a drawing at the normal size
+
+
 def pieces_table(sec, rows, units, footings):
     if sec["role"] == "foundations":
         t = ['<table class="pieces"><tr><th>No.</th><th class=n>x (from the left)</th><th class=n>y (from the front)</th></tr>']
@@ -1605,7 +1611,9 @@ def pieces_table(sec, rows, units, footings):
             d = math.hypot(max(xs) - min(xs), max(ys) - min(ys))
             t.append(f'<p class="note">Diagonal between the outer footings: {esc(fmt(d, units, True))}.</p>')
         return "".join(t)
-    t = ['<table class="pieces"><tr><th></th><th>Piece</th><th>Section</th><th class=n>Length</th><th class=n>Qty</th></tr>']
+    lines = 1 + sum(1 + bool(r["cuts"]) for r in rows) + any(not r["drawn"] for r in rows)
+    cls = "pieces tight" if lines > TIGHT_LINES else "pieces"     # a long table set smaller keeps the wall on one page
+    t = [f'<table class="{cls}"><tr><th></th><th>Piece</th><th>Section</th><th class=n>Length</th><th class=n>Qty</th></tr>']
     said = False
     for r in rows:
         if not r["drawn"] and not said:     # one heading for the pieces left out of the drawing, not a note on each

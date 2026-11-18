@@ -210,3 +210,13 @@ def test_3d_view_is_a_zbuffer_image_and_repeatable():
     svg = iso.draw([(i, "tim", 0, None) for i in rafters] + [(sheet, "rof", 0, None)], 80, 80)
     assert svg.startswith("<svg") and "<image " in svg
     assert svg == iso.draw([(i, "tim", 0, None) for i in rafters] + [(sheet, "rof", 0, None)], 80, 80)
+
+
+def test_long_pieces_table_is_set_tight_short_one_is_not():
+    sec = {"role": "wall", "title": "Left wall"}
+    row = lambda i, drawn=True, cuts="": {"letter": chr(65 + i), "name": "Stud", "item": "50×100", "length": "2000 mm",
+                                         "qty": 1, "drawn": drawn, "cuts": cuts}
+    short = [row(i) for i in range(sp.TIGHT_LINES - 1)]
+    assert 'class="pieces"' in sp.pieces_table(sec, short, "mm", [])
+    long_ = short + [row(20, cuts="0° / 8.3°"), row(21, drawn=False)]
+    assert 'class="pieces tight"' in sp.pieces_table(sec, long_, "mm", [])
