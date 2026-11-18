@@ -16,6 +16,9 @@ workbench is a working prototype, and anything may still change.
 ### Changed
 - Sizes as sold: a price row within 3 mm of a library size prices it (the importer refuses a bigger gap); eu cladding is now 19×146 tongue-and-groove (sold in Hungary and Czechia); more Hungarian nail prices.
 
+### Fixed
+- Site pack: a wall with a long parts table (a window and many cut studs) stays on one page; the table is set smaller.
+
 ## [0.9.0] - 2026-11-17
 
 Prices from ten suppliers in Hungary, the Czech Republic and the US, now also for nails, screws, felt and fittings
