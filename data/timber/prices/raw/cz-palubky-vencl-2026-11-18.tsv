@@ -1,0 +1,9 @@
+# supplier: Palubky Vencl (palubky-vencl.cz, sawmill/timber dealer e-shop)
+# region: cz
+# read_date: 2026-11-18
+# currency: CZK
+# prices: gross (incl. 21% VAT)
+# note: a second read, only the 19 x 146 tongue-and-groove spruce palubky (cladding); the 2026-11-17 read stays in use for everything else
+source_url	product	kind	item	variant	species	grade	thickness_mm	width_mm	length_mm	unit	pack_qty	price_net	price_gross	notes
+https://palubky-vencl.cz/smrkove-palubky-tatran-ab-19x146x4000-mm	Smrkové Palubky Tatran AB 19x146x4000 mm	lumber	tg-19x146	planed	spruce	AB	19	146	4000	piece	1		219.76	tongue-and-groove (profile F Tatran, extended tongue); sold in packs of 6 (3.54 m2); price per piece as printed ("Cena za ks 219,76 Kč s DPH 21%"); cover width 138 mm stated on the page
+https://palubky-vencl.cz/smrkove-palubky-klasik-bc-19x146x5000-mm	Smrkové Palubky Klasik BC 19x146x5000 mm	lumber	tg-19x146	planed	spruce	BC	19	146	5000	piece	1		175.78	tongue-and-groove; sold in packs of 6 (4.38 m2); price per piece as printed ("Cena za ks 175,78 Kč s DPH 21%")
