@@ -1214,6 +1214,10 @@ def generate(raw):
     else:
         _check_geometry(spec, lib)
         fr = recipes.gable_shed(spec, lib) if spec["type"] == "gable-shed" else recipes.pent_shed(spec, lib)
+    for m in fr["members"]:     # a cladding board is the variant the library says it is sold in (planed, not sawn)
+        v = lib.get("cladding", {}).get(m["item"], {}).get("variant")
+        if v:
+            m["variant"] = v
     if getattr(spec, "decisions", None):
         fr["decisions"] = list(spec.decisions)
     return fr

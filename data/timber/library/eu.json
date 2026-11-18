@@ -340,6 +340,24 @@
       ],
       "unverified": true,
       "note": "Also sold in 6 m on order (a special-order length, used only when a board is longer than the stocked ones; typical, not read from a supplier). Overall width 121 mm is the product name; the 96 mm cover width and the stock lengths are typical values not read from a supplier page."
+    },
+    "tg-19x146": {
+      "name": "Tongue-and-groove spruce cladding 19 × 146 mm (lambéria V / hajópadló)",
+      "profile": "tongue-and-groove",
+      "variant": "planed",
+      "thickness_mm": 19,
+      "face_width_mm": 146,
+      "cover_width_mm": 138,
+      "stock_lengths_mm": [
+        4000,
+        5100
+      ],
+      "can_rotate": false,
+      "sources": [
+        "larex-lamberia",
+        "cladding-cover-width"
+      ],
+      "note": "Planed spruce, sold in Hungary as lambéria (V mintás) or hajópadló 19x146 (Székely Fatelep and Larex Fatelep: 4 m, Larex also 5.1 m). The 138 mm cover width (146 mm less an 8 mm tongue) is read from two Czech sellers of the same 19x146 spruce profile; no Hungarian page states one (they price per m2 of the full 146 mm), so check it against the board you buy. A 14 mm lambéria is too thin for outside use and is not offered."
     }
   },
   "sheet_spans": {
@@ -759,7 +777,7 @@
       "sheathing": "osb-12",
       "floor_deck": "osb-18",
       "roof_deck": "osb-15",
-      "cladding": "shiplap-19x121"
+      "cladding": "tg-19x146"
     },
     "grade": "C24",
     "treated_floor": true,
@@ -1147,6 +1165,20 @@
       "url": "docs/research/timber-blocks.md",
       "read": "2026-11-13",
       "note": "NOT read from a standard or a single page; these are the figures such guides commonly give and are marked unverified. Knee brace angle 45 degrees and leg length about 2 ft are the usual rule of thumb; check local rules and wind loads."
+    },
+    {
+      "id": "larex-lamberia",
+      "title": "Larex Fatelep, Budapest: Luc lambéria (V mintás) 19x146 mm, 4 m and 5,1 m, A-B / B / C grades (webshop product pages)",
+      "url": "https://www.fatelep.hu/adatlap/luc-lamberia--v-mintas--19x146-mm-x-4-m--a-b-minoseg--premium-",
+      "read": "2026-11-17",
+      "note": "Sizes, lengths and prices are in data/timber/prices/hu-larex-fatelep-2026-11-17.csv; Székely Fatelep sells the same board as Hajópadló 19x146 x 4 m (hu-szekely-fatelep-2026-11-17.csv). The pages state no cover width."
+    },
+    {
+      "id": "cladding-cover-width",
+      "title": "Palubky Vencl (palubky-vencl.cz) and palubky-eshop.cz: spruce palubky 19x146, cover width (krycí šířka) 138 mm",
+      "url": "https://palubky-vencl.cz/smrkove-palubky-tatran-ab-19x146x4000-mm",
+      "read": "2026-11-18",
+      "note": "Vencl: the cover width is the total width less the tongue, about 8 mm: 146 - 8 = 138 mm. palubky-eshop.cz (https://www.palubky-eshop.cz/smrkova-palubka-19x146-mm-profil-c---klasicky-ab-) also gives 138 mm. Czech profiles, not the Hungarian V profile: the figure is used for the Hungarian board too."
     }
   ]
 }

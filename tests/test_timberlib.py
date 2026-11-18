@@ -229,3 +229,23 @@ def test_timber_cli_errors_as_before():
     r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "timber.py"), "classify", "wide"],
                        capture_output=True, text=True)
     assert r.returncode == 1 and "section must look like 50x100 (mm), not 'wide'" in r.stderr
+
+
+def test_eu_cladding_default_is_the_sold_tongue_and_groove_board():
+    eu = tl.load("eu")
+    assert eu["defaults"]["items"]["cladding"] == "tg-19x146"
+    c = tl.item(eu, "tg-19x146")
+    assert (c["thickness_mm"], c["face_width_mm"], c["cover_width_mm"], c["variant"]) == (19, 146, 138, "planed")
+    assert "shiplap-19x121" in eu["cladding"]            # still an option
+    assert tl.validate(eu) == [] and tl.unverified(eu) is not None
+
+
+def test_cladding_boards_of_a_planed_item_are_planed_in_the_frame():
+    import frame
+    raw = {"type": "pent-shed", "width": 3000, "depth": 2400, "height_front": 2400, "height_back": 2200}
+    fr = frame.generate(raw)
+    boards = [m for m in fr["members"] if m["kind"] == "board"]
+    assert boards and {m["item"] for m in boards} == {"tg-19x146"} and {m["variant"] for m in boards} == {"planed"}
+    raw["cladding"] = "shiplap-19x121"
+    fr = frame.generate(raw)
+    assert {m["variant"] for m in fr["members"] if m["kind"] == "board"} == {"sawn"}
