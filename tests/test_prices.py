@@ -425,3 +425,49 @@ def test_prices_of_another_library_are_refused_with_a_plain_message(prices, tmp_
     r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "bom.py"), str(frame), "--prices", "hu", "--out", str(tmp_path / "o")],
                        capture_output=True, text=True)
     assert r.returncode == 1 and "Traceback" not in r.stderr and "hu prices are for eu structures" in r.stderr
+
+
+# ----------------------------------------------------------------- sizes as sold (3 mm tolerance)
+
+def _row(item, t, w, l, variant="planed", kind="lumber"):
+    return {"kind": kind, "item": item, "variant": variant, "thickness_mm": t, "width_mm": w, "length_mm": l,
+            "price_gross": 1000.0, "price_net": 800.0, "currency": "HUF", "product": "x", "notes": ""}
+
+
+def test_a_tagged_row_within_3_mm_prices_the_library_section():
+    eu = tl.load("eu")
+    sec = tl.item(eu, "75x75")
+    assert tl.price_for([_row("75x75", 74, 74, 2500)], sec, 2500, "planed")        # planed 74 x 74
+    assert tl.price_for([_row("75x75", 78, 78, 2500, "sawn")], sec, 2500, "sawn")  # sawn 78 x 78: 3 mm
+    assert tl.price_for([_row("75x75", 72, 72, 2500)], sec, 2500, "planed")        # exactly 3 mm is still in
+    assert tl.price_for([_row("75x75", 71, 71, 2500)], sec, 2500, "planed") is None
+    # untagged: only the exact size counts; the tag is what says "this row stands for that item"
+    assert tl.price_for([_row("", 74, 74, 2500)], sec, 2500, "planed") is None
+    # the length still has to match and the variant too
+    assert tl.price_for([_row("75x75", 74, 74, 2400)], sec, 2500, "planed") is None
+    assert tl.price_for([_row("75x75", 74, 74, 2500, "impregnated")], sec, 2500, "planed") is None
+    deck = tl.item(eu, "deck-28x145")
+    assert tl.price_for([_row("deck-28x145", 27, 144, 2400, "impregnated")], deck, 2400, "impregnated")
+
+
+def test_importer_refuses_an_item_tag_more_than_3_mm_from_the_library_size(tmp_path):
+    head = ["# supplier: Test", "# region: hu", "# read_date: 2026-11-18", "# currency: HUF", "# prices: gross (incl. 27% VAT)",
+            "source_url\tproduct\tkind\titem\tvariant\tspecies\tgrade\tthickness_mm\twidth_mm\tlength_mm\tunit\tpack_qty\tprice_net\tprice_gross\tnotes"]
+    ok = "https://example.com/a\t24x48 lath\tlumber\t25x50\tsawn\t\t\t24\t48\t3000\tpiece\t1\t\t500\t"
+    bad = "https://example.com/b\t21x45 lath\tlumber\t25x50\tsawn\t\t\t21\t45\t3000\tpiece\t1\t\t400\t"
+    f = tmp_path / "hu-test-2026-11-18.tsv"
+    f.write_text("\n".join(head + [ok]) + "\n", encoding="utf-8")
+    rows, skipped = ti.convert_tsv(str(f), "hu", "Test", "2026-11-18", "HUF")
+    assert len(rows) == 1 and rows[0]["item"] == "25x50" and not skipped
+    f.write_text("\n".join(head + [ok, bad]) + "\n", encoding="utf-8")
+    with pytest.raises(SystemExit) as e:
+        ti.convert_tsv(str(f), "hu", "Test", "2026-11-18", "HUF")
+    msg = str(e.value)
+    assert "hu-test-2026-11-18.tsv" in msg and "row 2" in msg and "25x50" in msg and "21 x 45" in msg and "3 mm" in msg
+
+
+def test_every_tag_in_the_committed_raw_files_is_within_3_mm():
+    import glob
+    for path in sorted(glob.glob(os.path.join(ROOT, "data", "timber", "prices", "raw", "*.tsv"))):
+        head = ti.read_tsv(path)[0]
+        ti.convert_tsv(path, head["region"], "x", head["read_date"], head["currency"])   # exits on a bad tag

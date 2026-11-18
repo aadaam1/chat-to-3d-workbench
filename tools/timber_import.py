@@ -33,7 +33,7 @@ is shortened to its name before the first bracket, comma or dash).
 EU files give gross or net prices (the other is computed from the VAT rate in the
 "# prices:" line); US files give the shelf price, before sales tax, as both.
 """
-import argparse, csv, re, sys
+import argparse, csv, os, re, sys
 
 NUM = r"(\d+(?:[.,]\d+)?)"
 
@@ -149,13 +149,38 @@ def vat_of(head):
     return ("net" if re.search(r"\bnet\b|excl", txt) else "gross"), vat
 
 
+def item_size_error(lib, key, kind, t, w, l):
+    """Why a lumber or sheet row may not carry library item `key`, or "". A row stands for a
+    library section, sheet or cladding board only within timberlib.SIZE_TOL_MM of its thickness
+    and width (sheets: and sides); a bigger difference is a different product."""
+    import timberlib as tl
+    try:
+        it = tl.item(lib, key)
+    except KeyError:
+        return f"item {key!r} is not in the {lib.get('region', '?')} library"
+    if it["category"] not in ("sections", "cladding", "sheets"):
+        return f"item {key!r} is not a board or a sheet"
+    gap = tl.size_gap(it, t, w, l if kind == "sheet" else None)
+    if gap <= tl.SIZE_TOL_MM:
+        return ""
+    want = (f"{it['thickness_mm']:g} x {'x'.join(f'{x:g}' for x in sorted(it['size_mm']))}" if it["category"] == "sheets"
+            else f"{it['thickness_mm']:g} x {it.get('width_mm', it.get('face_width_mm')):g}")
+    got = f"{t:g} x {w:g}" + (f" x {l:g}" if kind == "sheet" else "")
+    return (f"item {key!r} is {want} mm but the row is {got} mm: more than {tl.SIZE_TOL_MM} mm apart "
+            f"is a different product, so the row cannot be tagged with it")
+
+
 def convert_tsv(path, region, supplier, date, currency):
     """(snapshot rows, [(line, reason)]) from a raw TSV file."""
     head, raw, skipped = read_tsv(path)
+    import timberlib as tl
+    lib = tl.load(tl.LIBRARY_OF.get(region, region)) if region in tl.LIBRARY_OF else None
+    n_row = 0
     mode, vat = vat_of(head)
     out = []
     for r in raw:
         line = "\t".join(r.values())
+        n_row += 1
 
         def bad(why):
             skipped.append((line, why))
@@ -210,6 +235,10 @@ def convert_tsv(path, region, supplier, date, currency):
                 bad(f"lumber variant {r['variant']!r} is not one of {', '.join(VARIANTS)}"); continue
             else:
                 t, w = min(t, w), max(t, w)
+            if r["item"] and lib:
+                err = item_size_error(lib, r["item"], kind, t, w, l)
+                if err:
+                    raise SystemExit(f"{path}, product row {n_row} ({r['product']}): {err}")
             if unit != "piece":     # a price per m2 or per m is turned into the price of the piece of the stated size
                 f = w * l / 1e6 if unit == "m2" else l / 1000
                 pn, pg = (x * f if x is not None else None for x in (pn, pg))
