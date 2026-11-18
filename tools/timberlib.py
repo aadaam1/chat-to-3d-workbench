@@ -354,6 +354,28 @@ def allowance(qty, waste_pct):
 
 # ---------------------------------------------------------------------- prices
 
+SIZE_TOL_MM = 3     # a row tagged with a library item may differ from its size by this much (thickness, width)
+
+
+def size_gap(it, thickness, width, length=None):
+    """The biggest difference in mm between a product's stated size and library item `it`
+    (a section, cladding board or sheet; either way round). Sheets compare thickness and the
+    two sides, boards thickness and width (the length is the stock length, matched separately).
+    None for an item with no board or sheet size."""
+    if it["category"] == "sheets":
+        short, long_ = sorted(it["size_mm"])
+        a, b = sorted((width, length)) if length else (width, None)
+        d = [abs(thickness - it["thickness_mm"]), abs(a - short)]
+        if b is not None:
+            d.append(abs(b - long_))
+        return max(d)
+    if it["category"] not in ("sections", "cladding"):
+        return None
+    t, w = it["thickness_mm"], it.get("width_mm", it.get("face_width_mm"))
+    (a1, a2), (b1, b2) = sorted((thickness, width)), sorted((t, w))
+    return max(abs(a1 - b1), abs(a2 - b2))
+
+
 def price_for(snapshot_rows, it, length_mm=None, variant="sawn", tol_mm=0.5):
     """The snapshot row that sells library item `it` (from item()), or None.
 
@@ -365,9 +387,16 @@ def price_for(snapshot_rows, it, length_mm=None, variant="sawn", tol_mm=0.5):
     the supplier sells at that size: an item with no row gets None, never a
     price for a different size. A library may list `variant_aliases`: in the US library an
     untreated ("sawn") member is priced by a "planed" row too, because dimension lumber is
-    sold dressed."""
+    sold dressed.
+
+    A row also stands for the item when it is tagged with the item's key (the `item` column) and
+    its thickness and width are each within SIZE_TOL_MM of the item's: a planed 74 x 74 for a
+    75 x 75, a 27 x 144 deck board for a 28 x 145. An untagged row must match the size exactly
+    (`tol_mm`)."""
     def near(a, b):
         return abs(a - b) <= tol_mm
+
+    near_tol = lambda a, b, tol: abs(a - b) <= tol
 
     def hit(r):
         return {"price_gross": r["price_gross"], "price_net": r["price_net"],
@@ -376,8 +405,12 @@ def price_for(snapshot_rows, it, length_mm=None, variant="sawn", tol_mm=0.5):
     if it["category"] == "sheets":
         short, long_ = it["size_mm"]
         for r in snapshot_rows:
-            if (r["kind"] == "sheet" and near(r["thickness_mm"], it["thickness_mm"])
-                    and near(r["width_mm"], short) and near(r["length_mm"], long_)):
+            if r["kind"] != "sheet":
+                continue
+            tagged = (r.get("item") or "") == it.get("key", "-")
+            tol = SIZE_TOL_MM if tagged else tol_mm
+            if (near_tol(r["thickness_mm"], it["thickness_mm"], tol)
+                    and near_tol(r["width_mm"], short, tol) and near_tol(r["length_mm"], long_, tol)):
                 return hit(r)
         return None
     if it["category"] not in ("sections", "cladding"):
@@ -386,9 +419,13 @@ def price_for(snapshot_rows, it, length_mm=None, variant="sawn", tol_mm=0.5):
         raise ValueError("price_for needs a length for timber")
     t = it["thickness_mm"]
     w = it.get("width_mm", it.get("face_width_mm"))
+    def size_ok(r):
+        if (r.get("item") or "") == it.get("key", "-"):
+            return size_gap(it, r["thickness_mm"], r["width_mm"]) <= SIZE_TOL_MM
+        return (near(min(r["thickness_mm"], r["width_mm"]), min(t, w))
+                and near(max(r["thickness_mm"], r["width_mm"]), max(t, w)))
+
     rows = [r for r in snapshot_rows
             if r["kind"] == "lumber" and r["variant"] in it.get("variant_aliases", {}).get(variant, [variant])
-            and near(min(r["thickness_mm"], r["width_mm"]), min(t, w))
-            and near(max(r["thickness_mm"], r["width_mm"]), max(t, w))
-            and near(r["length_mm"], length_mm)]
+            and size_ok(r) and near(r["length_mm"], length_mm)]
     return hit(min(rows, key=lambda r: r["price_gross"])) if rows else None
