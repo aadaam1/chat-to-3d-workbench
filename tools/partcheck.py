@@ -4,7 +4,7 @@
     partcheck.py <part.stl> [--process fdm_asa] [--flip] [--json out.json] [--md out.md]
 
 Processes and their limits live in tools/processes.json (resin_sla, fdm_asa,
-slm_316l, slm_alsi10mg, mjf_pa12). The part is checked as it would be built:
+fdm_pla, fdm_petg, slm_316l, slm_alsi10mg, mjf_pa12). The part is checked as it would be built:
 +Z up, lowest point on the bed (--flip turns it upside down first).
 
 What it reports, and why each matters:
@@ -19,7 +19,25 @@ What it reports, and why each matters:
   overhang  downward faces flatter than overhang_deg from horizontal, off the
             bed. FDM bridges flat ceilings; laser-melted metal cannot, and a
             support inside a channel can never be removed.
-  cost      volume x the process's rough rate, when one is known.
+  cost      volume x the process's rough rate, when one is known (print services).
+
+Home printers (fdm_pla, fdm_petg; "home": true in processes.json) get three
+more things instead of a service price:
+
+  bed       does the bounding box fit the printer's build volume as modelled,
+            only turned onto another face, or not at all? Build volume, first
+            that is set: --bed 256x256x256, the BED environment variable, a
+            printer.json ({"name": "...", "bed": [x, y, z]}) in the project
+            folder (found by walking up from the STL), else 220x220x250 mm.
+            Only axis-aligned turns are tried, and a part is not laid
+            diagonally on the bed. Fits only turned = a caution; fits nowhere
+            = a problem.
+  filament  grams and cost at a typical fill. Simple on purpose: the outer
+            shell is surface area x 1.2 mm (about three 0.4 mm walls), the rest
+            is 20 % infill, so  volume_printed = min(V, A x 1.2) + 0.2 x
+            (V - that).  Grams = volume x density; cost = grams x price per kg.
+  settings  the slicer settings to start from (layer, walls, infill, supports,
+            temperatures), in the report next to the checks.
 
 Exit code 1 when anything would be rejected (red walls, a cavity where escape
 is needed, metal ceilings), so build scripts can stop on it.
@@ -81,6 +99,100 @@ def hotspots(centres, area, values, mask, n=8, cell=3.0):
              "at_mm": [round(float(x), 1) for x in c]} for a, v, c in rows]
 
 
+DEFAULT_BED = (220.0, 220.0, 250.0)      # mm, a common small printer
+SHELL_MM, INFILL = 1.2, 0.20            # filament estimate: shell thickness, infill fraction
+
+
+def parse_bed(text):
+    """'256x256x256' (or 256,256,256) -> (256.0, 256.0, 256.0)."""
+    parts = [float(x) for x in text.lower().replace(",", "x").split("x") if x.strip()]
+    if len(parts) != 3 or min(parts) <= 0:
+        raise ValueError(f"bed size must look like 220x220x250, got {text!r}")
+    return tuple(parts)
+
+
+def find_printer(path):
+    """printer.json next to the STL or in a folder above it (the project folder)."""
+    d = os.path.dirname(os.path.abspath(path))
+    for _ in range(5):
+        f = os.path.join(d, "printer.json")
+        if os.path.isfile(f):
+            with open(f) as fh:
+                j = json.load(fh)
+            return parse_bed("x".join(str(v) for v in j["bed"])), j.get("name")
+        if d == os.path.dirname(d):
+            break
+        d = os.path.dirname(d)
+    return None, None
+
+
+def bed_volume(path, bed=None):
+    """(build volume, where it came from)."""
+    if bed:
+        return tuple(bed), "set on the command line"
+    if os.environ.get("BED"):
+        return parse_bed(os.environ["BED"]), "from the BED environment variable"
+    b, name = find_printer(path)
+    if b:
+        return b, f"from printer.json{' (' + name + ')' if name else ''}"
+    return DEFAULT_BED, "default; set a printer.json in the project to use yours"
+
+
+def bed_fit(size, bed):
+    """How a bounding box (x, y, z) sits in a build volume (bx, by, bz).
+    -> {"fit": "as built" | "turned" | "no", "turn": text or None}.
+    Tries the three axis-aligned 'which axis points up' choices; on the bed the
+    footprint may be rotated 90 degrees."""
+    bx, by, bz = bed
+    eps = 1e-6
+
+    def fits(a, b, h):
+        return h <= bz + eps and ((a <= bx + eps and b <= by + eps) or (a <= by + eps and b <= bx + eps))
+
+    x, y, z = size
+    if fits(x, y, z):
+        return {"fit": "as built", "turn": None}
+    for up, (a, b, h) in (("X", (y, z, x)), ("Y", (x, z, y))):
+        if fits(a, b, h):
+            return {"fit": "turned", "turn": f"stand it with its {up} axis up "
+                    f"(lay it on its {'Y-Z' if up == 'X' else 'X-Z'} side), "
+                    f"{a:g} x {b:g} x {h:g} mm"}
+    return {"fit": "no", "turn": None}
+
+
+def filament(volume_mm3, area_mm2, density, usd_kg):
+    """Filament for walls plus 20 % infill: shell = area x 1.2 mm (capped at the
+    whole volume), the rest at 20 %. -> (grams, cost in USD, printed cm3)."""
+    shell = min(volume_mm3, area_mm2 * SHELL_MM)
+    used = (shell + INFILL * (volume_mm3 - shell)) / 1000.0
+    g = used * density
+    return round(g, 1), round(g * usd_kg / 1000.0, 2), round(used, 2)
+
+
+def print_settings(P, rep, load=False):
+    """The slicer settings to start from, as short plain lines."""
+    walls = 4 if load else 3
+    if rep["overhang_mm2"] > 0:
+        sp = rep["overhang_spots"][:3]
+        where = "; ".join(f"({s['at_mm'][0]}, {s['at_mm'][1]}, {s['at_mm'][2]})" for s in sp)
+        sup = (f"only under the flagged overhangs ({rep['overhang_mm2']} mm2, around x y z {where} mm); "
+               "use support on those faces, not everywhere")
+    else:
+        sup = "none needed: the overhang check found nothing flatter than 45 degrees"
+    orient = "as modelled, +Z up, lowest face on the bed"
+    if rep.get("bed", {}).get("fit") == "turned":
+        orient = "turned: " + rep["bed"]["turn"] + " (the checks above assume the model's own orientation; re-check)"
+    return [
+        "Layer height 0.2 mm, 0.4 mm nozzle",
+        f"{walls} walls (4 for a part under load), 4 top and bottom layers",
+        "Infill 20-40 % gyroid (the higher end for a part that is loaded)",
+        f"Orientation: {orient}",
+        f"Supports: {sup}",
+        f"Nozzle {P['nozzle_c'][0]}-{P['nozzle_c'][1]} C, bed {P['bed_c'][0]}-{P['bed_c'][1]} C "
+        "(the spool label wins)",
+    ]
+
+
 def measure(path, flip=False):
     """Load a mesh onto the bed (z = 0) and measure its wall thickness per face."""
     m = trimesh.load(path, force="mesh")
@@ -90,7 +202,7 @@ def measure(path, flip=False):
     return m, thickness(m)
 
 
-def check(path, proc_key, flip=False, return_mesh=False, measured=None):
+def check(path, proc_key, flip=False, return_mesh=False, measured=None, bed=None):
     """measured: a (mesh, thickness) pair from measure(), to judge one mesh
     against several processes without measuring it again."""
     P = load_processes()[proc_key]
@@ -166,6 +278,21 @@ def check(path, proc_key, flip=False, return_mesh=False, measured=None):
             problems.append(msg + " This process cannot bridge: slope them to 45 deg.")
         else:
             cautions.append(msg)
+    if P.get("home"):
+        vol, src = bed_volume(path, bed)
+        bf = bed_fit(size, vol)
+        rep["bed"] = {"volume_mm": list(vol), "source": src, **bf}
+        if bf["fit"] == "no":
+            problems.append(f"Does not fit the {vol[0]:g} x {vol[1]:g} x {vol[2]:g} mm build volume "
+                            f"({src}) in any orientation: {' x '.join(f'{v:g}' for v in size)} mm. "
+                            "Make it smaller or split it into parts.")
+        elif bf["fit"] == "turned":
+            cautions.append(f"Fits the {vol[0]:g} x {vol[1]:g} x {vol[2]:g} mm build volume only "
+                            f"turned: {bf['turn']}. Overhangs and layer direction change with it.")
+        g, usd, used = filament(m.volume, m.area, P["density_g_cm3"], P["filament_usd_kg"])
+        rep.update({"filament_g": g, "filament_cost_usd": usd, "filament_cm3": used,
+                    "cost_usd": None})
+        rep["print_settings"] = print_settings(P, rep)
     rep["problems"], rep["cautions"] = problems, cautions
     rep["verdict"] = "fail" if problems else ("check" if cautions else "pass")
     return (rep, t, m) if return_mesh else (rep, t)
@@ -186,6 +313,12 @@ def to_markdown(r):
                  f"({r['ceiling_mm2']}) mm2 |")
     if r["cost_usd"] is not None:
         L.append(f"| Rough price | ${r['cost_usd']} |")
+    if "bed" in r:
+        v = r["bed"]["volume_mm"]
+        L.append(f"| Printer bed | {v[0]:g} x {v[1]:g} x {v[2]:g} mm ({r['bed']['source']}): "
+                 f"{ {'as built': 'fits', 'turned': 'fits only turned', 'no': 'DOES NOT FIT'}[r['bed']['fit']] } |")
+        L.append(f"| Filament | about {r['filament_g']} g, ${r['filament_cost_usd']:.2f} "
+                 "(walls plus 20 % infill; see partcheck.py) |")
     L.append("")
     for p in r["problems"]:
         L.append(f"- FIX: {p}")
@@ -199,6 +332,9 @@ def to_markdown(r):
                 f"({s['at_mm'][0]}, {s['at_mm'][1]}, {s['at_mm'][2]}) {s['area_mm2']} mm2"
                 for s in spots))
     L.append("")
+    if r.get("print_settings"):
+        L += ["", "**Print settings to start from**", ""] + [f"- {t}" for t in r["print_settings"]]
+    L.append("")
     L += [f"> {n}" for n in r["notes"]]
     return "\n".join(L)
 
@@ -209,10 +345,15 @@ def main():
     ap.add_argument("stl")
     ap.add_argument("--process", default="fdm_asa", choices=sorted(procs))
     ap.add_argument("--flip", action="store_true", help="check it built upside down")
+    ap.add_argument("--bed", help="printer build volume for home processes, e.g. 256x256x256 "
+                    "(else $BED, else printer.json in the project, else 220x220x250)")
+    ap.add_argument("--load", action="store_true", help="part is under load: 4 walls in the settings")
     ap.add_argument("--json", help="write the full report as JSON")
     ap.add_argument("--md", help="write the report as Markdown")
     a = ap.parse_args()
-    r, _ = check(a.stl, a.process, a.flip)
+    r, _ = check(a.stl, a.process, a.flip, bed=parse_bed(a.bed) if a.bed else None)
+    if a.load and r.get("print_settings"):
+        r["print_settings"] = print_settings(load_processes()[a.process], r, load=True)
     md = to_markdown(r)
     print(md)
     if a.json:

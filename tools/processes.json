@@ -1,5 +1,5 @@
 {
-  "_about": "Design and check rules per manufacturing process. Used by tools/partcheck.py and tools/make_viewer.py; mirrored for the CAD side in lib/process.scad (keep the two in step). Wall limits follow what the services' own checks reject (red) and flag (warn). Rates are rough per-cm3 figures from real JLC quotes; always upload the file for a real price. short, for and look are the plain-words name, the one-line purpose and the material look the preview page uses.",
+  "_about": "Design and check rules per manufacturing process. Used by tools/partcheck.py and tools/make_viewer.py; mirrored for the CAD side in lib/process.scad (keep the two in step). Wall limits follow what the services' own checks reject (red) and flag (warn). Rates are rough per-cm3 figures from real JLC quotes; always upload the file for a real price. short, for and look are the plain-words name, the one-line purpose and the material look the preview page uses. Home printers (home: true, fdm_pla and fdm_petg) are checked against a build volume (default 220 x 220 x 250 mm; printer.json in the project, --bed or BED=256x256x256 override it) and report filament instead of a service price. Home-printer sources, read 2026-11-18: Prusa Knowledge Base, PLA (help.prusa3d.com/article/pla_2062: 215/210 C nozzle, 60 C bed, softens above 60 C, not for outdoor use) and PETG (help.prusa3d.com/article/petg_2059: 230-240 C nozzle, 85-90 C bed, exterior use under 80 C, prone to stringing, do not print on the smooth PEI sheet: adhesion may be too strong); the same page says other makers' PLA runs 185-235 C. Densities 1.24 (PLA) and 1.27 (PETG) g/cm3 are the usual datasheet values (Prusament). Filament rate = about 20 USD/kg x density, a typical spool price. Temperature ranges here are the typical spread across makers; the spool label wins.",
 
   "resin_sla": {
     "name": "Resin (SLA), prototype",
@@ -33,6 +33,50 @@
       "Horizontal holes over 6 mm: teardrop them (hole_x in process.scad).",
       "Layer lines are the weak direction: load across them, not along them.",
       "Rate is filament only, at 100 % fill (upper bound)."
+    ]
+  },
+
+  "fdm_pla": {
+    "name": "Home printer, PLA",
+    "short": "PLA", "for": "The easy filament for test fits and indoor parts on your own printer. Softens in the heat, so not for outdoors.", "look": "pla",
+    "home": true,
+    "wall_red": 0.4, "wall_warn": 0.8,
+    "overhang_deg": 45,
+    "bridges_ok": true,
+    "needs_escape": false,
+    "fit": 0.25, "hole_comp": 0.15, "min_hole": 1.5,
+    "rate_usd_cm3": 0.025,
+    "density_g_cm3": 1.24, "filament_usd_kg": 20,
+    "nozzle_c": [190, 220], "bed_c": [50, 60],
+    "notes": [
+      "Walls: under one 0.4 mm line cannot print; under two lines (0.8) prints weak; 1.2 mm is better for strength.",
+      "PLA softens at about 55-60 C: not for a car, hot sun or hot water. Use it for indoor parts and test fits.",
+      "Print with the largest flat face on the bed; chamfer the bed edge 0.6-1 mm against elephant foot.",
+      "Layer lines are the weak direction: load across them, not along them.",
+      "Print threads coarse (M8 and up), or use a heat-set insert or a nut trap instead of a fine thread.",
+      "Rate is filament only (about 20 USD/kg, 1.24 g/cm3) at 100 % fill, an upper bound."
+    ]
+  },
+
+  "fdm_petg": {
+    "name": "Home printer, PETG",
+    "short": "PETG", "for": "A tougher home-printer filament that takes heat up to about 70-80 C. Fine for most outdoor parts.", "look": "petg",
+    "home": true,
+    "wall_red": 0.4, "wall_warn": 0.8,
+    "overhang_deg": 45,
+    "bridges_ok": true,
+    "needs_escape": false,
+    "fit": 0.30, "hole_comp": 0.15, "min_hole": 1.5,
+    "rate_usd_cm3": 0.025,
+    "density_g_cm3": 1.27, "filament_usd_kg": 20,
+    "nozzle_c": [230, 250], "bed_c": [70, 90],
+    "notes": [
+      "Walls: under one 0.4 mm line cannot print; under two lines (0.8) prints weak; 1.2 mm is better for strength.",
+      "Takes about 70-80 C, is tougher than PLA and fine for most outdoor parts (it yellows slowly in sun; ASA is better for years outdoors).",
+      "PETG strings (cooling and retraction help) and sticks very hard to a smooth PEI bed: use a textured sheet or a glue stick.",
+      "Layer lines are the weak direction: load across them, not along them.",
+      "Print threads coarse (M8 and up), or use a heat-set insert or a nut trap instead of a fine thread.",
+      "Rate is filament only (about 20 USD/kg, 1.27 g/cm3) at 100 % fill, an upper bound."
     ]
   },
 
