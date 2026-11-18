@@ -9,6 +9,10 @@ workbench is a working prototype, and anything may still change.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-18
+
+Ventilated cladding, sizes as sold and home 3D printers
+
 ### Added
 - Home 3D printers: PLA and PETG presets, a check that the part fits your printer's bed, the filament it takes and the print settings to use.
 - Ventilated cladding: a breather membrane, battens over the studs and an air gap behind the boards (on by default in Europe; `ventilated: false` to turn it off, `ventilated: true` in the US).
@@ -172,7 +176,8 @@ The first version.
 - The tap aerator example.
 - Setup for macOS and Linux, a copy-paste setup prompt, and a self-test.
 
-[Unreleased]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/aadaam1/chat-to-3d-workbench/compare/v0.7.0...v0.7.1

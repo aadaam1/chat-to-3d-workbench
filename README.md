@@ -184,7 +184,7 @@ projects/<name>/    your own designs (ignored by git)
 
 ## Status
 
-Version 0.9, a working prototype. macOS and Linux.
+Version 0.10, a working prototype. macOS and Linux.
 [Changelog](CHANGELOG.md) · [Roadmap](ROADMAP.md)
 
 ## Play safe
