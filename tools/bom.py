@@ -73,7 +73,7 @@ KIND_NAMES = {
     "blocking": ("Blocking", "blocking pieces"), "outrigger": ("Outrigger", "outriggers"),
     "fascia": ("Fascia", "fascias"), "bargeboard": ("Bargeboard", "bargeboards"),
     "ridge": ("Ridge board", "ridge boards"), "tie": ("Rafter tie", "rafter ties"),
-    "brace": ("Brace", "braces"), "board": ("Cladding board", "cladding boards"),
+    "brace": ("Brace", "braces"), "board": ("Cladding board", "cladding boards"), "batten": ("Batten", "battens"),
     "sheet": ("Sheet", "sheets"),
     "post": ("Post", "posts"), "beam": ("Beam ply", "beam plies"), "deckboard": ("Deck board", "deck boards"), "slat": ("Slat", "slats"),
 }
@@ -83,7 +83,8 @@ JOINT_NAMES = {
     "stud-plate": "stud to plate", "plate-plate": "plate to plate at a wall corner",
     "joist-rim": "floor joist to rim joist or blocking", "rafter-plate": "rafter to wall plate",
     "header-trimmer": "header or sill to king or jack stud", "sheet-frame": "sheet to frame",
-    "board-frame": "cladding board to frame", "king-jack": "king stud to jack stud",
+    "board-frame": "cladding board to frame", "board-batten": "cladding board to batten",
+    "batten-frame": "batten to stud, through the sheathing", "king-jack": "king stud to jack stud",
     "jack-header": "jack stud to header", "plate-lap": "plate lapped over plate",
     "corner-stud": "corner stud to wall stud", "blocking-rafter": "blocking or outrigger to rafter",
     "fascia-rafter": "fascia to rafter", "barge-rafter": "bargeboard to rafter",
@@ -536,7 +537,7 @@ def rule_count(r, j):
         return r["per_joint"]
     if "per_crossing" in r:
         return r["per_crossing"] * j.get("crossings", 0)
-    return math.ceil(j.get("edge_mm", 0) / r["every_mm"] - 1e-9)
+    return max(r.get("min", 0), math.ceil(j.get("edge_mm", 0) / r["every_mm"] - 1e-9))
 
 
 def nail_weight_packs(count, it):
@@ -652,7 +653,7 @@ def pack_size(row, ctx, it):
     elif ctx == "m":
         if u == "m":
             return 1.0
-        if u == "piece" and q:
+        if u in ("piece", "roll") and q:
             return q
     elif ctx == "m2":
         if u == "m2":

@@ -646,6 +646,17 @@
       ],
       "unverified": true,
       "note": "Nail and screw counts per joint follow the IRC 2021 fastening schedule R602.3(1) as read from a distributor's chart and the ICC code-change proposal text (see docs/research/timber-structures.md), adapted to the joints the generator records. They are workbench rules, not a code check. Nails are sold by weight, structural screws only where they are stronger (rafter to plate, wall corners). Review before relying on them."
+    },
+    "batten-frame": {
+      "fastener": "nail-framing",
+      "every_mm": 406.4,
+      "min": 2,
+      "note": "furring nailed through the sheathing into the stud: one nail per 16 in. of batten, at least 2"
+    },
+    "board-batten": {
+      "fastener": "nail-cladding",
+      "per_crossing": 2,
+      "note": "2 nails where a board crosses a batten"
     }
   },
   "grades": {
@@ -714,7 +725,21 @@
     "details": {
       "corner": "three-stud",
       "top_plate": "double",
-      "note": "Platform framing defaults: corner assembly and a double top plate lapped at the corners."
+      "note": "Platform framing defaults: corner assembly and a double top plate lapped at the corners.",
+      "cladding": {
+        "ventilated": false,
+        "batten": "1x4",
+        "batten_variant": "sawn",
+        "membrane": "breather-membrane",
+        "mesh": "insect-mesh",
+        "batten_spacing": "over every stud",
+        "max_batten_gap_mm": 609.6,
+        "gap_note": "Siding is commonly nailed straight through the house wrap in the US, so ventilated is off by default; turn it on for a rainscreen: 3/4 in. (19 mm) 1x4 furring over every stud gives a 19 mm gap, open at the bottom and top behind insect mesh.",
+        "sources": [
+          "scot-timber-cladding"
+        ],
+        "unverified": true
+      }
     },
     "terrace": {
       "post_item": "4x4",
@@ -992,6 +1017,33 @@
         "base": "post-base-bolt-on"
       },
       "note": "A bought foundation. Its sizes are typical, not read from a maker's table, and its load capacity is NOT checked."
+    },
+    "breather-membrane": {
+      "name": "Breather membrane (vapour-permeable house wrap)",
+      "unit": "m2",
+      "covers": "wall",
+      "roll_m": [
+        1.5,
+        30.5
+      ],
+      "sources": [
+        "scot-timber-cladding"
+      ],
+      "unverified": true,
+      "note": "Sold in rolls (typically 5 ft x 100 ft = 1.5 x 30.5 m = 46 m2); the roll size is typical, not read from a supplier page."
+    },
+    "insect-mesh": {
+      "name": "Insect / ventilation mesh strip for the air gap",
+      "unit": "m",
+      "roll_m": [
+        0.1,
+        30.5
+      ],
+      "sources": [
+        "scot-timber-cladding"
+      ],
+      "unverified": true,
+      "note": "A perforated strip at the bottom and top of the air gap, sold in rolls (typically 100 ft x about 4 in.); typical, not read from a supplier page."
     }
   },
   "sources": [
@@ -1071,6 +1123,13 @@
       "url": "docs/research/timber-blocks.md",
       "read": "2026-11-13",
       "note": "NOT read from a standard or a single page; these are the figures such guides commonly give and are marked unverified. Knee brace angle 45 degrees and leg length about 2 ft are the usual rule of thumb; check local rules and wind loads."
+    },
+    {
+      "id": "scot-timber-cladding",
+      "title": "Timber cladding in Scotland (Scottish Executive, 2002), the ventilated cavity page: cavity at least 19 mm, a 10 mm gap under the board bottoms, a 6 mm gap at the top, insect mesh over every opening, Type 1 breather membrane, battens at 600 mm centres (400 mm for green oak)",
+      "url": "https://www.gov.scot/publications/timber-cladding-scotland/pages/13/",
+      "read": "2026-11-18",
+      "note": "A UK source, used for the gap and the openings. Not a standard: check the local rules and the cladding maker's fixing guide."
     }
   ]
 }
