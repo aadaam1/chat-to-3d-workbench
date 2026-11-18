@@ -26,9 +26,9 @@ OPS = ("move", "resize", "remove", "add")
 KEEPS = ("start", "centre", "end")
 CONTACT = 1.0           # mm: members this close count as touching
 TIMBER = {"joist", "rim", "plate", "stud", "header", "trimmer", "king", "jack", "cripple",
-          "sill", "rafter", "blocking", "brace", "outrigger", "fascia", "bargeboard", "ridge", "tie", "post", "beam", "slat"}
+          "sill", "rafter", "blocking", "brace", "outrigger", "fascia", "bargeboard", "ridge", "tie", "post", "beam", "slat", "batten"}
 KINDS = TIMBER | {"board", "sheet"}
-LAYERS = ("floor", "walls", "roof", "sheathing", "cladding")
+LAYERS = ("floor", "walls", "roof", "sheathing", "battens", "cladding")
 GROUPS = ("floor", "wall-front", "wall-back", "wall-left", "wall-right", "roof")
 UPRIGHT = {"stud", "king", "jack", "cripple", "trimmer"}
 CARRIER = {"plate", "sill", "header"}
@@ -190,8 +190,14 @@ def joint_for(a, b, box):
             return {"type": "post-base", "a": s["id"], "b": t["id"]}
         if ks == "deckboard" and kt in TIMBER:
             return {"type": "deck-board", "a": s["id"], "b": t["id"], "crossings": 1}
+        if ks == "sheet" and kt == "batten":
+            continue                        # the battens lie on the sheathing; they are nailed to the studs, not to it
         if ks == "sheet" and kt in TIMBER:
             return {"type": "sheet-frame", "a": s["id"], "b": t["id"], "edge_mm": round(span, 1)}
+        if ks == "board" and kt == "batten":
+            return {"type": "board-batten", "a": s["id"], "b": t["id"], "crossings": 1}
+        if ks == "batten" and kt in UPRIGHT:
+            return {"type": "batten-frame", "a": s["id"], "b": t["id"], "edge_mm": round(span, 1)}
         if ks == "board" and kt in TIMBER:
             return {"type": "board-frame", "a": s["id"], "b": t["id"], "crossings": 1}
     if ka not in TIMBER or kb not in TIMBER:
