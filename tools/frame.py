@@ -169,7 +169,7 @@ def resolve_spec(raw):
         r = tl.item(lib, roofing)
     except KeyError:
         r = None
-    if not (r and r["category"] == "bought" and r["unit"] == "m2"):
+    if not (r and r["category"] == "bought" and r["unit"] == "m2" and r.get("covers") != "wall"):
         raise SpecError(f"roofing: {roofing!r} is not a roofing item sold by area in the {region} library")
     s["roofing"] = roofing
 
@@ -199,6 +199,7 @@ def resolve_spec(raw):
     if not fit or fit["category"] != "sections":
         raise SpecError(f"fascia_item: {fk!r} is not a timber section in the {region} library")
     s["fascia_item"] = fk
+    _ventilated(raw, s, lib)
     def item_ok(key):
         try:
             return tl.item(lib, key)["category"] in ("sections", "sheets", "cladding")
@@ -435,6 +436,30 @@ def _pick_item(raw, lib, field, default, cats=("sections",), what="a timber sect
     return key
 
 
+def _ventilated(raw, s, lib, record=True):
+    """`ventilated`: a breather membrane, battens over the studs and an air gap behind the cladding.
+    The default is the library's (details.cladding.ventilated); the spec keeps the field only when
+    the description changed it, so a frame without battens is exactly what it was before."""
+    det = lib["defaults"].get("details", {}).get("cladding")
+    default = bool(det and det.get("ventilated"))
+    v = raw.get("ventilated", default)
+    if not isinstance(v, bool):
+        raise SpecError("ventilated: use true or false")
+    if v and not det:
+        raise SpecError(f"ventilated: the {lib['region']} library has no batten for it (defaults.details.cladding)")
+    if v != default:
+        s["ventilated"] = v
+    if v != default and record:                   # a library default is not a decision, only a change of it
+        if v:
+            bt = tl.item(lib, det["batten"])
+            pl.decide(s, "Cladding", f"a breather membrane over the sheathing, {bt['name']} battens over the studs, the boards on the battens",
+                      f"you asked for ventilated cladding; the {bt['thickness_mm']:g} mm battens leave a {bt['thickness_mm']:g} mm "
+                      "air gap behind the boards, open at the bottom and top behind insect mesh")
+        else:
+            pl.decide(s, "Cladding", "the boards nailed straight to the studs through the sheathing, no battens, membrane or air gap",
+                      "you turned ventilated cladding off (the library's default is on); the wall can not dry outwards behind the boards")
+
+
 def _kitchen_spec(raw):
     """A summer kitchen description with every missing field filled from the library (the
     pergola, terrace and shed defaults and defaults.summer_kitchen), lengths in mm, the post
@@ -512,7 +537,7 @@ def _kitchen_spec(raw):
         r = tl.item(lib, roofing)
     except KeyError:
         r = None
-    if not (r and r["category"] == "bought" and r["unit"] == "m2"):
+    if not (r and r["category"] == "bought" and r["unit"] == "m2" and r.get("covers") != "wall"):
         raise SpecError(f"roofing: {roofing!r} is not a roofing item sold by area in the {region} library")
     s["roofing"] = roofing
     s["foundation"] = raw.get("foundation", pg["foundation"])
@@ -690,6 +715,7 @@ def _kitchen_spec(raw):
                 raise SpecError(f"{k}: only with floor: terrace")
     # the walls
     s["walls"] = _kitchen_walls(raw.get("walls", []))
+    _ventilated(raw, s, lib, record=bool(s["walls"]))
     if s["walls"] and tl.item(lib, s["frame_item"])["width_mm"] > min(pty, post["thickness_mm"]) + EPS:
         raise SpecError(f"frame_item: {s['frame_item']!r} is wider than the posts ({min(pty, post['thickness_mm']):g} mm); "
                         "a wall's inner face lies flush with the posts' inner faces, so it must be no wider than they are")

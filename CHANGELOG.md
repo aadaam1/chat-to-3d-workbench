@@ -11,6 +11,7 @@ workbench is a working prototype, and anything may still change.
 
 ### Added
 - Home 3D printers: PLA and PETG presets, a check that the part fits your printer's bed, the filament it takes and the print settings to use.
+- Ventilated cladding: a breather membrane, battens over the studs and an air gap behind the boards (on by default in Europe; `ventilated: false` to turn it off, `ventilated: true` in the US).
 
 ### Changed
 - Sizes as sold: a price row within 3 mm of a library size prices it (the importer refuses a bigger gap); eu cladding is now 19×146 tongue-and-groove (sold in Hungary and Czechia); more Hungarian nail prices.

@@ -262,7 +262,7 @@ def test_fastener_counts_equal_a_hand_count(shed_bom):
             elif "per_crossing" in part:
                 n = part["per_crossing"] * j["crossings"]
             else:
-                n = -(-j["edge_mm"] // part["every_mm"])
+                n = max(part.get("min", 0), -(-j["edge_mm"] // part["every_mm"]))
             want[part["fastener"]] = want.get(part["fastener"], 0) + n
     got = {f["item"]: f for f in b["fasteners"]}
     assert set(got) == set(want)

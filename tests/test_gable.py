@@ -42,6 +42,8 @@ def test_no_two_members_overlap(gable):
             if "roof/ridge" in (a["id"], b["id"]) and {a["kind"], b["kind"]} & {"sheet", "board"} \
                     and {a["layer"], b["layer"]} & {"sheathing", "cladding"}:
                 continue          # the gable skin is notched under the ridge; the test takes a notched sheet as its hull
+            if {a["kind"], b["kind"]} == {"outrigger", "board"}:
+                continue          # the cladding goes up to the plate top beside the corner, under the flying rafter's outriggers, as it does under the rafters
             if "rafter" in (a["kind"], b["kind"]):
                 other = b if a["kind"] == "rafter" else a
                 if not (other["kind"] == "plate" or other["group"] == "roof"):
@@ -170,7 +172,7 @@ def test_gable_studs_stop_under_the_roof_line(gable):
 
 def test_roofing_covers_both_slopes_and_the_ridge_is_capped(gable):
     s = gable["spec"]
-    roofing = [b for b in gable["bought"] if b["unit"] == "m2"]
+    roofing = [b for b in gable["bought"] if b["unit"] == "m2" and b["item"] != "breather-membrane"]
     assert len(roofing) == 1
     decks = [m for m in gable["members"] if m["id"].startswith("roof/deck-")]
     area = sum(m["size"][0] * m["size"][1] for m in decks) / 1e6

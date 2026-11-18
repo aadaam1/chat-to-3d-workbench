@@ -6,9 +6,10 @@ import math, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import framing as fr_rules  # noqa: E402
+import timberlib as tl  # noqa: E402
 import frame_edits as fe  # noqa: E402
 from timber.store import (EPS, MIN_CRIPPLE, MIN_INFILL, MIN_SHEET, SpecError, _clean, _is_rect,  # noqa: E402
-                          _ov, _pairs, _piece, _poly_clip, _poly_len, _norm, layout, split)
+                          _ov, _area, _pairs, _piece, _poly_clip, _poly_len, _norm, layout, split, r1)
 
 fr = fr_rules
 
@@ -31,6 +32,8 @@ class Wall:
         self.hf, self.hb = lay.hf, lay.hb
         self.courses, self.th, self.hh, self.plies = lay.courses, lay.th, lay.hh, lay.plies
         self.sheath, self.clad, self.ts, self.tc = lay.sheath, lay.clad, lay.ts, lay.tc
+        self.vent, self.tb, self.bw = lay.vent, lay.tb, lay.bw       # ventilated: battens tb thick, bw wide
+        self.clad_area, self.mesh_bottom, self.mesh_top = 0.0, 0.0, 0.0
         self.box, self.add, self.joint = frame.box, frame.add, frame.joint
         self.wf = None
         self.skin_sheets = {}
@@ -480,6 +483,10 @@ class Wall:
         vert = [(i, (p + q) / 2, z0, z1) for i, k, p, q, z0, z1 in faces
                 if k in ("stud", "king", "jack", "cripple") and z1 - z0 > q - p]
         clip = self.cladding_clip(name)
+        bat = self.battens(name, wf, faces, zmax, clip) if self.vent else []
+        self.clad_area += sum(_area(sh[5]) for sh in self.skin_sheets.get(name, [])) / 1e6
+        if self.vent:
+            self.mesh_ends(name, wf, clip, zmax)
         n = 0
         for zb, zt in zip(cuts, cuts[1:]):
             if zt - zb < 1.0:
@@ -511,23 +518,118 @@ class Wall:
                 n += 1
                 cen = [0.0, 0.0, (z0 + z1) / 2]
                 cen[ax] = (a + b) / 2
-                cen[dax] = wf["d0"] + sign * (ts + tc / 2)
+                cen[dax] = wf["d0"] + sign * (ts + self.tb + tc / 2)
                 bid = self.add(f"{ig}/board-{n:02d}", "board", g, "cladding", s["cladding"],
                                [b - a, z1 - z0, tc], cen, e_s, (0, 0, 1),
                                cut=(ch if self.gable else 0, ch), outline=outline)
+                if bat:                                 # on the battens it crosses (nearest one when none is under it)
+                    hit = [x for x in bat if a - EPS <= x[1] <= b + EPS and _ov(zb, zt, x[2], x[3]) > EPS]
+                    near = hit or [min(bat, key=lambda x: abs(x[1] - (a + b) / 2))]
+                    self.joint("board-batten", bid, near[0][0], crossings=max(1, len(hit)))
+                    continue
                 cr = sum(1 for _, c, z0, z1 in vert if a - EPS <= c <= b + EPS
                          and _ov(zb, zt, z0, z1) > EPS)
                 if not cr:                              # a course over the top plate: nailed at the studs
                     cr = max(1, sum(1 for _, c, z0, z1 in vert if a - EPS <= c <= b + EPS))
                 self.joint("board-frame", bid, wf["top_id"], crossings=cr)
+    def battens(self, name, wf, faces, zmax, clip):
+        """The vertical battens of a ventilated wall, nailed through the sheathing into the studs: one over
+        each full-height stud line (studs, kings and jacks; where two lines are a batten apart, the one beside
+        an opening), plus fillers so none is farther than the library's `max_batten_gap_mm` from the next.
+        Each runs from the bottom of the cladding to the top of the wall, cut to the clip outline like the
+        boards, and is interrupted by an opening. Returns [(id, centre, z0, z1)] for the boards to cross."""
+        s, ts, tb, bw, zd = self.s, self.ts, self.tb, self.bw, self.zd
+        ax, dax, sign = wf["ax"], wf["dax"], wf["sign"]
+        det = self.vent
+        g, ig = self.group, self.gid
+        lines = sorted((c, 0 if k == "jack" else 1) for i, k, p, q, z0, z1 in faces
+                       if k in ("stud", "king", "jack") and z1 - z0 > q - p
+                       for c in [(p + q) / 2] if wf["s0"] - EPS <= c <= wf["s1"] + EPS)
+        keep = []
+        for c, pri in lines:
+            if keep and c - keep[-1][0] <= bw + 1.0:
+                if pri < keep[-1][1]:
+                    keep[-1] = (c, pri)
+                continue
+            keep.append((c, pri))
+        cs = [c for c, _ in keep]
+        lo, hi, _ = self._board_span(name, zd)
+        if not cs:
+            cs = [(lo + hi) / 2]
+        gap = float(det.get("max_batten_gap_mm", 600.0))
+        full = []
+        for c0, c1 in zip(cs, cs[1:]):
+            full.append(c0)
+            k = math.ceil((c1 - c0) / gap - 1e-9)
+            full += [c0 + (c1 - c0) * j / k for j in range(1, k)]
+        full.append(cs[-1])
+        vert = [(i, (p + q) / 2, p, q, z0, z1) for i, k, p, q, z0, z1 in faces
+                if k in ("stud", "king", "jack", "cripple") and wf["s0"] - EPS <= (p + q) / 2 <= wf["s1"] + EPS]
+        e_s = [1 if j == ax else 0 for j in range(3)]
+        out, n = [], 0
+        for c in full:
+            c = r1(c)
+            ivs = [(zd, zmax)]
+            for o in wf["ops"]:
+                if c - bw / 2 < o["b"] - EPS and c + bw / 2 > o["a"] + EPS:
+                    nxt = []
+                    for a_, b_ in ivs:
+                        if o["zb"] > a_ + EPS:
+                            nxt.append((a_, min(b_, o["zb"])))
+                        if o["zt"] < b_ - EPS:
+                            nxt.append((max(a_, o["zt"]), b_))
+                    ivs = nxt
+            for z0, z1 in ivs:
+                if z1 - z0 < 50.0:
+                    continue
+                a, b, outline = c - bw / 2, c + bw / 2, None
+                if clip:
+                    poly_i = _poly_clip(clip, a, b, z0, z1)
+                    if not poly_i:
+                        continue
+                    z0, z1 = min(p[1] for p in poly_i), max(p[1] for p in poly_i)
+                    local = [(p[1] - z0, p[0] - a) for p in poly_i]
+                    if not _is_rect(local, z1 - z0, bw):
+                        outline = local
+                    L = max(u for u, _ in local)
+                    z1 = z0 + L
+                else:
+                    L = z1 - z0
+                n += 1
+                cen = [0.0, 0.0, z0 + L / 2]
+                cen[ax] = c
+                cen[dax] = wf["d0"] + sign * (ts + tb / 2)
+                var = det.get("batten_variant", "sawn")
+                bid = self.add(f"{ig}/batten-{n:02d}", "batten", g, "battens", det["batten"], [L, bw, tb], cen,
+                               (0, 0, 1), e_s, outline=outline and _clean(outline), treated=var == "impregnated",
+                               variant=var)
+                out.append((bid, c, z0, z0 + L))
+                # nailed into the stud beside it (the nearest member of the wall frame under it)
+                under = [v for v in vert if v[2] - EPS <= c <= v[3] + EPS and _ov(z0, z0 + L, v[4], v[5]) > EPS]
+                sup = under[0][0] if under else min(vert, key=lambda v: abs(v[1] - c))[0] if vert else wf["top_id"]
+                self.joint("batten-frame", bid, sup, edge_mm=L)
+        return out
+
+    def mesh_ends(self, name, wf, clip, zmax):
+        """The length of insect mesh the air gap of this wall needs: along the bottom (less the doors) and the top."""
+        lo, hi, _ = self._board_span(name, self.zd)
+        bottom = hi - lo - sum(o["b"] - o["a"] for o in wf["ops"] if o["kind"] == "door")
+        if clip:
+            top = sum(math.hypot(q[0] - p[0], q[1] - p[1]) for p, q in zip(clip, clip[1:] + clip[:1])
+                      if abs(q[0] - p[0]) > EPS and not (abs(p[1] - self.zd) < EPS and abs(q[1] - self.zd) < EPS))
+        else:
+            top = hi - lo
+        self.mesh_bottom += bottom / 1000
+        self.mesh_top += top / 1000
+
     def cladding_clip(self, name):
         """The polygon (s, z) the side walls' cladding is cut to: the rafter line, wrapped past the corners."""
         zd = self.zd
         clip = None
         if name in ("left", "right") and self.gable:
-            clip = self.gable_outline(self.ts + self.tc)
+            clip = self.gable_outline(self.ts + self.tb + self.tc)
         elif name in ("left", "right"):
-            wrap, D, w = self.ts + self.tc, self.D, self.w
+            wrap, D, w = self.ts + self.tb + self.tc, self.D, self.w
             clip = _clean([(-wrap, zd), (D + wrap, zd), (D + wrap, self.hb), (D - w, self.hb),
                            (D - w, self.line.underside(D - w)), (w, self.hf), (-wrap, self.hf)])
         return clip
@@ -536,9 +638,9 @@ class Wall:
         """Range along the wall of a board whose lower edge is at zb, and the
         cut angle at its high end. Side boards wrap past the front and back
         skin; above the back wall they follow the rafter line."""
-        wrap = self.ts + self.tc
+        wrap = self.ts + self.tb + self.tc
         if name in ("front", "back"):
-            return -self.ts, self.W + self.ts, 0.0
+            return -(self.ts + self.tb), self.W + self.ts + self.tb, 0.0
         D, w = self.D, self.w
         if self.gable:              # above the eave height both ends follow the roof line
             above = zb >= self.hb - EPS
@@ -588,3 +690,29 @@ def corners(frame, lay, walls):
             pa = a["bots"][0][0] if fw == "front" else a["bots"][-1][0]
             pb = next(m for m, p0, p1 in b["bots"] if _ov(lo, hi, p0, p1) > EPS)
             joint("plate-plate", pa, pb)
+
+
+def buy_ventilation(frame, lib, walls):
+    """The breather membrane (the clad wall area plus 10% lap) and the insect mesh (the bottoms and tops of the
+    air gaps, less the doors) of a ventilated structure, as bought items. Nothing for one that is not."""
+    walls = list(walls)
+    if not walls or not walls[0].vent:
+        return
+    det = walls[0].vent
+    area = sum(w.clad_area for w in walls)
+    bottom, top = sum(w.mesh_bottom for w in walls), sum(w.mesh_top for w in walls)
+
+    def rolls(key, need):
+        it = tl.item(lib, key)
+        w_, l_ = it["roll_m"]
+        per = w_ * l_ if it["unit"] == "m2" else l_
+        return per, max(1, math.ceil(need / per - 1e-9))
+
+    key = det["membrane"]
+    per, n = rolls(key, area * 1.1)
+    frame.bought.append({"item": key, "qty": round(area * 1.1, 2), "unit": "m2",
+                         "note": f"clad wall area {area:.2f} m2 plus 10% lap, over the sheathing; rolls of {per:g} m2: {n}"})
+    key = det["mesh"]
+    per, n = rolls(key, bottom + top)
+    frame.bought.append({"item": key, "qty": round(bottom + top, 2), "unit": "m",
+                         "note": f"bottom {bottom:.2f} m and top {top:.2f} m of the air gap; rolls of {per:g} m: {n}"})

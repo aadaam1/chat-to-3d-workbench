@@ -317,6 +317,24 @@ class Frame:
         self.assemblies.append({"id": aid, "type": typ, "spans": spans})
 
 
+def cladding_detail(spec, lib):
+    """The library's cladding block (defaults.details.cladding) when the structure is ventilated, else None.
+    `ventilated` is in the spec only when the description changed the library's default."""
+    det = lib["defaults"].get("details", {}).get("cladding")
+    if det and spec.get("ventilated", bool(det.get("ventilated"))):
+        return det
+    return None
+
+
+def set_batten(lay, spec, lib):
+    """Put the battens of a ventilated wall on a layout: `vent` (the library block or None), `batten` (its
+    item), `tb` (the air gap: the batten's thickness, 0 without) and `bw` (its width)."""
+    lay.vent = cladding_detail(spec, lib)
+    lay.batten = tl.item(lib, lay.vent["batten"]) if lay.vent else None
+    lay.tb = lay.batten["thickness_mm"] if lay.vent else 0.0
+    lay.bw = lay.batten["width_mm"] if lay.vent else 0.0
+
+
 class Layout:
     """The numbers the blocks share, worked out before anything is built: the
     library items, section sizes, the floor top and the heights."""
@@ -336,6 +354,7 @@ class Layout:
         self.sheath = tl.item(lib, s["sheathing"])
         self.clad = tl.item(lib, s["cladding"])
         self.ts, self.tc = self.sheath["thickness_mm"], self.clad["thickness_mm"]
+        set_batten(self, spec, lib)
         self.zd = self.hj + self.fdeck["thickness_mm"]          # top of the floor deck
         self.gable = s["type"] == "gable-shed"
         if self.gable:            # both eave walls the same height; the gable walls' top plates are level too
