@@ -39,7 +39,7 @@ import versions as vers
 # "auto" puts the spacing chain along the direction the joists or rafters are spread in;
 # "hide" are the kinds left out of the drawing (they stay in the table).
 
-HIDE = ["sheet", "board", "deckboard"]
+HIDE = ["sheet", "board", "deckboard", "batten"]
 PLAN_FLOOR = {"view": "plan", "title": "Plan, seen from above (front at the bottom)", "hide": HIDE,
               "auto": {"kinds": ["joist"], "mode": "gap"}, "overall": "wh"}
 PLAN_POSTS = {"view": "plan", "title": "Plan, seen from above (front at the bottom)", "hide": HIDE,
@@ -886,7 +886,7 @@ def mat_cat(m):
     k = m["kind"]
     if k == "sheet":
         return "rof" if m.get("layer") == "roof" else "shs"
-    if k == "board":
+    if k in ("board", "batten"):
         return "cla"
     if k == "deckboard":
         return "dck"
@@ -1412,7 +1412,7 @@ def cover_html(frame, checks, name, version, date, units, structure_size, bom, v
     how = ('<h3>How to read the drawings</h3><p class="small">The two 3D views are seen from the front-left, from above: the numbers on the right-hand one are the part numbers at the top of each drawing page. '
            "Each side is drawn on its own page. Walls are seen from outside. "
            "Floors and roofs are seen from above, with the front at the bottom of the page. Left and right are as you face the front "
-           "wall from outside. Letters match the table next to the drawing. Sheathing, cladding and deck boards are not drawn "
+           "wall from outside. Letters match the table next to the drawing. Sheathing, cladding, battens and deck boards are not drawn "
            "(they would hide the frame) but are in the table. Print at 100% (not &quot;fit to page&quot;) for the scale shown.</p>")
     return (f'<section class="page cover"><h1>{esc(name)}</h1><p class="sub">Site pack: shopping list and drawings</p>'
             f'<table class="facts">{facts}</table>{views}{verdict}{warn}{dec}{how}</section>')
@@ -1609,6 +1609,20 @@ def pieces_table(sec, rows, units, footings):
     return "".join(t)
 
 
+def batten_note(sec, units):
+    """On a wall page with battens: how many of which length, and how the layers go together ('' without battens)."""
+    ls = {}
+    for m in sec["members"]:
+        if m["kind"] == "batten":
+            ls[round(m["size"][0])] = ls.get(round(m["size"][0]), 0) + 1
+    if not ls:
+        return ""
+    cnt = ", ".join(f"{n} x {fmt(l, units, True)}" for l, n in sorted(ls.items(), reverse=True))
+    return ('<p class="note"><b>Ventilated cladding.</b> Membrane over the sheathing, battens over every stud, cladding on the battens; '
+            "leave the gap open at the bottom and top, behind insect mesh. "
+            f"Battens ({sum(ls.values())}): {esc(cnt)}.</p>")
+
+
 def section_html(frame, sec, views, rows, units, left_w, panel_w, panel_h, tw, footings, lo, hi, key="", no=None):
     sec["frame"] = frame
     title = sec["title"]
@@ -1630,7 +1644,7 @@ def section_html(frame, sec, views, rows, units, left_w, panel_w, panel_h, tw, f
     svg, N = draw_one(first, left_w, avail_h)
     out.append('<section class="page draw">' + heads(title, N) + f'<p class="note" style="margin:-1mm 0 2mm">{esc(sub)}</p>'
                f'<div class="drawing"><div class="panel"><p class="cap">{esc(first.spec["title"])}</p>{svg}</div>'
-               f'<div><div class="key"><p class="cap">Where this part is; arrow: viewing direction</p>{key}</div>{pieces_table(sec, rows, units, footings)}</div></div></section>')
+               f'<div><div class="key"><p class="cap">Where this part is; arrow: viewing direction</p>{key}</div>{pieces_table(sec, rows, units, footings)}{batten_note(sec, units)}</div></div></section>')
     rest = views[1:]
     if rest:
         n = len(rest)
