@@ -1,0 +1,9 @@
+# supplier: Szegmester (szegmester.hu webshop)
+# region: hu
+# read_date: 2026-11-18
+# currency: HUF
+# prices: gross (incl. 27% VAT) - "Bruttó ár" on each product page
+# note: loose nails by the box. The framing nail is a ring-shank nail of the library size (the library asks for a smooth one; a ring shank holds at least as well). Szegmester lists no loose 2.8 x 50 or 2.8 x 60 ring-shank nails and no smooth bright 3.1 x 90.
+source_url	product	kind	item	variant	species	grade	thickness_mm	width_mm	length_mm	unit	pack_qty	price_net	price_gross	notes
+https://www.szegmester.hu/28-65-omlesztett-huzalszeg-5kg	28/65 ömlesztett-huzalszeg (5kg)	fastener	nail-toe							box	5		3600.45	2.8 x 65 mm, 5 kg box, plain/bright (Bevonat: nincs), smooth ("sima / huzalszeg")
+https://www.szegmester.hu/31-90-omlesztett-gyurus-szeg-25kg	31/90 ömlesztett-gyűrűs szeg (25kg)	fastener	nail-framing							box	25		16414.75	3.1 x 90 mm, 25 kg box (the 5 kg smooth huzalszeg list stops at 3.1 x 80), uncoated, ring shank (the library nail is smooth; same size, holds better), head not stated; price is the sale price "while stock lasts" (list price 23495 gross)
