@@ -61,7 +61,7 @@ wider" is one number.
 - **Checks before you print:** wall-thickness heatmap, overhangs, trapped
   hollows, and a rough price per material.
 - **Print it anywhere:** the STL goes into any slicer for your own printer,
-  or to a print service in resin, ASA, nylon, stainless steel or aluminium.
+  or to a print service in resin, ASA, nylon, stainless steel or aluminium. Home printers get PLA and PETG presets, a bed-size check, the filament it takes and the settings to use.
 - **Edit it in CAD if you like:** every part also comes as a STEP file,
   which opens in Fusion and friends as a real solid, not a mesh.
 

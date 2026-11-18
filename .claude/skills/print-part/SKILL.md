@@ -1,6 +1,6 @@
 ---
 name: print-part
-description: Design, check and hand over a 3D-printed or metal-printed part in a chat-to-3d-workbench repo (one folder per project under projects/, which git ignores) - from measuring the mating part, through a parametric OpenSCAD model with per-process presets (resin prototype, ASA plastic, SLM 316L or aluminium, MJF nylon), to printability checks (wall thickness heatmap, overhangs, trapped cavities, rough price), renders, a shareable 3D preview page, STEP files for Fusion and a versioned print pack. Use for any new part, any change to an existing one, and any "can this be printed / ordered in X" question.
+description: Design, check and hand over a 3D-printed or metal-printed part in a chat-to-3d-workbench repo (one folder per project under projects/, which git ignores) - from measuring the mating part, through a parametric OpenSCAD model with per-process presets (resin prototype, ASA plastic, PLA or PETG on a home printer, SLM 316L or aluminium, MJF nylon), to printability checks (wall thickness heatmap, overhangs, trapped cavities, rough price), renders, a shareable 3D preview page, STEP files for Fusion and a versioned print pack. Use for any new part, any change to an existing one, and any "can this be printed / ordered in X" question.
 ---
 
 # Print a part
@@ -46,10 +46,20 @@ obvious. At minimum, know:
    hand measurements for anything that must fit within millimetres.
 3. Where it lives and what it takes: sun, frost, heat, water or pressure,
    chemicals, food contact, load and its direction, who handles it.
-4. How many, and the route: usually **a cheap prototype first** (resin, or
+4. **Does the person own a 3D printer?** If so, or when the part is a test
+   fit or an indoor part, offer the home presets `fdm_pla` (easy, indoors,
+   softens above about 60 C) or `fdm_petg` (tougher, most outdoor parts, up
+   to about 70-80 C) instead of a print service. Ask **once** for the
+   printer's model or its bed size (X x Y x Z mm) and write it to
+   `projects/<project>/printer.json` as `{"name": "...", "bed": [256, 256, 256]}`
+   (default 220 x 220 x 250; `BED=256x256x256` overrides it for one run).
+   Explain on first use: FDM (the printer melts a plastic thread and draws the
+   part layer by layer), PLA and PETG (the two common filaments, the plastic
+   thread on the spool).
+5. How many, and the route: usually **a cheap prototype first** (resin, or
    a test piece of the critical fit), then the final material. The model
    must export every process from one file.
-5. Which project it belongs to. A change to an existing part goes in that
+6. Which project it belongs to. A change to an existing part goes in that
    part's folder; anything new gets its own `projects/<name>/` (next step).
    Read that project's `README.md` before touching it.
 
@@ -78,6 +88,7 @@ obvious. At minimum, know:
 ```
 tools/setup.sh                                   # once per machine (macOS or Linux)
 tools/build_part.sh <project>[/<part>] resin_sla fdm_asa slm_316l
+tools/build_part.sh <project>[/<part>] fdm_petg      # your own printer
 ```
 
 For each process this writes the STL, the STEP (Fusion-editable), a check
@@ -87,6 +98,12 @@ if any process fails. One file by hand: `tools/partcheck.py part.stl --process s
 A project with named variants (sizes, gauges, a handover folder) gets its own
 `projects/<project>/build.sh` that writes into its `out/`; see
 `examples/tap-aerator/build.sh`. Run `tools/partcheck.py` on its outputs too.
+
+For `fdm_pla` / `fdm_petg` the report also says whether the part fits the
+printer's bed (red when it fits in no orientation, a warning when only
+turned, with the turn), the filament in grams and dollars (walls plus 20 %
+infill), and a short block of slicer settings; the build also writes the
+block to `<part>_<process>.print-settings.txt` for the print pack.
 
 Read every report. What the verdicts mean:
 - **FAIL**: a service would reject it, or it cannot be built (walls under
@@ -187,8 +204,8 @@ folder over http and route the three.js URLs to an `npm i three@0.160.1` copy.
   source.
 - Print pack: a zip in the scratchpad named `<project>-prints-v<N>.zip`, built
   from `out/`, with
-  folders per material (`asa/`, `metal/`, `resin/`), each part as STL and
-  STEP, and a `READ-ME-FIRST.txt` that starts with: "Checks passed is not a
+  folders per material (`asa/`, `pla/`, `petg/`, `metal/`, `resin/`), each part as STL and
+  STEP (for pla/petg also the `.print-settings.txt`), and a `READ-ME-FIRST.txt` that starts with: "Checks passed is not a
   guarantee: test the part before you rely on it. What you make, and how you
   use it, is your responsibility (DISCLAIMER.md in the workbench)." Say which
   earlier pack it replaces. Send it with SendUserFile.

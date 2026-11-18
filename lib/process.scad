@@ -6,7 +6,7 @@
 // then exports a resin prototype, an ASA part and a metal part, each with the
 // right clearances, without copies drifting apart.
 //
-//   PROCESS = "fdm_asa";         // resin_sla | fdm_asa | slm_316l | slm_alsi10mg | mjf_pa12
+//   PROCESS = "fdm_asa";         // resin_sla | fdm_asa | fdm_pla | fdm_petg | slm_316l | slm_alsi10mg | mjf_pa12
 //   include <lib/process.scad>
 //
 // Keep the numbers in step with tools/processes.json, which the checker uses.
@@ -18,6 +18,8 @@
 _PROC = [
   ["resin_sla",    [0.20, 0.05,      0.8,      0.3,         false]],
   ["fdm_asa",      [0.30, 0.15,      1.2,      0.8,         true ]],
+  ["fdm_pla",      [0.25, 0.15,      1.2,      0.8,         true ]],
+  ["fdm_petg",     [0.30, 0.15,      1.2,      0.8,         true ]],
   ["slm_316l",     [0.45, 0.00,      1.2,      0.5,         true ]],
   ["slm_alsi10mg", [0.45, 0.00,      1.2,      0.5,         true ]],
   ["mjf_pa12",     [0.30, 0.10,      1.0,      0.3,         false]],

@@ -5,7 +5,10 @@
 #
 #   project   projects/<project>/ (else examples/<project>/)
 #   part      <project folder>/<part>.scad   (default: <project>, with - as _)
-#   process   resin_sla fdm_asa slm_316l slm_alsi10mg mjf_pa12  (default: resin_sla fdm_asa)
+#   process   resin_sla fdm_asa fdm_pla fdm_petg slm_316l slm_alsi10mg mjf_pa12
+#             (default: resin_sla fdm_asa). fdm_pla / fdm_petg are for your own printer:
+#             they also check the bed (printer.json in the project, or BED=256x256x256)
+#             and write <part>_<process>.print-settings.txt
 #   after --  extra OpenSCAD -D overrides, applied to every build
 #
 # Writes, all under <project folder>/out/<part>/ (not committed):
@@ -61,9 +64,14 @@ for p in "${procs[@]}"; do
   rc=$?
   verdict=$("$PY" -c "import json,sys; r=json.load(open(sys.argv[1])); \
 print(r['verdict'].upper(), '|', r['volume_cm3'], 'cm3 |', 'thinnest', r['thinnest_mm'], 'mm |', \
-'cost', ('\$'+str(r['cost_usd'])) if r['cost_usd'] else 'n/a')" "$out/$base.check.json")
+('filament ~'+str(r['filament_g'])+' g, bed '+r['bed']['fit'] if 'bed' in r else 'cost '+(('\$'+str(r['cost_usd'])) if r['cost_usd'] else 'n/a')))" "$out/$base.check.json")
   echo "   check: $verdict   ($out/$base.check.md)"
   [ $rc -ne 0 ] && status=1
+  # home printers: the slicer settings as a small file for the print pack
+  "$PY" -c "import json,sys; r=json.load(open(sys.argv[1])); s=r.get('print_settings')
+s and print('Print settings (' + r['process_name'] + ')\n\n' + '\n'.join('- '+t for t in s))" \
+      "$out/$base.check.json" > "$out/$base.print-settings.txt"
+  [ -s "$out/$base.print-settings.txt" ] || rm -f "$out/$base.print-settings.txt"
 
   # renders: outside, and cut in half
   tools/render.sh "$out/$base.stl" "$out/$base.png" >/dev/null 2>&1 || true

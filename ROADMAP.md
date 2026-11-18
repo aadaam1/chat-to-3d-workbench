@@ -41,8 +41,6 @@ list of the others. Plan in `docs/research/timber-blocks.md`.
 Functional parts designed in OpenSCAD: brackets, caps, clips, adapters,
 mounts, enclosures, hose and thread fittings.
 
-- **Home printers:** material presets for PLA and PETG on a home FDM
-  printer, next to the print-service ones.
 - **Start from an existing file:** check and preview an STL or STEP made
   elsewhere, and make simple changes to it (holes, cuts, scale, combine).
 - **Strength checks as formulas:** pressure in a wall, a thread, a bracket

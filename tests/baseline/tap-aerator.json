@@ -8,6 +8,8 @@
   ],
   "verdicts": {
    "fdm_asa": "check",
+   "fdm_petg": "check",
+   "fdm_pla": "check",
    "mjf_pa12": "check",
    "resin_sla": "check",
    "slm_316l": "check",
@@ -25,6 +27,8 @@
   ],
   "verdicts": {
    "fdm_asa": "check",
+   "fdm_petg": "check",
+   "fdm_pla": "check",
    "mjf_pa12": "check",
    "resin_sla": "check",
    "slm_316l": "check",
@@ -42,6 +46,8 @@
   ],
   "verdicts": {
    "fdm_asa": "check",
+   "fdm_petg": "check",
+   "fdm_pla": "check",
    "mjf_pa12": "check",
    "resin_sla": "check",
    "slm_316l": "check",
@@ -59,6 +65,8 @@
   ],
   "verdicts": {
    "fdm_asa": "check",
+   "fdm_petg": "check",
+   "fdm_pla": "check",
    "mjf_pa12": "check",
    "resin_sla": "check",
    "slm_316l": "check",
@@ -76,6 +84,8 @@
   ],
   "verdicts": {
    "fdm_asa": "check",
+   "fdm_petg": "check",
+   "fdm_pla": "check",
    "mjf_pa12": "check",
    "resin_sla": "check",
    "slm_316l": "fail",
@@ -93,6 +103,8 @@
   ],
   "verdicts": {
    "fdm_asa": "check",
+   "fdm_petg": "check",
+   "fdm_pla": "check",
    "mjf_pa12": "check",
    "resin_sla": "check",
    "slm_316l": "fail",
@@ -110,6 +122,8 @@
   ],
   "verdicts": {
    "fdm_asa": "fail",
+   "fdm_petg": "fail",
+   "fdm_pla": "fail",
    "mjf_pa12": "fail",
    "resin_sla": "fail",
    "slm_316l": "fail",
@@ -127,6 +141,8 @@
   ],
   "verdicts": {
    "fdm_asa": "fail",
+   "fdm_petg": "fail",
+   "fdm_pla": "fail",
    "mjf_pa12": "fail",
    "resin_sla": "fail",
    "slm_316l": "fail",
@@ -144,6 +160,8 @@
   ],
   "verdicts": {
    "fdm_asa": "fail",
+   "fdm_petg": "fail",
+   "fdm_pla": "fail",
    "mjf_pa12": "fail",
    "resin_sla": "fail",
    "slm_316l": "fail",
@@ -161,6 +179,8 @@
   ],
   "verdicts": {
    "fdm_asa": "fail",
+   "fdm_petg": "fail",
+   "fdm_pla": "fail",
    "mjf_pa12": "fail",
    "resin_sla": "fail",
    "slm_316l": "fail",
@@ -178,6 +198,8 @@
   ],
   "verdicts": {
    "fdm_asa": "fail",
+   "fdm_petg": "fail",
+   "fdm_pla": "fail",
    "mjf_pa12": "fail",
    "resin_sla": "fail",
    "slm_316l": "fail",
@@ -195,6 +217,8 @@
   ],
   "verdicts": {
    "fdm_asa": "fail",
+   "fdm_petg": "fail",
+   "fdm_pla": "fail",
    "mjf_pa12": "fail",
    "resin_sla": "fail",
    "slm_316l": "fail",
@@ -212,6 +236,8 @@
   ],
   "verdicts": {
    "fdm_asa": "fail",
+   "fdm_petg": "fail",
+   "fdm_pla": "fail",
    "mjf_pa12": "fail",
    "resin_sla": "fail",
    "slm_316l": "fail",
@@ -229,6 +255,8 @@
   ],
   "verdicts": {
    "fdm_asa": "fail",
+   "fdm_petg": "fail",
+   "fdm_pla": "fail",
    "mjf_pa12": "fail",
    "resin_sla": "fail",
    "slm_316l": "fail",
