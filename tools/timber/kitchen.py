@@ -12,7 +12,7 @@ import math, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import timberlib as tl  # noqa: E402
-from timber.store import EPS, SpecError, _clean  # noqa: E402
+from timber.store import EPS, SpecError, _clean, set_batten  # noqa: E402
 from timber.beam import Beam  # noqa: E402
 from timber import flush as flush_frame, planning as pl  # noqa: E402
 from timber.foundations import Footings, footing_item  # noqa: E402
@@ -64,6 +64,7 @@ class KitchenLayout:
         self.sheath = tl.item(lib, s["sheathing"])
         self.clad = tl.item(lib, s["cladding"])
         self.ts, self.tc = self.sheath["thickness_mm"], self.clad["thickness_mm"]
+        set_batten(self, spec, lib)
         self.zd = 0.0
         self.gable = s["roof"] == "gable"
         self.hf = self.hb = 0.0

@@ -24,7 +24,7 @@ from timber.kitchen import BeamRoofLine, KitchenLayout, KitchenWall, build_floor
 from timber.pergola import sloped_brace  # noqa: E402
 import timberlib as tl  # noqa: E402
 from timber import planning as pl  # noqa: E402
-from timber.wall import Wall, corners  # noqa: E402
+from timber.wall import Wall, buy_ventilation, corners  # noqa: E402
 
 
 def pent_shed(spec, lib):
@@ -44,6 +44,7 @@ def pent_shed(spec, lib):
         walls[n].skin(aabbs)
     corners(fr, lay, walls)
     roof.buy()
+    buy_ventilation(fr, lib, walls.values())
     buy_openings(fr, spec)
     if foot:
         foot.buy()
@@ -71,6 +72,7 @@ def gable_shed(spec, lib):
         walls[n].skin(aabbs)
     corners(fr, lay, walls)
     roof.buy()
+    buy_ventilation(fr, lib, walls.values())
     buy_openings(fr, spec)
     if foot:
         foot.buy()
@@ -140,7 +142,7 @@ def join_pieces(fr, s):
         what = label.lower()[:-1] if one else label.lower()            # "1 top plate", "2 top plates"
         chose = f"{n['count']} {what} joined over a {n['support']}"
         if label == "Cladding boards":
-            chose = f"{n['count']} cladding board{'' if one else 's'} joined on a stud, staggered from course to course"
+            chose = f"{n['count']} cladding board{'' if one else 's'} joined on a {n['support']}, staggered from course to course"
         if label == "Upper top plates":
             chose = (f"{n['count']} upper top plate{'' if one else 's'} joined over a stud, at least 600 mm from "
                      f"the joint in the plate below")
@@ -474,6 +476,7 @@ def summer_kitchen(spec, lib):
     for wl in walls:
         wl.skin(aabbs)
     roof.buy()
+    buy_ventilation(fr, lib, walls)
     for si in ("back", "left", "right"):
         for j, o in enumerate(walled.get(si, [])):
             fr.bought.append({"item": o["kind"], "qty": 1, "unit": "pcs",

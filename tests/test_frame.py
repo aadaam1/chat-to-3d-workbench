@@ -282,8 +282,8 @@ def test_both_fixtures_generate_and_follow_the_format(shed):
                           "origin", "x", "y", "cut_deg", "outline"}
         assert m["kind"] in ("joist", "rim", "plate", "stud", "header", "trimmer", "king", "jack",
                              "cripple", "sill", "rafter", "blocking", "brace", "outrigger", "fascia",
-                             "bargeboard", "board", "sheet")
-        assert m["layer"] in ("floor", "walls", "roof", "sheathing", "cladding")
+                             "bargeboard", "board", "batten", "sheet")
+        assert m["layer"] in ("floor", "walls", "roof", "sheathing", "battens", "cladding")
         assert m["group"] in ("floor", "wall-front", "wall-back", "wall-left", "wall-right", "roof")
         tl.item(lib, m["item"])
         assert all(v > 0 for v in m["size"])
@@ -321,7 +321,9 @@ def test_both_fixtures_generate_and_follow_the_format(shed):
 def test_joint_coverage(shed):
     """Every kind of contact the plan names is recorded."""
     types = {j["type"] for j in shed["joints"]}
-    assert types == set(tl.JOINT_TYPES) - {"rafter-ridge", "tie-rafter", "tie-plate",       # the gable roof's
+    det = tl.load(shed["region"])["defaults"]["details"]["cladding"]
+    vent = shed["spec"].get("ventilated", det["ventilated"])
+    assert types == set(tl.JOINT_TYPES) - ({"board-frame"} if vent else {"batten-frame", "board-batten"}) - {"rafter-ridge", "tie-rafter", "tie-plate",       # the gable roof's
                                                            "post-base", "beam-post", "beam-cap", "beam-ply",
                                                            "joist-beam", "deck-board",
                                                            "brace-post", "brace-beam", "brace-rafter", "rafter-beam", "slat-rafter",
@@ -342,7 +344,7 @@ def test_joint_coverage(shed):
 
 
 def test_roofing_is_bought_by_area(shed):
-    roofing = [b for b in shed["bought"] if b["unit"] == "m2"]
+    roofing = [b for b in shed["bought"] if b["unit"] == "m2" and b["item"] != "breather-membrane"]
     assert len(roofing) == 1 and roofing[0]["item"] == "roofing-felt"
     spec = shed["spec"]
     import math

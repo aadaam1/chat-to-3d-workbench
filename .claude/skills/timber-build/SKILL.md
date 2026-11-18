@@ -129,6 +129,11 @@ Rules that matter:
 - A terrace above about 600 mm needs a railing in most places (rails and steps
   are not built yet): the check says so.
 - A summer kitchen's walls are infill (the posts carry the roof).
+- **Ventilated cladding** (`ventilated`, on by default in the eu library, off in the us one): a breather
+  membrane over the sheathing, 25x50 battens over every stud (and a filler where two are over 600 mm
+  apart), the boards on the battens, a 25 mm air gap open at the bottom and top behind insect mesh. The
+  membrane and the mesh are on the shopping list by area and length; the site pack lists the battens
+  on each wall page. `ventilated: false` nails the boards straight on, as before.
 - **Tiled roof on an open summer kitchen** (gable): `roof_deck: "none"` leaves out the sheets and
   their seam blocking (the rafters carry the battens) and `ties: "posts"` puts a tie over each post
   line only, with the cross braces going up to it. **Battens and tiles are not on the shopping list,

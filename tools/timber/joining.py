@@ -131,12 +131,14 @@ class Joiner:
         if k == "board":
             rank = boards_rank.get((g, round(float(fe._corners(m)[:, 2].min()), 0)), 0)
             lo_z, hi_z = fe._corners(m)[:, 2].min(), fe._corners(m)[:, 2].max()
+            sup = ("batten",) if self.has_battens(g) else VERT
             c = [_u(m, _centre(s)) for s in self.fr.members
-                 if s["group"] == g and s["kind"] in VERT
+                 if s["group"] == g and s["kind"] in sup
                  and min(hi_z, fe._corners(s)[:, 2].max()) - max(lo_z, fe._corners(s)[:, 2].min()) >= 30.0]
             if not c:               # a course above the top plate is nailed at the studs below it, as the generator does
-                c = [_u(m, _centre(s)) for s in self.fr.members if s["group"] == g and s["kind"] in VERT]
-            return choose(L, limit, c, first_max=limit * (0.5 if rank % 2 else 1.0)), "Cladding boards", "stud"
+                c = [_u(m, _centre(s)) for s in self.fr.members if s["group"] == g and s["kind"] in sup]
+            return (choose(L, limit, c, first_max=limit * (0.5 if rank % 2 else 1.0)), "Cladding boards",
+                    "batten" if sup == ("batten",) else "stud")
         if k == "plate":
             if "plate-top-2" in mid:
                 low = self.by.get(mid.replace("plate-top-2", "plate-top"))
@@ -173,6 +175,9 @@ class Joiner:
             c = [v for i, v in enumerate(c) if i == 0 or v - c[i - 1] > 60.0]       # one candidate per beam, not per ply
             return choose(L, limit, c), "Deck joists", "beam"
         return None
+
+    def has_battens(self, group):
+        return any(m["kind"] == "batten" and m["group"] == group for m in self.fr.members)
 
     def _abs(self, m, u):
         """World position along the member's axis (a projection on its x axis from the world origin)."""
@@ -243,7 +248,7 @@ class Joiner:
                 continue
             pa, pb = opts(a), opts(b)
             pairs = [(x, y) for x in pa for y in pb]
-            if j["type"] != "board-frame":
+            if j["type"] not in ("board-frame", "board-batten"):
                 touch = [(x, y) for x, y in pairs if fe.contact(x, y) is not None]
                 pairs = touch or pairs
             whole_a, whole_b = old[a], old[b]
@@ -256,7 +261,7 @@ class Joiner:
                     nj["edge_mm"] = num(j["edge_mm"] * (w1 / w0 if w0 > EPS else 1.0 / len(pairs)))
                     if nj["edge_mm"] <= 0:
                         continue
-                if j["type"] == "board-frame":
+                if j["type"] in ("board-frame", "board-batten"):
                     nj["crossings"] = max(1, self.crossings(x))
                 joints.append(nj)
         for oid, ps in self.pieces.items():
@@ -269,8 +274,9 @@ class Joiner:
         lo_z, hi_z = fe._corners(board)[:, 2].min(), fe._corners(board)[:, 2].max()
         lo, hi = 0.0, board["size"][0]
         n = n_any = 0
+        kinds = ("batten",) if self.has_battens(board["group"]) else VERT
         for s in self.fr.members:
-            if s["group"] != board["group"] or s["kind"] not in VERT:
+            if s["group"] != board["group"] or s["kind"] not in kinds:
                 continue
             if not lo - 1.0 <= _u(board, _centre(s)) <= hi + 1.0:
                 continue

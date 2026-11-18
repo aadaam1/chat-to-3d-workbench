@@ -623,7 +623,7 @@ are stood up separately and pulled together with screws every ~500 mm).
 **Rule of thumb.** Studs to plates: 2 end nails. Doubled top plate: face nails
 every 16 in. (400 mm). Corner lap: 2 face nails. Header to king or jack: 4 toe
 nails. Floor joist to rim, blocking to rafter: 3 end nails. Sheathing: every
-6 in. (150 mm). Cladding: 2 nails per stud crossing. Sizes: framing nail
+6 in. (150 mm). Cladding: 2 nails per stud crossing (per batten crossing when ventilated; each batten is nailed to the studs through the sheathing, one framing nail per 400 mm, at least 2). Sizes: framing nail
 3.1 x 90 (US 16d), small toe nail 2.8 x 65 (US 8d), sheathing ring-shank
 2.8 x 50, cladding ring-shank 2.8 x 60 (US 8d siding).
 
