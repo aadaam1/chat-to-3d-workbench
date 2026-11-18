@@ -209,10 +209,15 @@ def fmt(mm, units, unit=False):
 
 
 def item_name(lib, key):
+    """The section column: a cladding board is named by its size, like a stud (the piece
+    column already says it is a cladding board; the full name is in the shopping list)."""
     try:
-        return tl.item(lib, key)["name"]
+        it = tl.item(lib, key)
     except KeyError:
         return key
+    if it.get("category") == "cladding":
+        return f"{it['thickness_mm']:g}×{it['face_width_mm']:g}"
+    return it["name"]
 
 
 def cut_text(m):
@@ -822,7 +827,7 @@ def piece_rows(frame, sec, letters, lib, units):
     for m in sec["members"]:
         if m["id"] not in letters:
             sheet = m["kind"] in ("sheet",)
-            size = f"{fmt(m['size'][0], units, True)} x {fmt(m['size'][1], units, True)}" if sheet else fmt(m["size"][0], units, True)
+            size = f"{fmt(m['size'][0], units)} x {fmt(m['size'][1], units, True)}" if sheet else fmt(m["size"][0], units, True)
             k = (piece_name(m), item_name(lib, m["item"]), size, cut_text(m))
             other.setdefault(k, []).append(m)
     byname = {}
@@ -1324,6 +1329,7 @@ tr{break-inside:avoid}
 .head .sc{color:var(--grey);font-size:9pt;margin-left:auto}
 .pieces{font-size:8.5pt}
 .pieces td,.pieces th{padding:0.55mm 1.5mm}
+.pieces td:nth-child(2){white-space:nowrap}
 .note{font-size:8.5pt;color:var(--grey);margin:2mm 0 0}
 .nd{color:var(--grey)}
 svg{display:block;max-width:100%%}
@@ -1600,10 +1606,14 @@ def pieces_table(sec, rows, units, footings):
             t.append(f'<p class="note">Diagonal between the outer footings: {esc(fmt(d, units, True))}.</p>')
         return "".join(t)
     t = ['<table class="pieces"><tr><th></th><th>Piece</th><th>Section</th><th class=n>Length</th><th class=n>Qty</th></tr>']
+    said = False
     for r in rows:
+        if not r["drawn"] and not said:     # one heading for the pieces left out of the drawing, not a note on each
+            t.append('<tr><td></td><td colspan=4 class=nd>Not drawn (they would hide the frame):</td></tr>')
+            said = True
         lt = f'<span class=lt>{esc(r["letter"])}</span>' if r["letter"] else '<span class=nd>-</span>'
         cut = f'<br><span class=nd>cut {esc(r["cuts"])}</span>' if r["cuts"] else ""
-        t.append(f"<tr><td>{lt}</td><td>{esc(r['name'])}" + ("" if r["drawn"] else " <span class=nd>(not drawn)</span>") +
+        t.append(f"<tr><td>{lt}</td><td>{esc(r['name'])}"
                  f"</td><td>{esc(r['item'])}</td><td class=n>{esc(r['length'])}{cut}</td><td class=n>{r['qty']}</td></tr>")
     t.append("</table>")
     return "".join(t)
@@ -1617,10 +1627,8 @@ def batten_note(sec, units):
             ls[round(m["size"][0])] = ls.get(round(m["size"][0]), 0) + 1
     if not ls:
         return ""
-    cnt = ", ".join(f"{n} x {fmt(l, units, True)}" for l, n in sorted(ls.items(), reverse=True))
     return ('<p class="note"><b>Ventilated cladding.</b> Membrane over the sheathing, battens over every stud, cladding on the battens; '
-            "leave the gap open at the bottom and top, behind insect mesh. "
-            f"Battens ({sum(ls.values())}): {esc(cnt)}.</p>")
+            f"leave the gap open at the bottom and top, behind insect mesh. {sum(ls.values())} battens, in the table.</p>")
 
 
 def section_html(frame, sec, views, rows, units, left_w, panel_w, panel_h, tw, footings, lo, hi, key="", no=None):
@@ -1643,8 +1651,8 @@ def section_html(frame, sec, views, rows, units, left_w, panel_w, panel_h, tw, f
     avail_h = panel_h - 36.0
     svg, N = draw_one(first, left_w, avail_h)
     out.append('<section class="page draw">' + heads(title, N) + f'<p class="note" style="margin:-1mm 0 2mm">{esc(sub)}</p>'
-               f'<div class="drawing"><div class="panel"><p class="cap">{esc(first.spec["title"])}</p>{svg}</div>'
-               f'<div><div class="key"><p class="cap">Where this part is; arrow: viewing direction</p>{key}</div>{pieces_table(sec, rows, units, footings)}{batten_note(sec, units)}</div></div></section>')
+               f'<div class="drawing"><div class="panel"><p class="cap">{esc(first.spec["title"])}</p>{svg}{batten_note(sec, units)}</div>'
+               f'<div><div class="key"><p class="cap">Where this part is; arrow: viewing direction</p>{key}</div>{pieces_table(sec, rows, units, footings)}</div></div></section>')
     rest = views[1:]
     if rest:
         n = len(rest)
