@@ -32,7 +32,7 @@ list of the others. Plan in `docs/research/timber-blocks.md`.
   pieces are joined), then
   railings and steps.
 - **Ventilated cladding:** battens and an air gap behind the boards.
-- **More prices** (done: several suppliers per region, each line from the cheapest; nails, screws, felt, ground screws and fittings priced; snapshots for hu, cz and us). Still to come: more yards and regions, cladding profiles (shiplap), and sizes the libraries lack.
+- **More prices** (done: several suppliers per region, each line from the cheapest; nails, screws, felt, ground screws and fittings priced; snapshots for hu, cz and us). Still to come: more yards and regions (loose ring-shank nails 2.8×50 and 2.8×60 and a smooth 3.1×90 nail are not found in Hungary yet; doors, windows and some fittings have no price), more cladding profiles, and sizes the libraries lack.
 - **Planning** (done: sections, spacings and wall heights the description leaves out are chosen by the span formulas and recorded as decisions; `tools/frame.py --types` and `--fields`), then beams and walls sized the same way.
 - **Building it:** the site pack is done (`tools/site_pack.sh`: the shopping list, each side drawn with dimensions and lettered pieces, the cut list, as a PDF). Still to come: the order of assembly, and which piece goes where.
 
